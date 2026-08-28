@@ -13,30 +13,52 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
-      - run: npm ci
-      - run: npm run build
+      - name: Setup Android
+        uses: android-actions/setup-android@v3
+      - name: Install Android build tools
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build web app
+        run: npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
       - name: Add Android platform if missing
         run: |
-          if [ ! -d android ]; then
-            npx cap add android
-          fi
-      - run: npx cap sync android
-      - working-directory: android
+          if [ ! -d android ]; then npx cap add android; fi
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - name: Build release APK
+        working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-      - run: mkdir -p release && cp android/app/build/outputs/apk/release/app-release.apk release/Adam-AI-Agent-${GITHUB_SHA::7}.apk
-      - uses: actions/upload-artifact@v4
+      - name: Locate and prepare APK
+        run: |
+          set -euo pipefail
+          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          if [ -z "$APK" ]; then
+            echo "No release APK was produced. Available APK files:"
+            find android/app/build/outputs -type f -name '*.apk' -print || true
+            exit 1
+          fi
+          mkdir -p release
+          cp "$APK" "release/Adam-AI-Agent-${GITHUB_SHA::7}.apk"
+          ls -lh release/*.apk
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
           name: Adam-AI-Agent-${{ github.sha }}
           path: release/*.apk
