@@ -29,7 +29,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Install Android build tools
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager --licenses </dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm ci
@@ -42,18 +42,44 @@ jobs:
           if [ ! -d android ]; then npx cap add android; fi
       - name: Sync Capacitor
         run: npx cap sync android
-      - name: Build release APK
+      - name: Configure installable release signing
+        working-directory: android
+        run: |
+          set -euo pipefail
+          mkdir -p app/build/keys
+          keytool -genkeypair -v \
+            -keystore app/build/keys/adam-release.jks \
+            -storepass adam-release-password \
+            -keypass adam-release-password \
+            -alias adam-release \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Adam AI Agent, OU=Adam, O=Adam AI Agent, L=Blida, ST=Blida, C=DZ"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/build.gradle')
+          s = p.read_text()
+          if 'signingConfigs {' not in s:
+              marker = 'android {\n'
+              block = '''android {\n    signingConfigs {\n        release {\n            storeFile file("build/keys/adam-release.jks")\n            storePassword "adam-release-password"\n            keyAlias "adam-release"\n            keyPassword "adam-release-password"\n        }\n    }\n'''
+              s = s.replace(marker, block, 1)
+          if 'signingConfig signingConfigs.release' not in s:
+              s = s.replace('buildTypes {', 'buildTypes {', 1)
+              s = s.replace('release {', 'release {\n            signingConfig signingConfigs.release', 1)
+          p.write_text(s)
+          PY
+      - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-      - name: Locate and prepare APK
+      - name: Verify APK signature and prepare download
         run: |
           set -euo pipefail
           APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
           if [ -z "$APK" ]; then
-            echo "No release APK was produced. Available APK files:"
+            echo "No release APK was produced."
             find android/app/build/outputs -type f -name '*.apk' -print || true
             exit 1
           fi
+          apksigner verify --verbose "$APK"
           mkdir -p release
           cp "$APK" "release/Adam-AI-Agent-${GITHUB_SHA::7}.apk"
           ls -lh release/*.apk
