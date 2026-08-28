@@ -63,8 +63,14 @@ jobs:
               block = '''android {\n    signingConfigs {\n        release {\n            storeFile file("build/keys/adam-release.jks")\n            storePassword "adam-release-password"\n            keyAlias "adam-release"\n            keyPassword "adam-release-password"\n        }\n    }\n'''
               s = s.replace(marker, block, 1)
           if 'signingConfig signingConfigs.release' not in s:
-              s = s.replace('buildTypes {', 'buildTypes {', 1)
-              s = s.replace('release {', 'release {\n            signingConfig signingConfigs.release', 1)
+              build_types = s.find('buildTypes {')
+              if build_types < 0:
+                  raise SystemExit('buildTypes block not found')
+              release = s.find('release {', build_types)
+              if release < 0:
+                  raise SystemExit('release build type not found')
+              insert_at = release + len('release {')
+              s = s[:insert_at] + '\n            signingConfig signingConfigs.release' + s[insert_at:]
           p.write_text(s)
           PY
       - name: Build signed release APK
@@ -81,12 +87,13 @@ jobs:
           fi
           apksigner verify --verbose "$APK"
           mkdir -p release
-          cp "$APK" "release/Adam-AI-Agent-${GITHUB_SHA::7}.apk"
+          VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
+          cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
           ls -lh release/*.apk
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Adam-AI-Agent-${{ github.sha }}
+          name: Adam-AI-Agent-${{ github.ref_name }}
           path: release/*.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
