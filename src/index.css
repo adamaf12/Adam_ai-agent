@@ -1,0 +1,673 @@
+@import "tailwindcss";
+
+/* --- Universal Default & Theme Scrollbar Variables --- */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --card-bg: #f1f5f9;
+  --border-color: #cbd5e1;
+  --accent-color: #0284c7;
+  --text-main: #0f172a;
+  --scrollbar-track: var(--bg-primary);
+  --scrollbar-thumb: var(--border-color);
+  --scrollbar-thumb-hover: var(--accent-color);
+}
+
+html.dark,
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --card-bg: #1e293b;
+  --border-color: #334155;
+  --accent-color: #38bdf8;
+  --text-main: #f8fafc;
+  --scrollbar-track: var(--bg-primary);
+  --scrollbar-thumb: var(--border-color);
+  --scrollbar-thumb-hover: var(--accent-color);
+}
+
+/* --- Global Theme Definitions & Color Palettes --- */
+
+/* 1. Cyberpunk Neon Theme */
+html.theme-cyberpunk,
+.theme-cyberpunk {
+  --bg-primary: #090514;
+  --bg-secondary: #130a2a;
+  --card-bg: #1a0f38;
+  --border-color: #f59e0b;
+  --accent-color: #eab308;
+  --text-main: #f8fafc;
+  --scrollbar-track: #090514;
+  --scrollbar-thumb: #281452;
+  --scrollbar-thumb-hover: #f59e0b;
+  background-color: #090514 !important;
+  color: #f8fafc !important;
+}
+
+html.theme-cyberpunk body {
+  background-color: #090514 !important;
+}
+
+html.theme-cyberpunk header,
+html.theme-cyberpunk .bg-white,
+html.theme-cyberpunk .bg-slate-900,
+html.theme-cyberpunk .bg-slate-950 {
+  background-color: rgba(19, 10, 42, 0.9) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* 2. Royal Sapphire Theme */
+html.theme-sapphire,
+.theme-sapphire {
+  --bg-primary: #060d21;
+  --bg-secondary: #0b1a3d;
+  --card-bg: #112554;
+  --border-color: #3b82f6;
+  --accent-color: #60a5fa;
+  --scrollbar-track: #060d21;
+  --scrollbar-thumb: #132a5e;
+  --scrollbar-thumb-hover: #3b82f6;
+  background-color: #060d21 !important;
+  color: #f0f9ff !important;
+}
+
+html.theme-sapphire body {
+  background-color: #060d21 !important;
+}
+
+html.theme-sapphire header,
+html.theme-sapphire .bg-white,
+html.theme-sapphire .bg-slate-900,
+html.theme-sapphire .bg-slate-950 {
+  background-color: rgba(11, 26, 61, 0.9) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* 3. Amber Sunset Theme */
+html.theme-sunset,
+.theme-sunset {
+  --bg-primary: #1a080d;
+  --bg-secondary: #2b0d16;
+  --card-bg: #3d1220;
+  --border-color: #f43f5e;
+  --accent-color: #fb923c;
+  --scrollbar-track: #1a080d;
+  --scrollbar-thumb: #471526;
+  --scrollbar-thumb-hover: #f43f5e;
+  background-color: #1a080d !important;
+  color: #fff1f2 !important;
+}
+
+html.theme-sunset body {
+  background-color: #1a080d !important;
+}
+
+html.theme-sunset header,
+html.theme-sunset .bg-white,
+html.theme-sunset .bg-slate-900,
+html.theme-sunset .bg-slate-950 {
+  background-color: rgba(43, 13, 22, 0.9) !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+/* 4. Luxury Gold & Onyx Theme */
+html.theme-luxury_gold,
+.theme-luxury_gold {
+  --bg-primary: #0c0b09;
+  --bg-secondary: #191612;
+  --card-bg: #26221c;
+  --border-color: #eab308;
+  --accent-color: #fbbf24;
+  --scrollbar-track: #0c0b09;
+  --scrollbar-thumb: #332d23;
+  --scrollbar-thumb-hover: #eab308;
+  background-color: #0c0b09 !important;
+  color: #fefce8 !important;
+}
+
+html.theme-luxury_gold body {
+  background-color: #0c0b09 !important;
+}
+
+html.theme-luxury_gold header,
+html.theme-luxury_gold .bg-white,
+html.theme-luxury_gold .bg-slate-900,
+html.theme-luxury_gold .bg-slate-950 {
+  background-color: rgba(25, 22, 18, 0.9) !important;
+  border-color: rgba(234, 179, 8, 0.3) !important;
+}
+
+/* 5. Warm Espresso Theme */
+html.theme-espresso,
+.theme-espresso {
+  --bg-primary: #140e0a;
+  --bg-secondary: #241912;
+  --card-bg: #33231a;
+  --border-color: #d97706;
+  --accent-color: #f59e0b;
+  --scrollbar-track: #140e0a;
+  --scrollbar-thumb: #38271d;
+  --scrollbar-thumb-hover: #d97706;
+  background-color: #140e0a !important;
+  color: #fffbeb !important;
+}
+
+html.theme-espresso body {
+  background-color: #140e0a !important;
+}
+
+html.theme-espresso header,
+html.theme-espresso .bg-white,
+html.theme-espresso .bg-slate-900,
+html.theme-espresso .bg-slate-950 {
+  background-color: rgba(36, 25, 18, 0.9) !important;
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+
+/* 6. Surreal Glitch Matrix Theme */
+html.theme-glitch_matrix,
+.theme-glitch_matrix {
+  --bg-primary: #050508;
+  --bg-secondary: #0d0a14;
+  --card-bg: #150f21;
+  --border-color: #ec4899;
+  --accent-color: #06b6d4;
+  --scrollbar-track: #050508;
+  --scrollbar-thumb: #251a38;
+  --scrollbar-thumb-hover: #ec4899;
+  background-color: #050508 !important;
+  color: #fdf2f8 !important;
+}
+
+html.theme-glitch_matrix body {
+  background-color: #050508 !important;
+}
+
+html.theme-glitch_matrix header,
+html.theme-glitch_matrix .bg-white,
+html.theme-glitch_matrix .bg-slate-900,
+html.theme-glitch_matrix .bg-slate-950 {
+  background-color: rgba(13, 10, 20, 0.92) !important;
+  border-color: rgba(236, 72, 153, 0.35) !important;
+}
+
+/* 7. Crimson Samurai Onyx Theme */
+html.theme-crimson_samurai,
+.theme-crimson_samurai {
+  --bg-primary: #090304;
+  --bg-secondary: #170709;
+  --card-bg: #260c10;
+  --border-color: #ef4444;
+  --accent-color: #f87171;
+  --scrollbar-track: #090304;
+  --scrollbar-thumb: #381218;
+  --scrollbar-thumb-hover: #ef4444;
+  background-color: #090304 !important;
+  color: #fef2f2 !important;
+}
+
+html.theme-crimson_samurai body {
+  background-color: #090304 !important;
+}
+
+html.theme-crimson_samurai header,
+html.theme-crimson_samurai .bg-white,
+html.theme-crimson_samurai .bg-slate-900,
+html.theme-crimson_samurai .bg-slate-950 {
+  background-color: rgba(23, 7, 9, 0.92) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+/* 8. Retro Synthwave 80s Sunset Theme */
+html.theme-synthwave_retro,
+.theme-synthwave_retro {
+  --bg-primary: #12071f;
+  --bg-secondary: #220d3a;
+  --card-bg: #321356;
+  --border-color: #d946ef;
+  --accent-color: #f97316;
+  --scrollbar-track: #12071f;
+  --scrollbar-thumb: #3c1763;
+  --scrollbar-thumb-hover: #d946ef;
+  background-color: #12071f !important;
+  color: #faf5ff !important;
+}
+
+html.theme-synthwave_retro body {
+  background-color: #12071f !important;
+}
+
+html.theme-synthwave_retro header,
+html.theme-synthwave_retro .bg-white,
+html.theme-synthwave_retro .bg-slate-900,
+html.theme-synthwave_retro .bg-slate-950 {
+  background-color: rgba(34, 13, 58, 0.92) !important;
+  border-color: rgba(217, 70, 239, 0.35) !important;
+}
+
+/* 9. Quantum Ionized Emerald Theme */
+html.theme-emerald_quantum,
+.theme-emerald_quantum {
+  --bg-primary: #020d09;
+  --bg-secondary: #061f17;
+  --card-bg: #0c3326;
+  --border-color: #10b981;
+  --accent-color: #34d399;
+  --scrollbar-track: #020d09;
+  --scrollbar-thumb: #0e3d2e;
+  --scrollbar-thumb-hover: #10b981;
+  background-color: #020d09 !important;
+  color: #ecfdf5 !important;
+}
+
+html.theme-emerald_quantum body {
+  background-color: #020d09 !important;
+}
+
+html.theme-emerald_quantum header,
+html.theme-emerald_quantum .bg-white,
+html.theme-emerald_quantum .bg-slate-900,
+html.theme-emerald_quantum .bg-slate-950 {
+  background-color: rgba(6, 31, 23, 0.92) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+/* 10. Nordic Aurora, Deep Space, Matrix Hologram, Titanium Glass */
+html.theme-matrix_hologram,
+.theme-matrix_hologram {
+  --bg-primary: #000000;
+  --bg-secondary: #05140d;
+  --card-bg: #092418;
+  --border-color: #10b981;
+  --accent-color: #34d399;
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #0c3b25;
+  --scrollbar-thumb-hover: #34d399;
+  background-color: #000000 !important;
+  color: #34d399 !important;
+}
+html.theme-matrix_hologram body { background-color: #000000 !important; }
+
+html.theme-nordic_aurora,
+.theme-nordic_aurora {
+  --bg-primary: #030b14;
+  --bg-secondary: #07192b;
+  --card-bg: #0d2842;
+  --border-color: #06b6d4;
+  --accent-color: #22d3ee;
+  --scrollbar-track: #030b14;
+  --scrollbar-thumb: #0e3252;
+  --scrollbar-thumb-hover: #06b6d4;
+  background-color: #030b14 !important;
+  color: #e0f2fe !important;
+}
+html.theme-nordic_aurora body { background-color: #030b14 !important; }
+
+html.theme-deep_space,
+.theme-deep_space {
+  --bg-primary: #04020c;
+  --bg-secondary: #0b0720;
+  --card-bg: #150e38;
+  --border-color: #8b5cf6;
+  --accent-color: #a78bfa;
+  --scrollbar-track: #04020c;
+  --scrollbar-thumb: #1e134a;
+  --scrollbar-thumb-hover: #8b5cf6;
+  background-color: #04020c !important;
+  color: #ede9fe !important;
+}
+html.theme-deep_space body { background-color: #04020c !important; }
+
+html.theme-titanium_glass,
+.theme-titanium_glass {
+  --bg-primary: #0c1015;
+  --bg-secondary: #161c24;
+  --card-bg: #222b37;
+  --border-color: #64748b;
+  --accent-color: #94a3b8;
+  --scrollbar-track: #0c1015;
+  --scrollbar-thumb: #293442;
+  --scrollbar-thumb-hover: #64748b;
+  background-color: #0c1015 !important;
+  color: #e2e8f0 !important;
+}
+html.theme-titanium_glass body { background-color: #0c1015 !important; }
+
+/* 11. Electric Cyber Tokyo Theme */
+html.theme-cyber_neon_tokyo,
+.theme-cyber_neon_tokyo {
+  --bg-primary: #08031a;
+  --bg-secondary: #120836;
+  --card-bg: #1e0f52;
+  --border-color: #f43f5e;
+  --accent-color: #06b6d4;
+  --scrollbar-track: #08031a;
+  --scrollbar-thumb: #2b136e;
+  --scrollbar-thumb-hover: #f43f5e;
+  background-color: #08031a !important;
+  color: #fdf2f8 !important;
+}
+html.theme-cyber_neon_tokyo body { background-color: #08031a !important; }
+html.theme-cyber_neon_tokyo header,
+html.theme-cyber_neon_tokyo .bg-white,
+html.theme-cyber_neon_tokyo .bg-slate-900,
+html.theme-cyber_neon_tokyo .bg-slate-950 {
+  background-color: rgba(18, 8, 54, 0.92) !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+/* 12. Midnight Ocean Theme */
+html.theme-midnight_ocean,
+.theme-midnight_ocean {
+  --bg-primary: #020b14;
+  --bg-secondary: #05192d;
+  --card-bg: #092947;
+  --border-color: #0284c7;
+  --accent-color: #38bdf8;
+  --scrollbar-track: #020b14;
+  --scrollbar-thumb: #0d375e;
+  --scrollbar-thumb-hover: #0284c7;
+  background-color: #020b14 !important;
+  color: #f0f9ff !important;
+}
+html.theme-midnight_ocean body { background-color: #020b14 !important; }
+html.theme-midnight_ocean header,
+html.theme-midnight_ocean .bg-white,
+html.theme-midnight_ocean .bg-slate-900,
+html.theme-midnight_ocean .bg-slate-950 {
+  background-color: rgba(5, 25, 45, 0.92) !important;
+  border-color: rgba(2, 132, 199, 0.35) !important;
+}
+
+/* 13. Solar Flare Gold Theme */
+html.theme-solar_flare_gold,
+.theme-solar_flare_gold {
+  --bg-primary: #120902;
+  --bg-secondary: #241305;
+  --card-bg: #381f09;
+  --border-color: #f59e0b;
+  --accent-color: #fbbf24;
+  --scrollbar-track: #120902;
+  --scrollbar-thumb: #45240a;
+  --scrollbar-thumb-hover: #f59e0b;
+  background-color: #120902 !important;
+  color: #fffbeb !important;
+}
+html.theme-solar_flare_gold body { background-color: #120902 !important; }
+html.theme-solar_flare_gold header,
+html.theme-solar_flare_gold .bg-white,
+html.theme-solar_flare_gold .bg-slate-900,
+html.theme-solar_flare_gold .bg-slate-950 {
+  background-color: rgba(36, 19, 5, 0.92) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* 14. Dracula Violet Theme */
+html.theme-dracula_vampire,
+.theme-dracula_vampire {
+  --bg-primary: #0d0614;
+  --bg-secondary: #1a0d28;
+  --card-bg: #29153f;
+  --border-color: #a855f7;
+  --accent-color: #ec4899;
+  --scrollbar-track: #0d0614;
+  --scrollbar-thumb: #33194c;
+  --scrollbar-thumb-hover: #a855f7;
+  background-color: #0d0614 !important;
+  color: #faf5ff !important;
+}
+html.theme-dracula_vampire body { background-color: #0d0614 !important; }
+html.theme-dracula_vampire header,
+html.theme-dracula_vampire .bg-white,
+html.theme-dracula_vampire .bg-slate-900,
+html.theme-dracula_vampire .bg-slate-950 {
+  background-color: rgba(26, 13, 40, 0.92) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+}
+
+/* 15. Rose Gold Luxury Theme */
+html.theme-rose_gold_luxury,
+.theme-rose_gold_luxury {
+  --bg-primary: #14070a;
+  --bg-secondary: #260f15;
+  --card-bg: #3b1922;
+  --border-color: #fb7185;
+  --accent-color: #f43f5e;
+  --scrollbar-track: #14070a;
+  --scrollbar-thumb: #451d28;
+  --scrollbar-thumb-hover: #fb7185;
+  background-color: #14070a !important;
+  color: #fff1f2 !important;
+}
+html.theme-rose_gold_luxury body { background-color: #14070a !important; }
+html.theme-rose_gold_luxury header,
+html.theme-rose_gold_luxury .bg-white,
+html.theme-rose_gold_luxury .bg-slate-900,
+html.theme-rose_gold_luxury .bg-slate-950 {
+  background-color: rgba(38, 15, 21, 0.92) !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+
+/* 16. Tactical Carbon Fiber Theme */
+html.theme-carbon_fiber_stealth,
+.theme-carbon_fiber_stealth {
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #141416;
+  --card-bg: #1f1f23;
+  --border-color: #ea580c;
+  --accent-color: #f97316;
+  --scrollbar-track: #0a0a0b;
+  --scrollbar-thumb: #27272c;
+  --scrollbar-thumb-hover: #ea580c;
+  background-color: #0a0a0b !important;
+  color: #f4f4f5 !important;
+}
+html.theme-carbon_fiber_stealth body { background-color: #0a0a0b !important; }
+html.theme-carbon_fiber_stealth header,
+html.theme-carbon_fiber_stealth .bg-white,
+html.theme-carbon_fiber_stealth .bg-slate-900,
+html.theme-carbon_fiber_stealth .bg-slate-950 {
+  background-color: rgba(20, 20, 22, 0.92) !important;
+  border-color: rgba(234, 88, 12, 0.35) !important;
+}
+
+/* 17. High Contrast Monochrome Minimalist */
+html.theme-monochrome_minimalist,
+.theme-monochrome_minimalist {
+  --bg-primary: #000000;
+  --bg-secondary: #121212;
+  --card-bg: #1e1e1e;
+  --border-color: #ffffff;
+  --accent-color: #e4e4e7;
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #333333;
+  --scrollbar-thumb-hover: #ffffff;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+html.theme-monochrome_minimalist body { background-color: #000000 !important; }
+html.theme-monochrome_minimalist header,
+html.theme-monochrome_minimalist .bg-white,
+html.theme-monochrome_minimalist .bg-slate-900,
+html.theme-monochrome_minimalist .bg-slate-950 {
+  background-color: rgba(18, 18, 18, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 18. Nordic Pine Forest Theme */
+html.theme-nordic_forest,
+.theme-nordic_forest {
+  --bg-primary: #030d07;
+  --bg-secondary: #071f11;
+  --card-bg: #0d331c;
+  --border-color: #059669;
+  --accent-color: #10b981;
+  --scrollbar-track: #030d07;
+  --scrollbar-thumb: #0f3d21;
+  --scrollbar-thumb-hover: #059669;
+  background-color: #030d07 !important;
+  color: #ecfdf5 !important;
+}
+html.theme-nordic_forest body { background-color: #030d07 !important; }
+html.theme-nordic_forest header,
+html.theme-nordic_forest .bg-white,
+html.theme-nordic_forest .bg-slate-900,
+html.theme-nordic_forest .bg-slate-950 {
+  background-color: rgba(7, 31, 17, 0.92) !important;
+  border-color: rgba(5, 150, 105, 0.35) !important;
+}
+
+/* --- Global Smooth Scrolling & Dynamic Adaptive Scroll Padding --- */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  scroll-padding-left: 0px;
+  scroll-padding-right: 0px;
+  transition: scroll-padding 300ms ease-in-out;
+}
+
+/* Dynamic scroll-padding adaptation when desktop sidebar is open */
+html.sidebar-open,
+body.sidebar-open {
+  scroll-padding-left: 18rem; /* 288px sidebar in LTR */
+  scroll-padding-right: 0px;
+}
+
+html[dir="rtl"].sidebar-open,
+body[dir="rtl"].sidebar-open {
+  scroll-padding-left: 0px;
+  scroll-padding-right: 18rem; /* 288px sidebar in RTL */
+}
+
+/* --- Universal Custom Themed Scrollbars & Inherited Theme Class --- */
+
+/* Dedicated utility class that inherits its parent's active theme variables */
+.theme-scrollbar,
+.custom-scrollbar,
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, var(--border-color, #94a3b8)) var(--scrollbar-track, var(--bg-primary, transparent));
+}
+
+/* Standard Firefox properties for all scrollable elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, var(--border-color, #94a3b8)) var(--scrollbar-track, var(--bg-primary, transparent));
+}
+
+/* WebKit / Chromium (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, var(--bg-primary, transparent)) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, var(--border-color, #94a3b8)) !important;
+  border-radius: 9999px;
+  border: 1px solid var(--scrollbar-track, transparent);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, var(--accent-color, #64748b)) !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track, var(--bg-primary, transparent)) !important;
+}
+
+/* Specific classes for thin or theme-bound scrollbars */
+.theme-scrollbar::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.theme-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, var(--bg-primary, transparent)) !important;
+}
+
+.theme-scrollbar::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, var(--border-color, #94a3b8)) !important;
+  border-radius: 9999px;
+  border: 1px solid var(--scrollbar-track, transparent);
+}
+
+.theme-scrollbar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, var(--accent-color, #64748b)) !important;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth theme transitions */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* --- Apple iOS System Design Enhancements --- */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* iOS Frosted Glass Effect (Blur, translucent background) */
+.ios-glass {
+  background-color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+.dark .ios-glass,
+html.dark .ios-glass {
+  background-color: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+/* iOS Card / Inset Grouped Table */
+.ios-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+.dark .ios-card,
+html.dark .ios-card {
+  background-color: rgba(30, 41, 59, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* iOS Button & Control Tactile Feedback */
+.ios-btn {
+  transition: all 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.ios-btn:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* iOS Modal Sheet */
+.ios-modal-sheet {
+  border-radius: 28px 28px 0px 0px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+}

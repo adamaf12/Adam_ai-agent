@@ -1,0 +1,6 @@
+{
+  "name": "Adam AI Agent",
+  "description": "تطبيق أدم - وكيل ذكاء اصطناعي شخصي متعدد المهام ينفذ المهام ويتذكر المستخدم باللغتين العربية والإنجليزية",
+  "requestFramePermissions": ["microphone", "camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

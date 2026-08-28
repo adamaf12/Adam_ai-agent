@@ -1,0 +1,42 @@
+{
+  "id": "/",
+  "short_name": "آدم AI",
+  "name": "آدم - وكيل الذكاء الاصطناعي",
+  "description": "تطبيق وكيل ومساعد ذكاء اصطناعي محلي ومكتبي متكامل للكمبيوتر والهاتف",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "background_color": "#0f172a",
+  "theme_color": "#0d9488",
+  "orientation": "any",
+  "categories": [
+    "productivity",
+    "utilities",
+    "ai"
+  ],
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ]
+}
