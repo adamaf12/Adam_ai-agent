@@ -15,6 +15,54 @@ test('orchestrator runs plan, tool execution, verification, and response composi
   assert.deepEqual(events, ['plan', 'tool', 'verify', 'compose']);
 });
 
+test('orchestrator executes multi-step plans in dependency order and verifies every step', async () => {
+  const events = [];
+  const orchestrator = createResponseOrchestrator({
+    plan: async () => ({ needsTool: true, steps: [
+      { id: 'read', tool: 'memory.search' },
+      { id: 'act', tool: 'tasks.create', dependsOn: ['read'], input: { title: 'Study' } },
+      { id: 'confirm', tool: 'tasks.list', dependsOn: ['act'] },
+    ] }),
+    executeTool: async tool => { events.push(`tool:${tool}`); return { ok: true, data: tool }; },
+    verify: async result => { events.push(`verify:${result.data}`); return { ok: true, facts: result.data }; },
+    compose: async context => { assert.equal(context.verificationCount, 3); return 'done'; },
+  });
+  assert.equal((await orchestrator.run({ text: 'do it', history: [] })).text, 'done');
+  assert.deepEqual(events, [
+    'tool:memory.search', 'verify:memory.search',
+    'tool:tasks.create', 'verify:tasks.create',
+    'tool:tasks.list', 'verify:tasks.list',
+  ]);
+});
+
+test('orchestrator rejects cycles before executing any tool', async () => {
+  let executed = false;
+  const orchestrator = createResponseOrchestrator({
+    plan: async () => ({ needsTool: true, steps: [
+      { id: 'a', tool: 'one', dependsOn: ['b'] },
+      { id: 'b', tool: 'two', dependsOn: ['a'] },
+    ] }),
+    executeTool: async () => { executed = true; return { ok: true }; },
+    verify: async () => ({ ok: true, facts: null }),
+    compose: async () => 'should not compose',
+  });
+  await assert.rejects(() => orchestrator.run({ text: 'cycle', history: [] }), /cycle detected/i);
+  assert.equal(executed, false);
+});
+
+test('orchestrator caps an oversized plan at six steps', async () => {
+  let calls = 0;
+  const steps = Array.from({ length: 10 }, (_, index) => ({ id: `s${index}`, tool: `tool.${index}` }));
+  const orchestrator = createResponseOrchestrator({
+    plan: async () => ({ needsTool: true, steps }),
+    executeTool: async () => { calls += 1; return { ok: true }; },
+    verify: async () => ({ ok: true, facts: null }),
+    compose: async context => String(context.verificationCount),
+  });
+  assert.equal((await orchestrator.run({ text: 'many', history: [] })).text, '6');
+  assert.equal(calls, 6);
+});
+
 test('orchestrator can answer directly without a tool', async () => {
   const orchestrator = createResponseOrchestrator({
     plan: async () => ({ needsTool: false }),
