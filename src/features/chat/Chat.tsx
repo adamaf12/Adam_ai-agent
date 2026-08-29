@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Message } from '../../core/domain';
 import { httpAgentClient, httpChatClient } from '../../core/ai/client';
 import { routePrompt } from '../../core/agent/agentTypes';
+import { toCapabilityRequest, requiresDedicatedCapability } from '../../core/agent/capabilities';
 import { createResponseState, reduceResponseEvent, type ResponseState } from '../../core/agent/responseModel';
 import { createAssistantMessage, createUserMessage } from './chatModel';
 import { MessageBubble } from './MessageBubble';
@@ -31,7 +32,9 @@ export function Chat({ language, agentName, copy: heroCopy }: { language: Langua
     const assistant = createAssistantMessage();
     const next = [...messages, user];
     const route = routePrompt(text);
-    const client = route.intent === 'web' ? httpAgentClient : httpChatClient;
+    const capability = toCapabilityRequest(route);
+    // Dedicated routes are sent through the agent gateway; plain chat uses the lightweight chat path.
+    const client = requiresDedicatedCapability(capability.capability) ? httpAgentClient : httpChatClient;
     setResponse(createResponseState(route.intent));
     setLastPrompt(text);
     setError(null);
