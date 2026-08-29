@@ -1,6 +1,7 @@
 import type { Message } from '../domain';
 import { createAssistantMessage } from '../../features/chat/chatModel';
 import { ChatError, type ChatClient, type ChatRequest } from './types';
+import { parseStreamLines, type StreamEvent } from './streamParser';
 
 const apiBase = (import.meta.env.VITE_ADAM_API_URL ?? '').replace(/\/$/, '');
 
@@ -12,27 +13,38 @@ async function streamRequest(url: string, request: ChatRequest, signal: AbortSig
     throw new ChatError(payload.code ?? `HTTP_${response.status}`, payload.message ?? 'The AI service is temporarily unavailable.');
   }
   if (!response.body) throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let text = '';
-  const consume = (line: string) => {
-    if (!line.trim()) return;
-    let event: { type: string; text?: string; message?: string; code?: string };
-    try { event = JSON.parse(line); } catch { throw new ChatError('INVALID_STREAM', 'Adam received an invalid response stream.'); }
-    if (event.type === 'delta') { text += event.text ?? ''; onDelta(text); }
-    if (event.type === 'error') throw new ChatError(event.code ?? 'AI_ERROR', event.message ?? 'The AI service failed.');
+  let completed = false;
+
+  const consume = (input: string) => {
+    const parsed = parseStreamLines(input);
+    buffer = parsed.remainder;
+    for (const event of parsed.events) {
+      const streamEvent: StreamEvent = event;
+      if (streamEvent.type === 'delta') {
+        text += streamEvent.text;
+        onDelta(text);
+      } else if (streamEvent.type === 'error') {
+        throw new ChatError(streamEvent.code, streamEvent.message);
+      } else if (streamEvent.type === 'done') {
+        completed = true;
+      }
+    }
   };
+
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    lines.forEach(consume);
+    consume(buffer + decoder.decode(value, { stream: true }));
   }
-  buffer += decoder.decode();
-  consume(buffer);
+
+  consume(buffer + decoder.decode());
+  if (buffer.trim()) throw new ChatError('INCOMPLETE_STREAM', 'Adam received an incomplete response stream.');
+  if (!completed) throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a completion signal.');
   return createAssistantMessage(text) as Message;
 }
 
