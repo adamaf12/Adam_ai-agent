@@ -17,6 +17,7 @@ import {
 import {
   parseStreamLines,
 } from '../src/core/ai/streamParser.ts';
+import { normalizeMessage, isMessage } from '../src/core/domain.ts';
 
 test('event bus publishes typed events to subscribers and supports unsubscribe', () => {
   const bus = createEventBus();
@@ -65,4 +66,13 @@ test('stream parser handles fragmented JSONL and reports terminal events', () =>
     { type: 'done' },
   ]);
   assert.equal(parsed.remainder, '');
+});
+
+test('message normalization creates safe canonical messages and rejects malformed values', () => {
+  const message = normalizeMessage({ role: 'user', content: '  Hello Adam  ', createdAt: 10 });
+  assert.equal(message.role, 'user');
+  assert.equal(message.content, 'Hello Adam');
+  assert.equal(typeof message.id, 'string');
+  assert.equal(isMessage(message), true);
+  assert.equal(isMessage({ role: 'user', content: '', createdAt: 'bad' }), false);
 });
