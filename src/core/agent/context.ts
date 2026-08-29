@@ -35,7 +35,7 @@ export function buildAgentContext(
   let memoryUsed = 0;
   for (const memory of memories) {
     const cost = estimateTokens(memory.content) + 6;
-    if (memoryUsed + cost > memoryBudget) break;
+    if (memoryUsed + cost > memoryBudget) continue;
     selectedMemories.push(memory);
     memoryUsed += cost;
   }

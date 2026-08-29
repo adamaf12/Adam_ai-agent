@@ -39,15 +39,31 @@ export class ToolRegistry {
 
     const timeoutMs = Math.max(100, Math.min(context.timeoutMs ?? DEFAULT_TIMEOUT_MS, 120_000));
     const timeoutController = new AbortController();
-    const abortFromParent = () => timeoutController.abort();
-    context.signal?.addEventListener('abort', abortFromParent, { once: true });
-    const timer = setTimeout(() => timeoutController.abort(), timeoutMs);
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let rejectAbort: ((reason?: unknown) => void) | undefined;
+    const abortPromise = context.signal
+      ? new Promise<never>((_, reject) => { rejectAbort = reject; })
+      : new Promise<never>(() => {});
+    const parentAbort = () => {
+      timeoutController.abort();
+      rejectAbort?.(new Error('Tool execution aborted'));
+    };
+    context.signal?.addEventListener('abort', parentAbort, { once: true });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        timeoutController.abort();
+        reject(new Error(`Tool execution timed out: ${name}`));
+      }, timeoutMs);
+    });
 
     try {
-      return await tool.execute(args, { ...context, signal: timeoutController.signal });
+      const execution = Promise.resolve().then(() => tool.execute(args, { ...context, signal: timeoutController.signal }));
+      return await Promise.race([execution, timeoutPromise, abortPromise]);
     } finally {
-      clearTimeout(timer);
-      context.signal?.removeEventListener('abort', abortFromParent);
+      if (timer) clearTimeout(timer);
+      context.signal?.removeEventListener('abort', parentAbort);
     }
   }
 }

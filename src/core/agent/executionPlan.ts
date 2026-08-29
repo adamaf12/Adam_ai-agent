@@ -38,6 +38,19 @@ export function createExecutionPlan(
     }
   }
 
+  const stepsById = new Map(normalized.map((step) => [step.id, step]));
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (stepId: string): void => {
+    if (visited.has(stepId)) return;
+    if (visiting.has(stepId)) throw new Error(`Execution dependency cycle detected at step: ${stepId}`);
+    visiting.add(stepId);
+    for (const dependency of stepsById.get(stepId)?.dependsOn ?? []) visit(dependency);
+    visiting.delete(stepId);
+    visited.add(stepId);
+  };
+  for (const step of normalized) visit(step.id);
+
   return { id: planId(), steps: normalized, createdAt };
 }
 
