@@ -29,10 +29,21 @@ function parseEvent(line: string): StreamEvent {
 
 export function parseStreamLines(input: string): ParsedStream {
   const lines = input.split('\n');
-  const remainder = lines.pop() ?? '';
+  const tail = lines.pop() ?? '';
   const events = lines
     .map((line) => line.replace(/\r$/, '').trim())
     .filter(Boolean)
     .map(parseEvent);
-  return { events, remainder };
+
+  const normalizedTail = tail.replace(/\r$/, '').trim();
+  if (!normalizedTail) return { events, remainder: '' };
+
+  try {
+    return { events: [...events, parseEvent(normalizedTail)], remainder: '' };
+  } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_STREAM_JSON') {
+      return { events, remainder: tail };
+    }
+    throw error;
+  }
 }
