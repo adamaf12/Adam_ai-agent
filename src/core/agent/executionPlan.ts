@@ -51,7 +51,7 @@ export function canExecuteStep(plan: ExecutionPlan, stepId: string): ExecutionCh
 
 export function completeExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
   const check = canExecuteStep(plan, stepId);
-  if (!check.ok) throw new Error(`Cannot complete execution step: ${check.reason}`);
+  if (check.ok === false) throw new Error(`Cannot complete execution step: ${check.reason}`);
   return {
     ...plan,
     steps: plan.steps.map((step) => step.id === stepId ? { ...step, status: 'completed' } : step),
