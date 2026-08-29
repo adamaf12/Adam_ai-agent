@@ -11,20 +11,28 @@ export type ResponseOrchestratorDeps = {
 
 export type ResponseRunResult = { text: string; usedTool: boolean; tool?: string; warning?: string };
 
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) throw new DOMException('The agent run was cancelled.', 'AbortError');
+}
+
 export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
   return {
     async run(input: { text: string; history: unknown[]; signal?: AbortSignal }): Promise<ResponseRunResult> {
+      throwIfAborted(input.signal);
       const plan = await deps.plan(input);
+      throwIfAborted(input.signal);
       if (!plan.needsTool) {
         return { text: await deps.compose(undefined, input), usedTool: false };
       }
       if (!plan.tool) throw new Error('Agent selected a tool without a tool name.');
       const result = await deps.executeTool(plan.tool, plan.input ?? {}, input.signal);
+      throwIfAborted(input.signal);
       if (!result.ok) {
         const text = await deps.compose({ toolError: result.error ?? 'Tool execution failed.' }, input);
         return { text, usedTool: true, tool: plan.tool, warning: result.error };
       }
       const verified = await deps.verify(result, input);
+      throwIfAborted(input.signal);
       const text = await deps.compose(verified, input);
       return { text, usedTool: true, tool: plan.tool, warning: verified.warning };
     },
