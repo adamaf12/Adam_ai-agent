@@ -1,6 +1,7 @@
-import type { AppPreferences } from './domain';
+import type { AppPreferences, ChatConversation } from './domain';
 
 const PREFS_KEY = 'adam.preferences.v2';
+const CONVERSATION_KEY = 'adam.conversation.v2';
 
 export function createId(prefix = 'id'): string {
   const random = typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -32,4 +33,21 @@ export function loadPreferences(fallback: AppPreferences): AppPreferences {
 export function savePreferences(preferences: AppPreferences): void {
   if (typeof localStorage === 'undefined') return;
   localStorage.setItem(PREFS_KEY, JSON.stringify(normalizePreferences(preferences)));
+}
+
+export function loadConversation(fallback: ChatConversation): ChatConversation {
+  if (typeof localStorage === 'undefined') return fallback;
+  const value = safeJsonParse<ChatConversation | null>(localStorage.getItem(CONVERSATION_KEY), null);
+  if (!value || !Array.isArray(value.messages)) return fallback;
+  return { ...fallback, ...value, messages: value.messages.slice(-100) };
+}
+
+export function saveConversation(conversation: ChatConversation): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(CONVERSATION_KEY, JSON.stringify({ ...conversation, messages: conversation.messages.slice(-100) }));
+}
+
+export function clearConversation(): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.removeItem(CONVERSATION_KEY);
 }
