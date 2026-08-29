@@ -15,6 +15,14 @@ const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');
 
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  next();
+});
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false }));
@@ -41,7 +49,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet. Add GEMINI_API_KEY to the server environment.');
+  if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
   const messages = normalizeMessages(req.body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
   const language = req.body?.language === 'en' ? 'en' : 'ar';
@@ -68,7 +76,7 @@ app.post('/api/chat', async (req, res) => {
     const providerMessage = String(error?.message ?? 'The AI provider failed to answer.');
     const normalized = providerMessage.toLowerCase();
     const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key') ? 'AI_AUTH' : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') ? 'AI_RATE_LIMIT' : status >= 500 || normalized.includes('unavailable') ? 'AI_PROVIDER' : 'AI_ERROR';
-    const message = code === 'AI_AUTH' ? 'The AI provider rejected the server credentials. Check GEMINI_API_KEY and the provider project.' : code === 'AI_RATE_LIMIT' ? 'Adam is temporarily rate-limited. Please try again in a moment.' : 'Adam could not complete the request. Please retry.';
+    const message = code === 'AI_AUTH' ? 'The AI provider rejected the server credentials or project permissions.' : code === 'AI_RATE_LIMIT' ? 'Adam is temporarily rate-limited. Please try again in a moment.' : 'Adam could not complete the request. Please retry.';
     res.write(JSON.stringify({ type: 'error', code, message }) + '\n');
     res.end();
     console.error('[Adam AI]', { code, status, providerMessage });
