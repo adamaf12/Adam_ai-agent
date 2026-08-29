@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_RUN_POLICY, assertRunBudget } from '../src/core/agent/runPolicy.ts';
+import { DEFAULT_RUN_POLICY, assertRunBudget, mergeRunPolicy } from '../src/core/agent/runPolicy.ts';
 import { chooseResponseDecision, capResponse } from '../src/core/agent/responsePolicy.ts';
 import { RequestDeduplicator } from '../src/core/agent/requestDedup.ts';
 
 test('run policy rejects exhausted budgets', () => {
   assert.throws(() => assertRunBudget(DEFAULT_RUN_POLICY, { steps: 9, toolCalls: 0, elapsedMs: 0, responseChars: 0 }), /step budget/);
+});
+
+test('run policy floors fractional overrides and rejects sub-unit limits', () => {
+  assert.deepEqual(mergeRunPolicy(DEFAULT_RUN_POLICY, { maxSteps: 3.9 }), { ...DEFAULT_RUN_POLICY, maxSteps: 3 });
+  assert.throws(() => mergeRunPolicy(DEFAULT_RUN_POLICY, { maxSteps: 0.5 }), /at least 1/);
 });
 
 test('response policy qualifies weak evidence instead of overstating certainty', () => {
@@ -15,6 +20,8 @@ test('response policy qualifies weak evidence instead of overstating certainty',
 
 test('response cap preserves a bounded output', () => {
   assert.equal(capResponse('abcdefghij', 6), 'abcde…');
+  assert.equal(capResponse('abcdefghij', 1), '…');
+  assert.equal(capResponse('abc', 3), 'abc');
 });
 
 test('request deduplicator blocks concurrent duplicate ids', () => {
