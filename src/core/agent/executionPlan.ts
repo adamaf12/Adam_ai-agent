@@ -67,7 +67,7 @@ function updateStep(plan: ExecutionPlan, stepId: string, status: ExecutionStepSt
 
 export function startExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
   const check = canExecuteStep(plan, stepId);
-  if (!check.ok) throw new Error(`Cannot start execution step: ${check.reason}`);
+  if (check.ok === false) throw new Error(`Cannot start execution step: ${check.reason}`);
   return updateStep(plan, stepId, 'running');
 }
 
@@ -76,7 +76,7 @@ export function completeExecutionStep(plan: ExecutionPlan, stepId: string): Exec
   if (!step) throw new Error(`Execution step not found: ${stepId}`);
   if (step.status === 'pending') {
     const check = canExecuteStep(plan, stepId);
-    if (!check.ok) throw new Error(`Cannot complete execution step: ${check.reason}`);
+    if (check.ok === false) throw new Error(`Cannot complete execution step: ${check.reason}`);
     return updateStep(updateStep(plan, stepId, 'running'), stepId, 'completed');
   }
   if (step.status !== 'running') throw new Error(`Cannot complete execution step from ${step.status}.`);
