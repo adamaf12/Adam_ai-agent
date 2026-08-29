@@ -29,7 +29,11 @@ export function createExecutionPlan(
   const normalized = steps.map((step) => {
     if (!step.id.trim() || ids.has(step.id)) throw new Error(`Invalid execution step id: ${step.id}`);
     ids.add(step.id);
-    return { ...step, dependsOn: [...(step.dependsOn ?? [])], status: 'pending' as const };
+    return {
+      ...step,
+      dependsOn: [...new Set(step.dependsOn ?? [])],
+      status: 'pending' as const,
+    };
   });
 
   for (const step of normalized) {
