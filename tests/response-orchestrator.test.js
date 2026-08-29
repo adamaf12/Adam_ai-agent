@@ -25,6 +25,19 @@ test('orchestrator can answer directly without a tool', async () => {
   assert.equal((await orchestrator.run({ text: 'hello', history: [] })).text, 'Direct answer');
 });
 
+test('orchestrator stops before executing a tool when the run is cancelled', async () => {
+  const controller = new AbortController();
+  let executed = false;
+  const orchestrator = createResponseOrchestrator({
+    plan: async () => { controller.abort(); return { needsTool: true, tool: 'tasks.list', input: {} }; },
+    executeTool: async () => { executed = true; return { ok: true }; },
+    verify: async () => ({ ok: true, facts: null }),
+    compose: async () => 'should not compose',
+  });
+  await assert.rejects(() => orchestrator.run({ text: 'cancel me', history: [], signal: controller.signal }), /aborted/i);
+  assert.equal(executed, false);
+});
+
 test('provider errors become safe user-facing errors', () => {
   assert.deepEqual(normalizeResponseError(Object.assign(new Error('quota exceeded'), { status: 429 })), {
     code: 'AI_RATE_LIMIT',
