@@ -63,3 +63,5 @@ Release builds are handled by GitHub Actions. The quality workflow must pass tes
 ## Project direction
 
 The next layers are intentionally added only after the foundation is stable: Tasks → Memory → Workspace integrations → Settings → agent routing/tools → web search → media → voice.
+
+> v2 rebuild branch: every change is gated by automated tests, TypeScript, and a production build before it is considered ready.
