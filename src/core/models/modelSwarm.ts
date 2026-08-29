@@ -51,7 +51,7 @@ export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);
 
 function score(model: ModelDescriptor, task: RoutingTask): number {
-  const required = task.capabilities?.length ? task.capabilities : ['general'];
+  const required: ModelCapability[] = task.capabilities?.length ? task.capabilities : ['general'];
   const capabilityMatch = required.filter((capability) => model.capabilities.includes(capability)).length / required.length;
   const qualityWeight = task.preferSpeed ? 0.25 : 0.55;
   const speedWeight = task.preferSpeed ? 0.55 : 0.2;
