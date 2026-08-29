@@ -24,10 +24,13 @@ test('response cap preserves a bounded output', () => {
   assert.equal(capResponse('abc', 3), 'abc');
 });
 
-test('request deduplicator blocks concurrent duplicate ids', () => {
-  const dedupe = new RequestDeduplicator();
-  assert.equal(dedupe.begin('r1'), true);
-  assert.equal(dedupe.begin('r1'), false);
+test('request deduplicator blocks concurrent duplicate ids and expires stale entries', () => {
+  const dedupe = new RequestDeduplicator(100);
+  assert.equal(dedupe.begin('r1', 1_000), true);
+  assert.equal(dedupe.begin('r1', 1_050), false);
+  assert.equal(dedupe.has('r1', 1_099), true);
+  assert.equal(dedupe.has('r1', 1_100), false);
+  assert.equal(dedupe.begin('r1', 1_101), true);
   dedupe.finish('r1');
-  assert.equal(dedupe.begin('r1'), true);
+  assert.equal(dedupe.size(), 0);
 });
