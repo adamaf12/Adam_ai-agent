@@ -20,8 +20,8 @@ test('memory policy rejects secrets and ranks relevant durable memories', () => 
   assert.equal(decideMemory('api_key=abc', 'fact'), 'skip');
   assert.equal(decideMemory('User prefers concise technical answers', 'preference'), 'store');
   const memories = [
-    { id: '1', content: 'prefers dark theme', category: 'preference' as const, createdAt: 1, updatedAt: 2 },
-    { id: '2', content: 'likes football', category: 'preference' as const, createdAt: 1, updatedAt: 3 },
+    { id: '1', content: 'prefers dark theme', category: 'preference', createdAt: 1, updatedAt: 2 },
+    { id: '2', content: 'likes football', category: 'preference', createdAt: 1, updatedAt: 3 },
   ];
   assert.equal(rankMemories(memories, 'dark theme')[0]?.id, '1');
 });
