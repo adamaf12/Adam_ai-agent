@@ -12,7 +12,7 @@ export type ResponseOrchestratorDeps = {
 export type ResponseRunResult = { text: string; usedTool: boolean; tool?: string; warning?: string };
 
 function throwIfAborted(signal?: AbortSignal) {
-  if (signal?.aborted) throw new DOMException('The agent run was cancelled.', 'AbortError');
+  if (signal?.aborted) throw new DOMException('The agent run was aborted.', 'AbortError');
 }
 
 export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
