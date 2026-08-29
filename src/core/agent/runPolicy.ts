@@ -26,10 +26,12 @@ export function mergeRunPolicy(base: RunPolicy, override?: Partial<RunPolicy>): 
   for (const [key, value] of Object.entries(next)) {
     if (!Number.isFinite(value) || value <= 0) throw new Error(`Invalid run policy: ${key}`);
   }
-  return {
+  const normalized = {
     maxSteps: Math.floor(next.maxSteps),
     maxToolCalls: Math.floor(next.maxToolCalls),
     maxTotalMs: Math.floor(next.maxTotalMs),
     maxResponseChars: Math.floor(next.maxResponseChars),
   };
+  if (Object.values(normalized).some((value) => value < 1)) throw new Error('Run policy limits must be at least 1.');
+  return normalized;
 }
