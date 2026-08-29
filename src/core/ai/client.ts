@@ -2,38 +2,43 @@ import type { Message } from '../domain';
 import { createAssistantMessage } from '../../features/chat/chatModel';
 import { ChatError, type ChatClient, type ChatRequest } from './types';
 
+const apiBase = (import.meta.env.VITE_ADAM_API_URL ?? '').replace(/\/$/, '');
+const chatUrl = `${apiBase}/api/chat`;
+
 export const httpChatClient: ChatClient = {
   async send(request: ChatRequest, signal: AbortSignal, onDelta) {
-    const response = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request), signal });
+    const response = await fetch(chatUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request), signal });
     if (!response.ok) {
       let payload: { code?: string; message?: string } = {};
-      try { payload = await response.json(); } catch { /* keep generic */ }
+      try { payload = await response.json(); } catch { /* preserve the HTTP status */ }
       throw new ChatError(payload.code ?? `HTTP_${response.status}`, payload.message ?? 'The AI service is temporarily unavailable.');
     }
     if (!response.body) throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let text = '';
+
+    const consume = (line: string) => {
+      if (!line.trim()) return;
+      let event: { type: string; text?: string; message?: string; code?: string };
+      try { event = JSON.parse(line); } catch { throw new ChatError('INVALID_STREAM', 'Adam received an invalid response stream.'); }
+      if (event.type === 'delta') { text += event.text ?? ''; onDelta(text); }
+      if (event.type === 'error') throw new ChatError(event.code ?? 'AI_ERROR', event.message ?? 'The AI service failed.');
+    };
+
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const event = JSON.parse(line) as { type: string; text?: string; message?: string; code?: string };
-        if (event.type === 'delta') { text += event.text ?? ''; onDelta(text); }
-        if (event.type === 'error') throw new ChatError(event.code ?? 'AI_ERROR', event.message ?? 'The AI service failed.');
-      }
+      lines.forEach(consume);
     }
-    if (buffer.trim()) {
-      const event = JSON.parse(buffer) as { type: string; text?: string; message?: string; code?: string };
-      if (event.type === 'delta') { text += event.text ?? ''; onDelta(text); }
-      if (event.type === 'error') throw new ChatError(event.code ?? 'AI_ERROR', event.message ?? 'The AI service failed.');
-    }
-    const message: Message = createAssistantMessage(text);
-    return message;
+    buffer += decoder.decode();
+    consume(buffer);
+
+    return createAssistantMessage(text) as Message;
   },
 };
