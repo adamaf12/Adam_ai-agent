@@ -18,7 +18,7 @@ export function chooseResponseDecision(input: ResponseQualityInput): ResponseDec
 }
 
 export function capResponse(text: string, maxChars = 40_000): string {
-  const limit = Math.max(256, Math.floor(maxChars));
+  const limit = Math.max(1, Math.floor(maxChars));
   const value = text.trim();
-  return value.length <= limit ? value : `${value.slice(0, limit - 1).trimEnd()}…`;
+  return value.length <= limit ? value : `${value.slice(0, Math.max(0, limit - 1)).trimEnd()}${limit > 1 ? '…' : ''}`;
 }
