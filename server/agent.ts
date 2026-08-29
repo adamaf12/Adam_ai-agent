@@ -5,6 +5,8 @@ import { DEFAULT_AGENT_BUDGET } from '../src/core/agent/agentBudget';
 import { DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from '../src/core/agent/retryPolicy';
 import { requestDeduplicator } from '../src/core/agent/requestDedup';
 import { appendRunEvent, createRunSummary } from '../src/core/agent/runTelemetry';
+import { routeTask } from '../src/core/models/modelSwarm';
+import { inferCapabilities } from '../src/core/models/agentModelGateway';
 
 type AgentMessage = { role: string; content: string };
 type AgentRequest = { messages?: unknown; language?: unknown; agentName?: unknown };
@@ -61,6 +63,12 @@ function sendError(res: Response, status: number, code: string, message: string)
   res.status(status).json({ code, message });
 }
 
+function chooseModel(prompt: string, fallback: string) {
+  const plan = routeTask({ prompt, capabilities: inferCapabilities(prompt), maxModels: 1, preferSpeed: prompt.length < 120 });
+  // Only Gemini models are executable by the current /api/agent provider.
+  return plan.primary.provider === 'gemini' ? plan.primary.id : fallback;
+}
+
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
   app.post('/api/agent', async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as AgentRequest;
@@ -80,6 +88,9 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     }
     const language = getLanguage(body.language);
     const agentName = getAgentName(body.agentName);
+    const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
+    const selectedModel = chooseModel(latestPrompt, model);
+    res.setHeader('X-Adam-Model', selectedModel);
     const ai = new GoogleGenAI({ apiKey });
 
     res.status(200); res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('X-Accel-Buffering', 'no'); res.setHeader('Connection', 'keep-alive'); res.flushHeaders?.();
@@ -95,7 +106,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         try {
           run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt });
           const stream = await ai.models.generateContentStream({
-            model, contents: messages,
+            model: selectedModel, contents: messages,
             config: { temperature: 0.35, topP: 0.9, maxOutputTokens: Math.min(4096, DEFAULT_AGENT_BUDGET.maxResponseChars), systemInstruction: systemInstruction(language, agentName), tools: [{ googleSearch: {} }] },
           });
           run = appendRunEvent(run, { phase: 'verifying', at: Date.now(), attempt });
@@ -113,7 +124,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       if (!closed && completed) {
         run = appendRunEvent(run, { phase: 'responding', at: Date.now() });
         run = appendRunEvent(run, { phase: 'completed', at: Date.now() });
-        res.write(JSON.stringify({ type: 'done' }) + '\n');
+        res.write(JSON.stringify({ type: 'done', model: selectedModel }) + '\n');
         res.end();
       } else if (closed) {
         run = appendRunEvent(run, { phase: 'cancelled', at: Date.now() });
