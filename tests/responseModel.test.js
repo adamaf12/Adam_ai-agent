@@ -17,11 +17,21 @@ test('stream events accumulate content without losing status metadata', () => {
   assert.equal(state.status, 'streaming');
 });
 
-test('done and error events become explicit terminal states', () => {
+test('done events become terminal and ignore later error events', () => {
   let state = reduceResponseEvent(createResponseState('chat'), { type: 'delta', text: 'x' });
   state = reduceResponseEvent(state, { type: 'done' });
   assert.equal(state.status, 'complete');
   state = reduceResponseEvent(state, { type: 'error', code: 'AI_RATE_LIMIT', message: 'Try again.' });
+  assert.equal(state.status, 'complete');
+  assert.equal(state.error, null);
+});
+
+test('error events become terminal from a non-terminal response', () => {
+  const state = reduceResponseEvent(createResponseState('chat'), {
+    type: 'error',
+    code: 'AI_RATE_LIMIT',
+    message: 'Try again.',
+  });
   assert.equal(state.status, 'error');
   assert.equal(state.error?.code, 'AI_RATE_LIMIT');
 });
