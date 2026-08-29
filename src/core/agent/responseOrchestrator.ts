@@ -68,13 +68,12 @@ export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
       throwIfAborted(input.signal);
 
       const steps = normalizeSteps(plan);
-      if (!steps.length) {
-        return { text: await deps.compose(undefined, input), usedTool: false };
-      }
+      if (!steps.length) return { text: await deps.compose(undefined, input), usedTool: false };
 
       const orderedSteps = orderSteps(steps);
       const results: Record<string, { tool: string; result: ToolResult; verification: Verification }> = {};
       let warning: string | undefined;
+      let lastVerification: Verification | undefined;
 
       for (const step of orderedSteps) {
         throwIfAborted(input.signal);
@@ -94,11 +93,15 @@ export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
         const verification = await deps.verify(result, input);
         throwIfAborted(input.signal);
         results[step.id] = { tool: step.tool, result, verification };
+        lastVerification = verification;
         warning ??= verification.warning;
       }
 
       const firstTool = orderedSteps[0]?.tool;
-      const text = await deps.compose({ results, verificationCount: orderedSteps.length }, input);
+      const context = orderedSteps.length === 1
+        ? lastVerification
+        : { results, verificationCount: orderedSteps.length };
+      const text = await deps.compose(context, input);
       return { text, usedTool: true, tool: firstTool, warning };
     },
   };
