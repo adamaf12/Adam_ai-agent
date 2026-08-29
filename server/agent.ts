@@ -1,13 +1,17 @@
 import type { Express, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import { DEFAULT_AGENT_BUDGET } from '../src/core/agent/agentBudget';
 import { DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from '../src/core/agent/retryPolicy';
+import { requestDeduplicator } from '../src/core/agent/requestDedup';
+import { appendRunEvent, createRunSummary } from '../src/core/agent/runTelemetry';
 
 type AgentMessage = { role: string; content: string };
 type AgentRequest = { messages?: unknown; language?: unknown; agentName?: unknown };
 const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 30_000;
 const MAX_AGENT_NAME_CHARS = 40;
+const MAX_REQUEST_ID_CHARS = 128;
 
 function normalizeMessages(input: unknown) {
   if (!Array.isArray(input)) return [];
@@ -25,6 +29,11 @@ function getAgentName(value: unknown) {
   if (typeof value !== 'string') return 'Adam';
   const name = value.trim().slice(0, MAX_AGENT_NAME_CHARS);
   return name || 'Adam';
+}
+function getRequestId(req: Request) {
+  const header = req.header('x-request-id');
+  if (header && /^[a-zA-Z0-9._:-]{1,128}$/.test(header)) return header.slice(0, MAX_REQUEST_ID_CHARS);
+  return randomUUID();
 }
 
 function systemInstruction(language: 'ar' | 'en', agentName: string) {
@@ -55,9 +64,20 @@ function sendError(res: Response, status: number, code: string, message: string)
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
   app.post('/api/agent', async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as AgentRequest;
-    if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server. Add GEMINI_API_KEY to the server environment.');
+    const requestId = getRequestId(req);
+    const runId = `run_${requestId}`;
+    res.setHeader('X-Request-Id', requestId);
+    if (!requestDeduplicator.begin(requestId)) return sendError(res, 409, 'REQUEST_IN_PROGRESS', 'This request is already being processed.');
+    let run = createRunSummary(runId);
+    if (!apiKey) {
+      requestDeduplicator.finish(requestId);
+      return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server.');
+    }
     const messages = normalizeMessages(body.messages);
-    if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
+    if (!messages.length) {
+      requestDeduplicator.finish(requestId);
+      return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
+    }
     const language = getLanguage(body.language);
     const agentName = getAgentName(body.agentName);
     const ai = new GoogleGenAI({ apiKey });
@@ -68,14 +88,17 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     req.on('close', () => { closed = true; });
 
     try {
+      run = appendRunEvent(run, { phase: 'planning', at: Date.now() });
       let completed = false;
       let emittedText = false;
       for (let attempt = 1; attempt <= DEFAULT_RETRY_POLICY.maxAttempts && !closed && !completed; attempt += 1) {
         try {
+          run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt });
           const stream = await ai.models.generateContentStream({
             model, contents: messages,
             config: { temperature: 0.35, topP: 0.9, maxOutputTokens: Math.min(4096, DEFAULT_AGENT_BUDGET.maxResponseChars), systemInstruction: systemInstruction(language, agentName), tools: [{ googleSearch: {} }] },
           });
+          run = appendRunEvent(run, { phase: 'verifying', at: Date.now(), attempt });
           for await (const chunk of stream) {
             if (closed) break;
             const text = typeof (chunk as { text?: unknown }).text === 'string' ? (chunk as { text: string }).text : '';
@@ -87,9 +110,17 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
           await new Promise(resolve => setTimeout(resolve, retryDelayMs(attempt)));
         }
       }
-      if (!closed && completed) { res.write(JSON.stringify({ type: 'done' }) + '\n'); res.end(); }
+      if (!closed && completed) {
+        run = appendRunEvent(run, { phase: 'responding', at: Date.now() });
+        run = appendRunEvent(run, { phase: 'completed', at: Date.now() });
+        res.write(JSON.stringify({ type: 'done' }) + '\n');
+        res.end();
+      } else if (closed) {
+        run = appendRunEvent(run, { phase: 'cancelled', at: Date.now() });
+      }
     } catch (error: unknown) {
-      if (closed) return;
+      if (closed) { run = appendRunEvent(run, { phase: 'cancelled', at: Date.now() }); return; }
+      run = appendRunEvent(run, { phase: 'failed', at: Date.now(), detail: 'provider_error' });
       const providerError = error as { status?: unknown; code?: unknown; message?: unknown };
       const status = Number(providerError.status ?? providerError.code ?? 500);
       const providerMessage = String(providerError.message ?? 'Unknown provider error.');
@@ -99,8 +130,10 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const isProviderFailure = status >= 500 || normalized.includes('unavailable') || normalized.includes('timeout');
       const code = isAuth ? 'AI_AUTH' : isRateLimited ? 'AI_RATE_LIMIT' : isProviderFailure ? 'AI_PROVIDER' : 'AI_ERROR';
       const message = isAuth ? 'The AI provider rejected the server credentials or project permissions.' : isRateLimited ? 'Adam is temporarily rate-limited. Please try again shortly.' : isProviderFailure ? 'The AI provider is temporarily unavailable. Please try again.' : 'Adam could not complete this agent run. Please retry.';
-      console.error('[Adam Agent]', { code, status, providerMessage });
+      console.error('[Adam Agent]', { runId, code, status, durationMs: run.completedAt ? run.completedAt - run.startedAt : Date.now() - run.startedAt });
       sendError(res, 500, code, message);
+    } finally {
+      requestDeduplicator.finish(requestId);
     }
   });
 }
