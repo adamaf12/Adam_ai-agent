@@ -1,4 +1,16 @@
-export type Plan = { needsTool: boolean; tool?: string; input?: unknown };
+export type PlanStep = {
+  id: string;
+  tool: string;
+  input?: unknown;
+  dependsOn?: string[];
+};
+
+export type Plan = {
+  needsTool: boolean;
+  tool?: string;
+  input?: unknown;
+  steps?: PlanStep[];
+};
 export type ToolResult = { ok: boolean; data?: unknown; error?: string };
 export type Verification = { ok: boolean; facts: unknown; warning?: string };
 
@@ -11,8 +23,41 @@ export type ResponseOrchestratorDeps = {
 
 export type ResponseRunResult = { text: string; usedTool: boolean; tool?: string; warning?: string };
 
+const MAX_STEPS = 6;
+
 function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException('The agent run was aborted.', 'AbortError');
+}
+
+function normalizeSteps(plan: Plan): PlanStep[] {
+  if (Array.isArray(plan.steps) && plan.steps.length) return plan.steps.slice(0, MAX_STEPS);
+  if (plan.needsTool && plan.tool) return [{ id: 'tool-1', tool: plan.tool, input: plan.input ?? {} }];
+  return [];
+}
+
+function orderSteps(steps: PlanStep[]): PlanStep[] {
+  const byId = new Map(steps.map(step => [step.id, step]));
+  const ordered: PlanStep[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  const visit = (id: string) => {
+    if (visited.has(id)) return;
+    if (visiting.has(id)) throw new Error(`Agent execution cycle detected at step: ${id}`);
+    const step = byId.get(id);
+    if (!step || !step.id.trim() || !step.tool.trim()) throw new Error(`Invalid agent execution step: ${id}`);
+    visiting.add(id);
+    for (const dependency of [...new Set(step.dependsOn ?? [])]) {
+      if (!byId.has(dependency)) throw new Error(`Missing agent execution dependency: ${dependency}`);
+      visit(dependency);
+    }
+    visiting.delete(id);
+    visited.add(id);
+    ordered.push(step);
+  };
+
+  for (const step of steps) visit(step.id);
+  return ordered;
 }
 
 export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
@@ -21,20 +66,40 @@ export function createResponseOrchestrator(deps: ResponseOrchestratorDeps) {
       throwIfAborted(input.signal);
       const plan = await deps.plan(input);
       throwIfAborted(input.signal);
-      if (!plan.needsTool) {
+
+      const steps = normalizeSteps(plan);
+      if (!steps.length) {
         return { text: await deps.compose(undefined, input), usedTool: false };
       }
-      if (!plan.tool) throw new Error('Agent selected a tool without a tool name.');
-      const result = await deps.executeTool(plan.tool, plan.input ?? {}, input.signal);
-      throwIfAborted(input.signal);
-      if (!result.ok) {
-        const text = await deps.compose({ toolError: result.error ?? 'Tool execution failed.' }, input);
-        return { text, usedTool: true, tool: plan.tool, warning: result.error };
+
+      const orderedSteps = orderSteps(steps);
+      const results: Record<string, { tool: string; result: ToolResult; verification: Verification }> = {};
+      let warning: string | undefined;
+
+      for (const step of orderedSteps) {
+        throwIfAborted(input.signal);
+        const result = await deps.executeTool(step.tool, step.input ?? {}, input.signal);
+        throwIfAborted(input.signal);
+
+        if (!result.ok) {
+          warning = result.error ?? 'Tool execution failed.';
+          return {
+            text: await deps.compose({ toolError: warning, results }, input),
+            usedTool: true,
+            tool: step.tool,
+            warning,
+          };
+        }
+
+        const verification = await deps.verify(result, input);
+        throwIfAborted(input.signal);
+        results[step.id] = { tool: step.tool, result, verification };
+        warning ??= verification.warning;
       }
-      const verified = await deps.verify(result, input);
-      throwIfAborted(input.signal);
-      const text = await deps.compose(verified, input);
-      return { text, usedTool: true, tool: plan.tool, warning: verified.warning };
+
+      const firstTool = orderedSteps[0]?.tool;
+      const text = await deps.compose({ results, verificationCount: orderedSteps.length }, input);
+      return { text, usedTool: true, tool: firstTool, warning };
     },
   };
 }
