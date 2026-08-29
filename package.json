@@ -1,7 +1,7 @@
 {
   "name": "adam-ai-agent",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,29 +10,19 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js release android",
     "lint": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.js",
     "build:win": "vite build && electron-builder --win",
     "build:linux": "vite build && electron-builder --linux",
-    "cap:sync": "vite build && cap sync"
+    "cap:sync": "vite build && cap sync",
+    "cap:android": "npm run build && npx cap sync android"
   },
   "build": {
     "appId": "com.adam.aiagent",
     "productName": "Adam AI Agent",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ]
-    }
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*"],
+    "win": { "target": "nsis" },
+    "linux": { "target": ["AppImage", "deb"] }
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
