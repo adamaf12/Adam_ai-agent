@@ -1,5 +1,5 @@
 export type Language = 'ar' | 'en';
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'system' | 'light' | 'dark' | 'glass' | 'glass-dark' | 'aurora';
 export type ViewId = 'chat' | 'tasks' | 'memory' | 'workspace' | 'settings';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
