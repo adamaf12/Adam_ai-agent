@@ -14,12 +14,13 @@ export type ToolDefinition<TArgs = unknown, TResult = unknown> = {
 };
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const TOOL_NAME_PATTERN = /^(?=.{2,64}$)[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/;
 
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition<any, any>>();
 
   register<TArgs, TResult>(tool: ToolDefinition<TArgs, TResult>) {
-    if (!/^[a-z][a-z0-9_]{1,63}$/.test(tool.name)) throw new Error(`Invalid tool name: ${tool.name}`);
+    if (!TOOL_NAME_PATTERN.test(tool.name)) throw new Error(`Invalid tool name: ${tool.name}`);
     if (!tool.description.trim()) throw new Error(`Tool description is required: ${tool.name}`);
     if (this.tools.has(tool.name)) throw new Error(`Tool already registered: ${tool.name}`);
     this.tools.set(tool.name, tool);
