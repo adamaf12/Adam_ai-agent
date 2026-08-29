@@ -1,10 +1,12 @@
 import type { AppPreferences, ChatConversation, Theme } from './domain';
 import { migrateEnvelope, createVersionedEnvelope, type StorageEnvelope } from './storage/envelope';
+import { normalizeMessage } from './domain';
 
 const PREFS_KEY = 'adam.preferences.v2';
 const CONVERSATION_KEY = 'adam.conversation.v2';
 const THEMES: Theme[] = ['system', 'light', 'dark', 'glass', 'glass-dark', 'aurora'];
 const STORAGE_VERSION = 1;
+const MAX_MESSAGES = 100;
 
 export function createId(prefix = 'id'): string {
   const random = typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -33,9 +35,7 @@ function readEnvelope<T>(key: string): StorageEnvelope<T> | null {
   if (typeof localStorage === 'undefined') return null;
   const value = safeJsonParse<StorageEnvelope<T> | T | null>(localStorage.getItem(key), null);
   if (!value || typeof value !== 'object') return null;
-  if ('schema' in value && value.schema === 'adam' && typeof value.version === 'number' && 'payload' in value) {
-    return value as StorageEnvelope<T>;
-  }
+  if ('schema' in value && value.schema === 'adam' && typeof value.version === 'number' && 'payload' in value) return value as StorageEnvelope<T>;
   return createVersionedEnvelope(STORAGE_VERSION, value as T);
 }
 
@@ -59,11 +59,17 @@ export function loadConversation(fallback: ChatConversation): ChatConversation {
   const envelope = readEnvelope<ChatConversation>(CONVERSATION_KEY);
   if (!envelope || !envelope.payload || !Array.isArray(envelope.payload.messages)) return fallback;
   const current = migrateEnvelope(envelope, STORAGE_VERSION, (_version, payload) => payload);
-  return { ...fallback, ...current.payload, messages: current.payload.messages.slice(-100) };
+  const messages = current.payload.messages.map(message => {
+    try { return normalizeMessage(message); } catch { return null; }
+  }).filter((message): message is NonNullable<typeof message> => message !== null).slice(-MAX_MESSAGES);
+  return { ...fallback, ...current.payload, messages };
 }
 
 export function saveConversation(conversation: ChatConversation): void {
-  writeEnvelope(CONVERSATION_KEY, { ...conversation, messages: conversation.messages.slice(-100) });
+  const messages = conversation.messages.map(message => {
+    try { return normalizeMessage(message); } catch { return null; }
+  }).filter((message): message is NonNullable<typeof message> => message !== null).slice(-MAX_MESSAGES);
+  writeEnvelope(CONVERSATION_KEY, { ...conversation, messages });
 }
 
 export function clearConversation(): void {
