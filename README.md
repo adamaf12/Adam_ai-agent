@@ -2,16 +2,59 @@
 
 Adam is a premium, bilingual personal AI workspace built for Web, Android, iOS, and desktop. v2 is a clean-room rebuild focused on a fast mobile experience, reliable AI transport, and architecture that can grow without a monolithic frontend.
 
-## v2 foundation
+## Local development
 
-- ✨ Four-step onboarding with persisted preferences
-- 💬 Streaming AI chat with cancellation, retry, and typed provider errors
-- 🌍 Arabic RTL + English LTR from the application root
-- 📱 Mobile-first shell with desktop expansion
-- 🧠 Dedicated surfaces for Chat, Tasks, Memory, Workspace, and Settings
-- 🔐 Provider credentials stay server-side
-- 🧪 Automated tests, TypeScript checks, and production build gates
-- 📦 Capacitor-ready Android/iOS architecture
+Requirements: Node.js 22+ and npm.
+
+```bash
+git clone https://github.com/adamaf12/Adam_ai-agent.git
+cd Adam_ai-agent
+git checkout rebuild/adam-ai-v2
+npm ci
+cp .env.example .env
+```
+
+Edit `.env` and set `GEMINI_API_KEY` to your server-side Gemini API key.
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`. The development server runs Vite and the Node/Express API in the same process.
+
+Check the local API:
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+A healthy server reports `ok: true`; `configured` reports whether the server detected the provider key.
+
+Optional server variables:
+
+```env
+GEMINI_API_KEY=...
+ADAM_GEMINI_MODEL=gemini-3.7-flash
+PORT=3000
+```
+
+Never commit `.env` or provider secrets. The browser and Android/iOS client must never embed `GEMINI_API_KEY`.
+
+## Quality checks
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+## Android
+
+```bash
+npm run build
+npx cap sync android
+npx cap open android
+```
 
 ## Architecture
 
@@ -30,35 +73,6 @@ Gemini
 ```
 
 The browser never needs a provider API key. The server owns provider credentials and converts provider failures into stable application errors.
-
-## Development
-
-```bash
-npm ci
-npm test
-npm run lint
-npm run build
-npm run dev
-```
-
-For local AI chat, provide a server-side key:
-
-```env
-GEMINI_API_KEY=...
-ADAM_GEMINI_MODEL=gemini-3.7-flash
-```
-
-Never commit secrets. The Android/iOS client should use a deployed API endpoint rather than embedding provider credentials.
-
-## Android
-
-```bash
-npm run build
-npx cap sync android
-npx cap open android
-```
-
-Release builds are handled by GitHub Actions. The quality workflow must pass tests, TypeScript, and the production build before the Android release workflow is considered healthy.
 
 ## Project direction
 
