@@ -2,10 +2,10 @@ import 'dotenv/config';
 import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+import { registerAgentRoute } from './server/agent';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -37,33 +37,25 @@ function systemInstruction(language: string, agentName: string) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, model, configured: Boolean(apiKey), version: '2.0.0' });
+  res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.1.0' });
 });
 
 app.post('/api/chat', async (req, res) => {
   if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet. Add GEMINI_API_KEY to the server environment.');
   const messages = normalizeMessages(req.body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
-
   const language = req.body?.language === 'en' ? 'en' : 'ar';
   const agentName = typeof req.body?.agentName === 'string' ? req.body.agentName.slice(0, 40) : 'Adam';
   const ai = new GoogleGenAI({ apiKey });
-
   res.status(200);
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
-
   let closed = false;
   req.on('close', () => { closed = true; });
-
   try {
-    const stream = await ai.models.generateContentStream({
-      model,
-      contents: messages,
-      config: { temperature: 0.45, topP: 0.9, maxOutputTokens: 4096, systemInstruction: systemInstruction(language, agentName) },
-    });
+    const stream = await ai.models.generateContentStream({ model, contents: messages, config: { temperature: 0.45, topP: 0.9, maxOutputTokens: 4096, systemInstruction: systemInstruction(language, agentName) } });
     for await (const chunk of stream) {
       if (closed) break;
       const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : '';
@@ -75,23 +67,15 @@ app.post('/api/chat', async (req, res) => {
     const status = Number(error?.status ?? error?.code ?? 500);
     const providerMessage = String(error?.message ?? 'The AI provider failed to answer.');
     const normalized = providerMessage.toLowerCase();
-    const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key')
-      ? 'AI_AUTH'
-      : status === 429 || normalized.includes('quota') || normalized.includes('rate limit')
-        ? 'AI_RATE_LIMIT'
-        : status >= 500 || normalized.includes('unavailable')
-          ? 'AI_PROVIDER'
-          : 'AI_ERROR';
-    const message = code === 'AI_AUTH'
-      ? 'The AI provider rejected the server credentials. Check GEMINI_API_KEY and the provider project.'
-      : code === 'AI_RATE_LIMIT'
-        ? 'Adam is temporarily rate-limited. Please try again in a moment.'
-        : 'Adam could not complete the request. Please retry.';
+    const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key') ? 'AI_AUTH' : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') ? 'AI_RATE_LIMIT' : status >= 500 || normalized.includes('unavailable') ? 'AI_PROVIDER' : 'AI_ERROR';
+    const message = code === 'AI_AUTH' ? 'The AI provider rejected the server credentials. Check GEMINI_API_KEY and the provider project.' : code === 'AI_RATE_LIMIT' ? 'Adam is temporarily rate-limited. Please try again in a moment.' : 'Adam could not complete the request. Please retry.';
     res.write(JSON.stringify({ type: 'error', code, message }) + '\n');
     res.end();
     console.error('[Adam AI]', { code, status, providerMessage });
   }
 });
+
+registerAgentRoute(app, apiKey, model);
 
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
