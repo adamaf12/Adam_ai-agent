@@ -1,53 +1,54 @@
-# ADAM Personal AI Agent 🤖
+# Adam AI Agent v2
 
-**Adam** is a multilingual personal AI agent designed for Web, Android, iOS and desktop. The project combines fast conversational responses with tool routing, long-term memory, Google Workspace integrations and AI media generation.
+Adam is a premium, bilingual personal AI workspace built for Web, Android, iOS, and desktop. v2 is a clean-room rebuild focused on a fast mobile experience, reliable AI transport, and architecture that can grow without a monolithic frontend.
 
-## What Adam can do
+## v2 foundation
 
-- 💬 Fast chat with a lightweight response path
-- 🧠 Intent detection and planning for complex requests
-- 🔎 Live web-search workflows
-- 💻 Coding and debugging assistance
-- 🎨 AI image generation and editing when configured
-- 🎬 AI video generation as asynchronous jobs when configured
-- 📅 Calendar and scheduling workflows
-- 📧 Email workflows
-- 📝 Notes and long-term memory
-- 🎙️ Voice interaction
-- 📱 Capacitor Android/iOS architecture
-- 🖥️ Electron desktop builds
+- ✨ Four-step onboarding with persisted preferences
+- 💬 Streaming AI chat with cancellation, retry, and typed provider errors
+- 🌍 Arabic RTL + English LTR from the application root
+- 📱 Mobile-first shell with desktop expansion
+- 🧠 Dedicated surfaces for Chat, Tasks, Memory, Workspace, and Settings
+- 🔐 Provider credentials stay server-side
+- 🧪 Automated tests, TypeScript checks, and production build gates
+- 📦 Capacitor-ready Android/iOS architecture
 
 ## Architecture
 
 ```text
-User
+React UI
   ↓
-Adam UI (Web / iOS / Android / Desktop)
+Feature controllers
   ↓
-Intent Router → Fast Path / Planner
+Domain + storage + AI client
   ↓
-Tool Router
-  ├─ Chat / Reasoning
-  ├─ Web Search
-  ├─ Code
-  ├─ Image
-  ├─ Video Jobs
-  ├─ Calendar / Email
-  └─ Memory / Files
+POST /api/chat (NDJSON stream)
   ↓
-Backend + Providers
+Server provider adapter
+  ↓
+Gemini
 ```
 
-Simple requests stay on the fast path. Complex requests can be planned and verified before the final response.
+The browser never needs a provider API key. The server owns provider credentials and converts provider failures into stable application errors.
 
 ## Development
 
 ```bash
-npm install
+npm ci
+npm test
+npm run lint
+npm run build
 npm run dev
 ```
 
-Keep secrets in environment variables. Never commit provider API keys to source control. See `docs/RELEASE.md` for release guidance.
+For local AI chat, provide a server-side key:
+
+```env
+GEMINI_API_KEY=...
+ADAM_GEMINI_MODEL=gemini-3.7-flash
+```
+
+Never commit secrets. The Android/iOS client should use a deployed API endpoint rather than embedding provider credentials.
 
 ## Android
 
@@ -57,19 +58,8 @@ npx cap sync android
 npx cap open android
 ```
 
-For maintainers, pushing a version tag such as `v1.0.0` triggers the Android GitHub Actions workflow, which builds and publishes an APK to the GitHub Release.
+Release builds are handled by GitHub Actions. The quality workflow must pass tests, TypeScript, and the production build before the Android release workflow is considered healthy.
 
-## Environment
+## Project direction
 
-Provider credentials belong in the deployment environment, for example:
-
-```env
-GEMINI_API_KEY=...
-XAI_API_KEY=...
-```
-
-Only configure providers you actually use. Client-side builds must not expose privileged server secrets.
-
-## Releases
-
-Users should use **GitHub → Releases** and download the latest Android APK attached to the release. Do not ask users to inspect source folders to find an installer.
+The next layers are intentionally added only after the foundation is stable: Tasks → Memory → Workspace integrations → Settings → agent routing/tools → web search → media → voice.
