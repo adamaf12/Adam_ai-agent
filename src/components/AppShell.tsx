@@ -1,11 +1,11 @@
 import { PanelLeft, Plus, SlidersHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
 import { BottomNav } from './BottomNav';
 import { copy } from '../core/i18n';
 
-export function AppShell({ activeView, language, agentName, onViewChange, children }: { activeView: ViewId; language: Language; agentName: string; onViewChange: (view: ViewId) => void; children: React.ReactNode }) {
+export function AppShell({ activeView, language, agentName, onViewChange, children }: { activeView: ViewId; language: Language; agentName: string; onViewChange: (view: ViewId) => void; children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const t = copy(language);
   return <div className="app-shell">
