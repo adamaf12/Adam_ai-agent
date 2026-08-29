@@ -1,5 +1,6 @@
 export type ExecutionStepKind = 'context' | 'tool' | 'response';
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type ExecutionPlanStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface ExecutionStep {
   id: string;
@@ -7,6 +8,7 @@ export interface ExecutionStep {
   label: string;
   dependsOn: string[];
   status: ExecutionStepStatus;
+  error?: string;
 }
 
 export interface ExecutionPlan {
@@ -49,11 +51,56 @@ export function canExecuteStep(plan: ExecutionPlan, stepId: string): ExecutionCh
   return dependenciesPending ? { ok: false, reason: 'DEPENDENCIES_PENDING' } : { ok: true };
 }
 
-export function completeExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
-  const check = canExecuteStep(plan, stepId);
-  if (check.ok === false) throw new Error(`Cannot complete execution step: ${check.reason}`);
+function updateStep(plan: ExecutionPlan, stepId: string, status: ExecutionStepStatus, error?: string): ExecutionPlan {
+  const step = plan.steps.find((candidate) => candidate.id === stepId);
+  if (!step) throw new Error(`Execution step not found: ${stepId}`);
+  if (step.status !== 'pending' && !(status === 'failed' && step.status === 'running')) {
+    throw new Error(`Cannot transition execution step ${stepId} from ${step.status} to ${status}.`);
+  }
   return {
     ...plan,
-    steps: plan.steps.map((step) => step.id === stepId ? { ...step, status: 'completed' } : step),
+    steps: plan.steps.map((candidate) => candidate.id === stepId
+      ? { ...candidate, status, ...(error ? { error } : { error: undefined }) }
+      : candidate),
   };
+}
+
+export function startExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
+  const check = canExecuteStep(plan, stepId);
+  if (!check.ok) throw new Error(`Cannot start execution step: ${check.reason}`);
+  return updateStep(plan, stepId, 'running');
+}
+
+export function completeExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
+  const step = plan.steps.find((candidate) => candidate.id === stepId);
+  if (!step) throw new Error(`Execution step not found: ${stepId}`);
+  if (step.status === 'pending') {
+    const check = canExecuteStep(plan, stepId);
+    if (!check.ok) throw new Error(`Cannot complete execution step: ${check.reason}`);
+  } else if (step.status !== 'running') {
+    throw new Error(`Cannot complete execution step from ${step.status}.`);
+  }
+  return updateStep({ ...plan, steps: plan.steps.map((candidate) => candidate.id === stepId ? { ...candidate, status: 'running' } : candidate) }, stepId, 'completed');
+}
+
+export function failExecutionStep(plan: ExecutionPlan, stepId: string, error = 'Execution step failed.'): ExecutionPlan {
+  return updateStep(plan, stepId, 'failed', error);
+}
+
+export function cancelExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
+  const step = plan.steps.find((candidate) => candidate.id === stepId);
+  if (!step) throw new Error(`Execution step not found: ${stepId}`);
+  if (step.status === 'completed' || step.status === 'failed' || step.status === 'cancelled') {
+    throw new Error(`Cannot cancel execution step from ${step.status}.`);
+  }
+  return { ...plan, steps: plan.steps.map((candidate) => candidate.id === stepId ? { ...candidate, status: 'cancelled' } : candidate) };
+}
+
+export function getExecutionPlanStatus(plan: ExecutionPlan): ExecutionPlanStatus {
+  if (plan.steps.length === 0) return 'pending';
+  if (plan.steps.some((step) => step.status === 'failed')) return 'failed';
+  if (plan.steps.some((step) => step.status === 'cancelled')) return 'cancelled';
+  if (plan.steps.every((step) => step.status === 'completed')) return 'completed';
+  if (plan.steps.some((step) => step.status === 'running')) return 'running';
+  return 'pending';
 }
