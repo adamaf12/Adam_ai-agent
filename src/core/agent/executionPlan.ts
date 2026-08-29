@@ -54,9 +54,9 @@ export function canExecuteStep(plan: ExecutionPlan, stepId: string): ExecutionCh
 function updateStep(plan: ExecutionPlan, stepId: string, status: ExecutionStepStatus, error?: string): ExecutionPlan {
   const step = plan.steps.find((candidate) => candidate.id === stepId);
   if (!step) throw new Error(`Execution step not found: ${stepId}`);
-  if (step.status !== 'pending' && !(status === 'failed' && step.status === 'running')) {
-    throw new Error(`Cannot transition execution step ${stepId} from ${step.status} to ${status}.`);
-  }
+  const allowed = (step.status === 'pending' && (status === 'running' || status === 'failed' || status === 'cancelled'))
+    || (step.status === 'running' && (status === 'completed' || status === 'failed' || status === 'cancelled'));
+  if (!allowed) throw new Error(`Cannot transition execution step ${stepId} from ${step.status} to ${status}.`);
   return {
     ...plan,
     steps: plan.steps.map((candidate) => candidate.id === stepId
@@ -77,10 +77,10 @@ export function completeExecutionStep(plan: ExecutionPlan, stepId: string): Exec
   if (step.status === 'pending') {
     const check = canExecuteStep(plan, stepId);
     if (!check.ok) throw new Error(`Cannot complete execution step: ${check.reason}`);
-  } else if (step.status !== 'running') {
-    throw new Error(`Cannot complete execution step from ${step.status}.`);
+    return updateStep(updateStep(plan, stepId, 'running'), stepId, 'completed');
   }
-  return updateStep({ ...plan, steps: plan.steps.map((candidate) => candidate.id === stepId ? { ...candidate, status: 'running' } : candidate) }, stepId, 'completed');
+  if (step.status !== 'running') throw new Error(`Cannot complete execution step from ${step.status}.`);
+  return updateStep(plan, stepId, 'completed');
 }
 
 export function failExecutionStep(plan: ExecutionPlan, stepId: string, error = 'Execution step failed.'): ExecutionPlan {
@@ -88,12 +88,7 @@ export function failExecutionStep(plan: ExecutionPlan, stepId: string, error = '
 }
 
 export function cancelExecutionStep(plan: ExecutionPlan, stepId: string): ExecutionPlan {
-  const step = plan.steps.find((candidate) => candidate.id === stepId);
-  if (!step) throw new Error(`Execution step not found: ${stepId}`);
-  if (step.status === 'completed' || step.status === 'failed' || step.status === 'cancelled') {
-    throw new Error(`Cannot cancel execution step from ${step.status}.`);
-  }
-  return { ...plan, steps: plan.steps.map((candidate) => candidate.id === stepId ? { ...candidate, status: 'cancelled' } : candidate) };
+  return updateStep(plan, stepId, 'cancelled');
 }
 
 export function getExecutionPlanStatus(plan: ExecutionPlan): ExecutionPlanStatus {
