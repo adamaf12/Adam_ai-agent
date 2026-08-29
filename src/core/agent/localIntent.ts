@@ -18,8 +18,8 @@ export function parseLocalIntent(text: string): LocalIntent | null {
   if (memoryMatch) {
     const content = clean(memoryMatch[1]);
     if (!content) return null;
-    const category = /\b(prefer|like|love|أفضل|افضل|أحب|احب)\b/i.test(content) ? 'preference' : 'fact';
-    return { type: 'memory.remember', content, category };
+    const preference = /\b(prefer|like|love)\b/i.test(content) || ['أفضل', 'افضل', 'أحب', 'احب'].some((term) => content.includes(term));
+    return { type: 'memory.remember', content, category: preference ? 'preference' : 'fact' };
   }
 
   return null;
