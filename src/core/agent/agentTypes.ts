@@ -6,7 +6,7 @@ export type AgentRoute = {
   confidence: number;
 };
 
-const hasEnglishToken = (value: string, terms: string[]) => terms.some((term) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`, 'i').test(value));
+const hasEnglishToken = (value: string, terms: string[]) => terms.some((term) => new RegExp(`\\b${term}\\b`, 'i').test(value));
 const hasArabicPhrase = (value: string, terms: string[]) => terms.some((term) => value.includes(term));
 
 export function routePrompt(text: string): AgentRoute {
