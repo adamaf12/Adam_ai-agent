@@ -1,14 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import { inferCapabilities } from '../src/core/models/agentModelGateway.ts';
 
-describe('agent model routing intent', () => {
-  it('detects coding and reasoning tasks', () => {
-    const capabilities = inferCapabilities('حلل هذا الكود وأعد تصميم architecture');
-    expect(capabilities).toContain('coding');
-    expect(capabilities).toContain('reasoning');
-  });
+test('agent routing detects coding and reasoning tasks', () => {
+  const capabilities = inferCapabilities('حلل هذا الكود وأعد تصميم architecture');
+  assert.ok(capabilities.includes('coding'));
+  assert.ok(capabilities.includes('reasoning'));
+});
 
-  it('keeps simple prompts on the general path', () => {
-    expect(inferCapabilities('مرحبا')).toEqual(['general']);
-  });
+test('simple prompts stay on the general path', () => {
+  assert.deepEqual(inferCapabilities('مرحبا'), ['general']);
 });
