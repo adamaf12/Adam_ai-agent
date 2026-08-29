@@ -1,3 +1,5 @@
+import { sanitizePrompt } from './requestGuard';
+
 export type AgentMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
 export type AgentContext = {
@@ -24,7 +26,7 @@ export function buildAgentContext(input: {
       return (value.role === 'user' || value.role === 'assistant' || value.role === 'system') && typeof value.content === 'string';
     })
     .slice(-MAX_MESSAGES)
-    .map(message => ({ ...message, content: message.content.trim().slice(0, MAX_MESSAGE_CHARS) }));
+    .map(message => ({ ...message, content: sanitizePrompt(message.content).slice(0, MAX_MESSAGE_CHARS) }));
 
   let used = 0;
   const boundedMessages = [...messages].reverse().filter(message => {
@@ -34,7 +36,7 @@ export function buildAgentContext(input: {
     return true;
   }).reverse();
 
-  const userText = input.userText.trim().slice(0, MAX_MESSAGE_CHARS);
+  const userText = sanitizePrompt(input.userText).slice(0, MAX_MESSAGE_CHARS);
   return {
     locale: input.locale,
     userText,
