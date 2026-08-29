@@ -18,8 +18,10 @@ export function createResponseState(route: ResponseRoute): ResponseState {
 }
 
 export function reduceResponseEvent(state: ResponseState, event: ResponseEvent): ResponseState {
+  if (state.status === 'complete' || state.status === 'error') return state;
   if (event.type === 'delta') {
-    return { ...state, status: 'streaming', content: state.content + event.text, error: null };
+    const text = typeof event.text === 'string' ? event.text : '';
+    return text ? { ...state, status: 'streaming', content: state.content + text, error: null } : state;
   }
   if (event.type === 'done') return { ...state, status: 'complete' };
   return { ...state, status: 'error', error: { code: event.code, message: event.message } };
