@@ -3,8 +3,14 @@ on:
   workflow_dispatch:
   push:
     branches: ["rebuild/adam-ai-v2"]
+
 permissions:
   contents: read
+
+concurrency:
+  group: android-preview-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
