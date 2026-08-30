@@ -1,4 +1,4 @@
-export interface SwarmResult { agentId: string; modelId: string; output: string; confidence?: number; }
+import type { SwarmResult } from './types';
 
 export function fuseResults(results: readonly SwarmResult[]): string {
   if (!results.length) return '';
