@@ -20,7 +20,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - name: Install dependencies
+        run: npm install
       - run: npm run build
       - name: Add Android platform
         run: npx cap add android
