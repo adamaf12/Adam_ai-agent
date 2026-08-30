@@ -39,3 +39,18 @@ export interface SwarmPlan {
   assignments: ModelAssignment[];
   waves: ModelAssignment[][];
 }
+
+export interface SwarmResult {
+  agentId: string;
+  modelId: string;
+  output: string;
+  durationMs: number;
+  ok: boolean;
+  error?: string;
+}
+
+export interface VerificationResult {
+  ok: boolean;
+  score: number;
+  issues: string[];
+}
