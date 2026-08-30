@@ -16,37 +16,16 @@ const publicDir = path.join(rootDir, 'dist');
 
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use((_req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  next();
-});
+app.use((_req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin'); res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()'); res.setHeader('Cross-Origin-Opener-Policy', 'same-origin'); next(); });
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false }));
 
-function sendError(res: express.Response, status: number, code: string, message: string) {
-  res.status(status).json({ code, message });
-}
+function sendError(res: express.Response, status: number, code: string, message: string) { res.status(status).json({ code, message }); }
+function normalizeMessages(input: unknown) { if (!Array.isArray(input)) return []; return input.filter((item): item is { role: string; content: string } => Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string')).slice(-40).map(item => ({ role: item.role === 'assistant' || item.role === 'model' ? 'model' : 'user', parts: [{ text: item.content.slice(0, 30_000) }] })); }
+function systemInstruction(language: string, agentName: string) { const lang = language === 'ar' ? 'Arabic' : 'English'; return `You are ${agentName || 'Adam'}, a reliable personal AI agent. Reply primarily in ${lang} unless the user clearly asks for another language. Answer normal questions directly, preserve conversation context, never invent actions or tool results, and clearly distinguish known facts from uncertainty. For current information use appropriate grounding only when needed.`; }
 
-function normalizeMessages(input: unknown) {
-  if (!Array.isArray(input)) return [];
-  return input
-    .filter((item): item is { role: string; content: string } => Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string'))
-    .slice(-40)
-    .map((item) => ({ role: item.role === 'assistant' ? 'model' : 'user', parts: [{ text: item.content.slice(0, 30_000) }] }));
-}
-
-function systemInstruction(language: string, agentName: string) {
-  const lang = language === 'ar' ? 'Arabic' : 'English';
-  return `You are ${agentName || 'Adam'}, a premium personal AI agent. Reply primarily in ${lang} unless the user clearly asks for another language. Be concise but useful, preserve context, do not invent actions or tool results, and clearly distinguish what you know from what you cannot access. Never claim to have sent emails, changed files, or completed external actions unless the server actually performed them.`;
-}
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.1.0' });
-});
+app.get('/api/health', (_req, res) => res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.2.0' }));
 
 app.post('/api/chat', async (req, res) => {
   if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
@@ -55,30 +34,25 @@ app.post('/api/chat', async (req, res) => {
   const language = req.body?.language === 'en' ? 'en' : 'ar';
   const agentName = typeof req.body?.agentName === 'string' ? req.body.agentName.slice(0, 40) : 'Adam';
   const ai = new GoogleGenAI({ apiKey });
-  res.status(200);
-  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+  res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
-  let closed = false;
-  req.on('close', () => { closed = true; });
+  let aborted = false;
+  req.once('aborted', () => { aborted = true; });
   try {
     const stream = await ai.models.generateContentStream({ model, contents: messages, config: { temperature: 0.45, topP: 0.9, maxOutputTokens: 4096, systemInstruction: systemInstruction(language, agentName) } });
-    for await (const chunk of stream) {
-      if (closed) break;
-      const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : '';
-      if (text) res.write(JSON.stringify({ type: 'delta', text }) + '\n');
-    }
-    if (!closed) { res.write(JSON.stringify({ type: 'done' }) + '\n'); res.end(); }
+    for await (const chunk of stream) { if (aborted) break; const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : ''; if (text) res.write(JSON.stringify({ type: 'delta', text }) + '\n'); }
+    if (!aborted) { res.write(JSON.stringify({ type: 'done' }) + '\n'); res.end(); }
   } catch (error: any) {
-    if (closed) return;
+    if (aborted) return;
     const status = Number(error?.status ?? error?.code ?? 500);
     const providerMessage = String(error?.message ?? 'The AI provider failed to answer.');
     const normalized = providerMessage.toLowerCase();
-    const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key') ? 'AI_AUTH' : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') ? 'AI_RATE_LIMIT' : status >= 500 || normalized.includes('unavailable') ? 'AI_PROVIDER' : 'AI_ERROR';
-    const message = code === 'AI_AUTH' ? 'The AI provider rejected the server credentials or project permissions.' : code === 'AI_RATE_LIMIT' ? 'Adam is temporarily rate-limited. Please try again in a moment.' : 'Adam could not complete the request. Please retry.';
-    res.write(JSON.stringify({ type: 'error', code, message }) + '\n');
-    res.end();
+    const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key') ? 'AI_AUTH' : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') ? 'AI_RATE_LIMIT' : 'AI_PROVIDER';
+    const message = code === 'AI_AUTH' ? 'The AI provider rejected the configured credentials.' : code === 'AI_RATE_LIMIT' ? 'Adam is temporarily rate-limited. Please try again shortly.' : 'Adam could not complete the request. Please retry.';
+    if (!res.headersSent) return sendError(res, status >= 500 ? 502 : status, code, message);
+    res.write(JSON.stringify({ type: 'error', code, message }) + '\n'); res.end();
     console.error('[Adam AI]', { code, status, providerMessage });
   }
 });
@@ -86,16 +60,9 @@ app.post('/api/chat', async (req, res) => {
 registerAgentRoute(app, apiKey, model);
 
 async function startServer() {
-  if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' }));
-    app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
-  } else if (process.env.NODE_ENV !== 'test') {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
-    app.use(vite.middlewares);
-  }
+  if (process.env.NODE_ENV === 'production') { app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' })); app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html'))); }
+  else if (process.env.NODE_ENV !== 'test') { const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' }); app.use(vite.middlewares); }
   if (process.env.NODE_ENV !== 'test') app.listen(port, () => console.log(`Adam AI v2 listening on http://localhost:${port}`));
 }
-
 if (process.env.NODE_ENV !== 'test') void startServer();
-
 export { app, startServer };
