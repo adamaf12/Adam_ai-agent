@@ -46,6 +46,7 @@ export interface SwarmResult {
   output: string;
   durationMs: number;
   ok: boolean;
+  confidence?: number;
   error?: string;
 }
 
