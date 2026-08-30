@@ -21,6 +21,7 @@ export class FetchProviderAdapter implements ProviderAdapter {
 export class ProviderRouter {
   private readonly adapters = new Map<string, ProviderAdapter>();
   register(provider: string, adapter: ProviderAdapter): void { this.adapters.set(provider, adapter); }
+  has(provider: string): boolean { return this.adapters.has(provider); }
   async invoke(model: ModelDescriptor, request: ModelRequest): Promise<string> {
     const adapter = this.adapters.get(model.provider);
     if (!adapter) throw new Error(`No adapter registered for provider: ${model.provider}`);
