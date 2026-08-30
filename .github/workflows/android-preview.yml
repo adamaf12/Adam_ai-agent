@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -26,6 +26,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Verify Java toolchain
         run: |
+          node --version
           java -version
           javac -version
           cd android
