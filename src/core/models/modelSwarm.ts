@@ -5,7 +5,7 @@ export interface ModelDescriptor {
   id: string;
   provider: ModelProvider;
   displayName: string;
-  capabilities: ModelCapability[];
+  capabilities: readonly ModelCapability[];
   contextLength?: number;
   quality: number;
   speed: number;
