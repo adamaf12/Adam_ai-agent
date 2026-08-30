@@ -21,33 +21,36 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install dependencies
-        run: npm install
-      - run: npm run build
+        run: npm install --no-audit --no-fund
+      - name: Build web app
+        run: npm run build
       - name: Add Android platform
         run: npx cap add android
-      - run: npx cap sync android
+      - name: Sync Capacitor
+        run: npx cap sync android
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
-      - name: Verify Java toolchain
+      - name: Verify toolchains
         run: |
           node --version
+          npm --version
           java -version
           javac -version
           cd android
           ./gradlew --version
       - name: Force Gradle JDK 21
         working-directory: android
-        run: |
-          echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
-          echo "JAVA_HOME=$JAVA_HOME"
+        run: echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
       - name: Build debug APK
         working-directory: android
         run: ./gradlew clean assembleDebug --no-daemon --stacktrace
       - name: Verify APK
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
