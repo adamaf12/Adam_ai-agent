@@ -1,12 +1,18 @@
-import type { ModelDescriptor, ModelProvider } from './modelSwarm';
+import type { ModelCapability, ModelDescriptor, ModelProvider } from './modelSwarm';
 
 const PROVIDERS: ModelProvider[] = ['gemini', 'huggingface', 'openai-compatible', 'local', 'pollinations'];
+const CAPABILITIES: ModelCapability[] = ['general', 'reasoning', 'coding', 'math', 'vision', 'search', 'fast', 'arabic'];
 
 export type ModelCatalogEntry = Omit<ModelDescriptor, 'enabled'> & { enabled?: boolean };
 
 function asProvider(value: unknown): ModelProvider {
   if (typeof value === 'string' && PROVIDERS.includes(value as ModelProvider)) return value as ModelProvider;
   throw new Error(`Unsupported model provider: ${String(value)}`);
+}
+
+function asCapabilities(value: unknown): ModelCapability[] {
+  if (!Array.isArray(value)) return ['general'];
+  return value.filter((item): item is ModelCapability => typeof item === 'string' && CAPABILITIES.includes(item as ModelCapability));
 }
 
 export function normalizeModelCatalog(entries: unknown): ModelDescriptor[] {
@@ -20,7 +26,7 @@ export function normalizeModelCatalog(entries: unknown): ModelDescriptor[] {
     if (!id || !displayName) throw new Error('Model id and displayName are required.');
     if (ids.has(id)) throw new Error(`Duplicate model id: ${id}`);
     ids.add(id);
-    const capabilities = Array.isArray(item.capabilities) ? item.capabilities.filter((x): x is ModelDescriptor['capabilities'][number] => typeof x === 'string') : ['general'];
+    const capabilities = asCapabilities(item.capabilities);
     return {
       id,
       provider: asProvider(item.provider),
