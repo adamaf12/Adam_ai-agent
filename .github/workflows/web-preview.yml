@@ -1,0 +1,27 @@
+name: Web Preview
+on:
+  workflow_dispatch:
+  push:
+    branches: ["rebuild/adam-ai-v2"]
+permissions:
+  contents: read
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Package web preview
+        run: tar -czf adam-ai-v2-web-preview.tar.gz dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adam-ai-v2-web-preview
+          path: adam-ai-v2-web-preview.tar.gz
+          if-no-files-found: error
