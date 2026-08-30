@@ -24,9 +24,20 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
+      - name: Verify Java toolchain
+        run: |
+          java -version
+          javac -version
+          cd android
+          ./gradlew --version
+      - name: Force Gradle JDK 21
+        working-directory: android
+        run: |
+          echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+          echo "JAVA_HOME=$JAVA_HOME"
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew clean assembleDebug --no-daemon --stacktrace
       - name: Verify APK
         run: test -s android/app/build/outputs/apk/debug/app-debug.apk
       - name: Upload APK
