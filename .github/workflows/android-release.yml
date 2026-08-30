@@ -96,7 +96,13 @@ jobs:
             find android/app/build/outputs -type f -name '*.apk' -print || true
             exit 1
           fi
-          apksigner verify --verbose "$APK"
+          APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
+          if [ ! -x "$APKSIGNER" ]; then
+            echo "apksigner not found at $APKSIGNER"
+            find "${ANDROID_HOME}/build-tools" -name apksigner -type f -print || true
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
           cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
