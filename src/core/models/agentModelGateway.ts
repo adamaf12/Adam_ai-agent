@@ -1,9 +1,14 @@
 import { ModelGateway } from './modelGateway';
-import { ProviderRouter } from './modelProviders';
-import { ModelCapability } from './modelSwarm';
+import { FetchProviderAdapter, ProviderRouter } from './modelProviders';
+import { ModelCapability, modelRegistry } from './modelSwarm';
 
-export function createAgentModelGateway() {
+export function createAgentModelGateway(fetchImpl: typeof fetch = fetch) {
   const providers = new ProviderRouter();
+  const fetchAdapter = new FetchProviderAdapter(fetchImpl);
+  providers.register('huggingface', fetchAdapter);
+  providers.register('openai-compatible', fetchAdapter);
+  providers.register('local', fetchAdapter);
+  providers.register('pollinations', fetchAdapter);
   return { gateway: new ModelGateway((model, request) => providers.invoke(model, request)), providers };
 }
 
@@ -19,10 +24,14 @@ export function inferCapabilities(prompt: string): ModelCapability[] {
   return [...new Set(capabilities)];
 }
 
-export async function runModelSwarm(gateway: ModelGateway, prompt: string, system?: string) {
+export function listAvailableModels() {
+  return modelRegistry.enabled().map(({ id, provider, displayName, capabilities, contextLength, quality, speed, cost }) => ({ id, provider, displayName, capabilities, contextLength, quality, speed, cost }));
+}
+
+export async function runModelSwarm(gateway: ModelGateway, prompt: string, system?: string, maxModels = 3) {
   const capabilities = inferCapabilities(prompt);
   return gateway.complete(
-    { prompt, capabilities, maxModels: capabilities.length > 1 ? 3 : 1, preferSpeed: prompt.length < 120 },
+    { prompt, capabilities, maxModels: Math.max(1, Math.min(8, maxModels)), preferSpeed: prompt.length < 120 },
     { prompt, system, temperature: 0.35, maxTokens: 4096 },
   );
 }
