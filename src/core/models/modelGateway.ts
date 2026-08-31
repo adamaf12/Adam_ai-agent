@@ -5,14 +5,16 @@ export interface ModelResponse { text: string; modelId: string; provider: string
 export type ModelInvoker = (model: ModelDescriptor, request: ModelRequest) => Promise<string>;
 export interface GatewayResult { response: ModelResponse; plan: RoutingPlan; attempts: string[]; }
 
+function usableText(value: unknown): value is string { return typeof value === 'string' && value.trim().length > 0; }
+
 export class ModelGateway {
   constructor(private readonly invoke: ModelInvoker) {}
 
   async invokeSelected(model: ModelDescriptor, request: ModelRequest): Promise<ModelResponse> {
     const started = Date.now();
     const text = await this.invoke(model, request);
-    if (!text.trim()) throw new Error(`Empty response from ${model.id}`);
-    return { text, modelId: model.id, provider: model.provider, latencyMs: Date.now() - started };
+    if (!usableText(text)) throw new Error(`Empty response from ${model.id}`);
+    return { text: text.trim(), modelId: model.id, provider: model.provider, latencyMs: Date.now() - started };
   }
 
   async complete(task: RoutingTask, request: ModelRequest): Promise<GatewayResult> {
