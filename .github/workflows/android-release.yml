@@ -3,7 +3,7 @@ name: Android APK Release
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'rebuild/adam-ai-v2']
     tags: ['v*']
 
 permissions:
