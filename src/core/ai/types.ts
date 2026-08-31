@@ -4,6 +4,7 @@ export interface ChatRequest {
   messages: Message[];
   language: Language;
   agentName: string;
+  maxModels?: number;
 }
 
 export interface ChatClient {
