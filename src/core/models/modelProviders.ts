@@ -3,22 +3,24 @@ import { ModelRequest } from './modelGateway';
 
 export interface ProviderAdapter { invoke(model: ModelDescriptor, request: ModelRequest): Promise<string>; }
 
+function providerEndpoint(model: ModelDescriptor) {
+  if (model.endpoint) return model.endpoint;
+  if (model.provider === 'pollinations') return process.env.POLLINATIONS_BASE_URL ? `${process.env.POLLINATIONS_BASE_URL.replace(/\/$/, '')}/v1/chat/completions` : 'https://gen.pollinations.ai/v1/chat/completions';
+  return '';
+}
+
 export class FetchProviderAdapter implements ProviderAdapter {
   constructor(private readonly fetchImpl: typeof fetch = fetch) {}
 
   async invoke(model: ModelDescriptor, request: ModelRequest): Promise<string> {
-    if (!model.endpoint) throw new Error(`No endpoint configured for ${model.id}`);
-    const response = await this.fetchImpl(model.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        model: model.id,
-        prompt: request.prompt,
-        system: request.system,
-        temperature: request.temperature,
-        max_tokens: request.maxTokens,
-        maxTokens: request.maxTokens,
-      }),
+    const endpoint = providerEndpoint(model);
+    if (!endpoint) throw new Error(`No endpoint configured for ${model.id}`);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    const key = model.provider === 'pollinations' ? process.env.POLLINATIONS_API_KEY?.trim() : undefined;
+    if (key) headers.Authorization = `Bearer ${key}`;
+    const response = await this.fetchImpl(endpoint, {
+      method: 'POST', headers,
+      body: JSON.stringify({ model: model.id, messages: [{ role: 'system', content: request.system ?? '' }, { role: 'user', content: request.prompt }], prompt: request.prompt, system: request.system, temperature: request.temperature, max_tokens: request.maxTokens, maxTokens: request.maxTokens }),
     });
     const raw = await response.text();
     if (!response.ok) throw new Error(`${model.id}: provider returned HTTP ${response.status}${raw ? ` - ${raw.slice(0, 300)}` : ''}`);
