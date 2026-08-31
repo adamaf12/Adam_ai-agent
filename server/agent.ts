@@ -5,9 +5,9 @@ import { DEFAULT_AGENT_BUDGET } from '../src/core/agent/agentBudget';
 import { DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from '../src/core/agent/retryPolicy';
 import { requestDeduplicator } from '../src/core/agent/requestDedup';
 import { appendRunEvent, createRunSummary } from '../src/core/agent/runTelemetry';
-import { modelRegistry, routeTask, type ModelDescriptor } from '../src/core/models/modelSwarm';
-import { inferCapabilities } from '../src/core/models/agentModelGateway';
-import { ModelGateway, type ModelRequest } from '../src/core/models/modelGateway';
+import { modelRegistry, registerRemoteModels, routeTask, type ModelDescriptor } from '../src/core/models/modelSwarm';
+import { createAgentModelGateway, inferCapabilities } from '../src/core/models/agentModelGateway';
+import type { ModelRequest } from '../src/core/models/modelGateway';
 
 type AgentMessage = { role: string; content: string };
 type AgentRequest = { messages?: unknown; language?: unknown; agentName?: unknown; maxModels?: unknown };
@@ -15,6 +15,20 @@ const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 30_000;
 const MAX_AGENT_NAME_CHARS = 40;
 const MAX_REQUEST_ID_CHARS = 128;
+let remoteCatalogPromise: Promise<void> | null = null;
+
+async function hydrateRemoteCatalog() {
+  if (!remoteCatalogPromise) {
+    remoteCatalogPromise = fetch('https://gen.pollinations.ai/v1/models').then(async response => {
+      if (!response.ok) throw new Error(`Remote model catalog returned HTTP ${response.status}`);
+      const data = await response.json();
+      registerRemoteModels(data, 'pollinations');
+    }).catch(error => {
+      console.warn('[Adam AI] remote model catalog unavailable:', error instanceof Error ? error.message : error);
+    });
+  }
+  await remoteCatalogPromise;
+}
 
 function normalizeMessages(input: unknown) {
   if (!Array.isArray(input)) return [];
@@ -43,7 +57,11 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
     const stream = await ai.models.generateContentStream({ model: selected.id, contents: messages, config });
     let output = '';
     for await (const chunk of stream) { const text = typeof (chunk as { text?: unknown }).text === 'string' ? (chunk as { text: string }).text : ''; if (text) output += text; }
-    if (!output.trim()) throw new Error('The selected model returned an empty response.');
+    if (!output.trim()) {
+      const completion = await ai.models.generateContent({ model: selected.id, contents: messages, config });
+      output = typeof (completion as any).text === 'string' ? (completion as any).text : '';
+    }
+    if (!output.trim()) throw new Error(`The selected model ${selected.id} returned an empty response.`);
     return output;
   };
 }
@@ -63,52 +81,49 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     let aborted = false;
     req.once('aborted', () => { aborted = true; });
     try {
+      await hydrateRemoteCatalog();
       const language = getLanguage(body.language);
       const agentName = getAgentName(body.agentName);
       const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
       const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(8, Math.floor(body.maxModels))) : 1;
       const capabilities = inferCapabilities(latestPrompt);
       const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
-      const geminiModels = plan.ensemble.filter(candidate => candidate.provider === 'gemini');
       const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini');
-      const selectedModels = geminiModels.length ? geminiModels : (fallback ? [fallback] : []);
-      if (!selectedModels.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
+      const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])];
+      if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
 
       const useSearch = capabilities.includes('search');
-      const gateway = new ModelGateway(createGeminiInvoker(apiKey, language, agentName, messages, useSearch));
-      res.setHeader('X-Adam-Model', selectedModels.map(m => m.id).join(','));
+      const remoteGateway = createAgentModelGateway();
+      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch);
+      const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
+      res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
+      res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
       res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders?.();
-      run = appendRunEvent(run, { phase: 'planning', at: Date.now() });
+      run = appendRunEvent(run, { phase: 'planning', at: Date.now(), detail: `registry:${modelRegistry.size()}` });
 
-      const outputs: string[] = [];
-      for (const selectedModel of selectedModels) {
-        if (aborted) break;
-        let succeeded = false;
-        for (let attempt = 1; attempt <= DEFAULT_RETRY_POLICY.maxAttempts && !aborted && !succeeded; attempt += 1) {
+      let output = '';
+      for (const selectedModel of candidates) {
+        if (aborted || output) break;
+        for (let attempt = 1; attempt <= DEFAULT_RETRY_POLICY.maxAttempts && !aborted && !output; attempt += 1) {
           try {
-            run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt });
-            const result = await gateway.invokeSelected(selectedModel, { prompt: latestPrompt, system: systemInstruction(language, agentName), temperature: 0.35, maxTokens: 4096 });
-            outputs.push(result.text); succeeded = true;
+            run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt, detail: selectedModel.id });
+            output = await invoke(selectedModel, { prompt: latestPrompt, system: systemInstruction(language, agentName), temperature: 0.35, maxTokens: 4096 });
           } catch (error) {
-            if (aborted || !isRetryableError(error) || attempt >= DEFAULT_RETRY_POLICY.maxAttempts) {
-              if (!outputs.length) throw error;
-              break;
-            }
+            if (aborted || !isRetryableError(error) || attempt >= DEFAULT_RETRY_POLICY.maxAttempts) break;
             await new Promise(resolve => setTimeout(resolve, retryDelayMs(attempt)));
           }
         }
       }
-      if (!outputs.length && !aborted) throw new Error('No model returned a usable response.');
+      if (!output.trim() && !aborted) throw new Error('No model returned a usable response.');
       if (aborted) { run = appendRunEvent(run, { phase: 'cancelled', at: Date.now() }); return; }
       run = appendRunEvent(run, { phase: 'verifying', at: Date.now() });
-      const finalText = outputs.length === 1 ? outputs[0] : outputs.map((text, index) => `Model ${index + 1}:\n${text}`).join('\n\n');
       run = appendRunEvent(run, { phase: 'responding', at: Date.now() });
-      res.write(JSON.stringify({ type: 'delta', text: finalText }) + '\n');
+      res.write(JSON.stringify({ type: 'delta', text: output.trim() }) + '\n');
       run = appendRunEvent(run, { phase: 'completed', at: Date.now() });
-      res.write(JSON.stringify({ type: 'done', model: selectedModels.map(m => m.id), swarmSize: selectedModels.length }) + '\n');
+      res.write(JSON.stringify({ type: 'done', model: candidates.map(m => m.id).slice(0, 8), swarmSize: Math.min(candidates.length, 8), registrySize: modelRegistry.size() }) + '\n');
       res.end();
     } catch (error: unknown) {
       if (aborted) return;
