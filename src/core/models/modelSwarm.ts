@@ -50,7 +50,7 @@ export function registerRemoteModels(input: unknown, provider: ModelProvider = '
 }
 
 function score(model: ModelDescriptor, task: RoutingTask) {
-  const required = task.capabilities?.length ? task.capabilities : ['general'];
+  const required: ModelCapability[] = task.capabilities?.length ? task.capabilities : ['general'];
   const match = required.filter(cap => model.capabilities.includes(cap)).length / required.length;
   const qualityWeight = task.preferSpeed ? 0.25 : 0.55;
   const speedWeight = task.preferSpeed ? 0.55 : 0.2;
