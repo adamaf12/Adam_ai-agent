@@ -25,7 +25,7 @@ function sendError(res: express.Response, status: number, code: string, message:
 function normalizeMessages(input: unknown) { if (!Array.isArray(input)) return []; return input.filter((item): item is { role: string; content: string } => Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string')).slice(-40).map(item => ({ role: item.role === 'assistant' || item.role === 'model' ? 'model' : 'user', parts: [{ text: item.content.slice(0, 30_000) }] })); }
 function systemInstruction(language: string, agentName: string) { const lang = language === 'ar' ? 'Arabic' : 'English'; return `You are ${agentName || 'Adam'}, a reliable personal AI agent. Reply primarily in ${lang} unless the user clearly asks for another language. Answer normal questions directly, preserve conversation context, never invent actions or tool results, and clearly distinguish known facts from uncertainty. For current information use appropriate grounding only when needed.`; }
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.2.0' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.2.1' }));
 
 app.post('/api/chat', async (req, res) => {
   if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
@@ -37,13 +37,28 @@ app.post('/api/chat', async (req, res) => {
   res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
   let aborted = false;
   req.once('aborted', () => { aborted = true; });
   try {
-    const stream = await ai.models.generateContentStream({ model, contents: messages, config: { temperature: 0.45, topP: 0.9, maxOutputTokens: 4096, systemInstruction: systemInstruction(language, agentName) } });
-    for await (const chunk of stream) { if (aborted) break; const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : ''; if (text) res.write(JSON.stringify({ type: 'delta', text }) + '\n'); }
-    if (!aborted) { res.write(JSON.stringify({ type: 'done' }) + '\n'); res.end(); }
+    const config = { temperature: 0.45, topP: 0.9, maxOutputTokens: 4096, systemInstruction: systemInstruction(language, agentName) };
+    const stream = await ai.models.generateContentStream({ model, contents: messages, config });
+    let output = '';
+    for await (const chunk of stream) {
+      if (aborted) break;
+      const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : '';
+      if (text) { output += text; res.write(JSON.stringify({ type: 'delta', text }) + '\n'); }
+    }
+    if (aborted) return;
+    if (!output.trim()) {
+      const completion = await ai.models.generateContent({ model, contents: messages, config });
+      const text = typeof (completion as any).text === 'string' ? (completion as any).text : '';
+      if (text.trim()) { output = text; res.write(JSON.stringify({ type: 'delta', text }) + '\n'); }
+    }
+    if (!output.trim()) throw new Error('The AI provider returned an empty completion.');
+    res.write(JSON.stringify({ type: 'done' }) + '\n');
+    res.end();
   } catch (error: any) {
     if (aborted) return;
     const status = Number(error?.status ?? error?.code ?? 500);
