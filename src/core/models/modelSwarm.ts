@@ -1,30 +1,18 @@
 export type ModelProvider = 'gemini' | 'huggingface' | 'openai-compatible' | 'local' | 'pollinations';
 export type ModelCapability = 'general' | 'reasoning' | 'coding' | 'math' | 'vision' | 'search' | 'fast' | 'arabic';
 
-export interface ModelDescriptor {
-  id: string;
-  provider: ModelProvider;
-  displayName: string;
-  capabilities: readonly ModelCapability[];
-  contextLength?: number;
-  quality: number;
-  speed: number;
-  cost: number;
-  enabled: boolean;
-  endpoint?: string;
-}
-
+export interface ModelDescriptor { id: string; provider: ModelProvider; displayName: string; capabilities: readonly ModelCapability[]; contextLength?: number; quality: number; speed: number; cost: number; enabled: boolean; endpoint?: string; }
 export interface RoutingTask { prompt: string; capabilities?: ModelCapability[]; maxModels?: number; preferSpeed?: boolean; budget?: number; }
 export interface RoutingPlan { primary: ModelDescriptor; ensemble: ModelDescriptor[]; strategy: 'single' | 'ensemble'; }
 
 export class ModelRegistry {
   private readonly models = new Map<string, ModelDescriptor>();
-  register(model: ModelDescriptor): void { this.models.set(model.id, model); }
-  registerMany(models: ModelDescriptor[]): void { for (const model of models) this.register(model); }
-  get(id: string): ModelDescriptor | undefined { return this.models.get(id); }
-  all(): ModelDescriptor[] { return [...this.models.values()]; }
-  enabled(): ModelDescriptor[] { return this.all().filter((model) => model.enabled); }
-  size(): number { return this.models.size; }
+  register(model: ModelDescriptor) { this.models.set(model.id, model); }
+  registerMany(models: ModelDescriptor[]) { models.forEach(model => this.register(model)); }
+  get(id: string) { return this.models.get(id); }
+  all() { return [...this.models.values()]; }
+  enabled() { return this.all().filter(model => model.enabled); }
+  size() { return this.models.size; }
 }
 
 const builtInModels: ModelDescriptor[] = [
@@ -35,27 +23,25 @@ const builtInModels: ModelDescriptor[] = [
   { id: 'mistral', provider: 'pollinations', displayName: 'Mistral', capabilities: ['general','coding','fast'], quality: 7.5, speed: 8.7, cost: 0, enabled: true },
   { id: 'openai', provider: 'pollinations', displayName: 'OpenAI fallback', capabilities: ['general','coding','reasoning'], quality: 8, speed: 7.8, cost: 0, enabled: true },
 ];
-
 export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);
 
-function score(model: ModelDescriptor, task: RoutingTask): number {
+function score(model: ModelDescriptor, task: RoutingTask) {
   const required = task.capabilities?.length ? task.capabilities : ['general'];
-  const capabilityMatch = required.filter((capability) => model.capabilities.includes(capability)).length / required.length;
+  const match = required.filter(cap => model.capabilities.includes(cap)).length / required.length;
   const qualityWeight = task.preferSpeed ? 0.25 : 0.55;
   const speedWeight = task.preferSpeed ? 0.55 : 0.2;
   const costWeight = task.budget !== undefined ? 0.25 : 0.05;
-  return capabilityMatch * 5 + model.quality * qualityWeight + model.speed * speedWeight + Math.max(0, 10 - model.cost) * costWeight;
+  return match * 5 + model.quality * qualityWeight + model.speed * speedWeight + Math.max(0, 10 - model.cost) * costWeight;
 }
 
 export function routeTask(task: RoutingTask): RoutingPlan {
-  const candidates = modelRegistry.enabled().filter((model) => task.budget === undefined || model.cost <= task.budget);
+  const candidates = modelRegistry.enabled().filter(model => task.budget === undefined || model.cost <= task.budget);
   if (!candidates.length) throw new Error('No enabled model matches the current routing constraints.');
   const ranked = candidates.sort((a, b) => score(b, task) - score(a, task));
   const maxModels = Math.max(1, Math.min(task.maxModels ?? 1, 8));
   const primary = ranked[0];
-  if (maxModels === 1 || ranked.length === 1) return { primary, ensemble: [primary], strategy: 'single' };
-  return { primary, ensemble: ranked.slice(0, maxModels), strategy: 'ensemble' };
+  return maxModels === 1 ? { primary, ensemble: [primary], strategy: 'single' } : { primary, ensemble: ranked.slice(0, maxModels), strategy: 'ensemble' };
 }
 
-export function registrySnapshot() { return { total: modelRegistry.size(), enabled: modelRegistry.enabled().length, providers: [...new Set(modelRegistry.enabled().map((model) => model.provider))] }; }
+export function registrySnapshot() { return { total: modelRegistry.size(), enabled: modelRegistry.enabled().length, providers: [...new Set(modelRegistry.enabled().map(model => model.provider))] }; }
