@@ -15,17 +15,23 @@ const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 30_000;
 const MAX_AGENT_NAME_CHARS = 40;
 const MAX_REQUEST_ID_CHARS = 128;
+const CATALOG_TIMEOUT_MS = Math.max(3_000, Number(process.env.ADAM_CATALOG_TIMEOUT_MS ?? 10_000));
 let remoteCatalogPromise: Promise<void> | null = null;
 
 async function hydrateRemoteCatalog() {
   if (!remoteCatalogPromise) {
-    remoteCatalogPromise = fetch('https://gen.pollinations.ai/v1/models').then(async response => {
-      if (!response.ok) throw new Error(`Remote model catalog returned HTTP ${response.status}`);
-      const data = await response.json();
-      registerRemoteModels(data, 'pollinations');
-    }).catch(error => {
-      console.warn('[Adam AI] remote model catalog unavailable:', error instanceof Error ? error.message : error);
-    });
+    remoteCatalogPromise = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), CATALOG_TIMEOUT_MS);
+      try {
+        const response = await fetch('https://gen.pollinations.ai/v1/models', { signal: controller.signal });
+        if (!response.ok) throw new Error(`Remote model catalog returned HTTP ${response.status}`);
+        const data = await response.json();
+        registerRemoteModels(data, 'pollinations');
+      } catch (error) {
+        console.warn('[Adam AI] remote model catalog unavailable:', error instanceof Error ? error.message : error);
+      } finally { clearTimeout(timer); }
+    })();
   }
   await remoteCatalogPromise;
 }
