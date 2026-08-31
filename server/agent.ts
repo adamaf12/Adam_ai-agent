@@ -35,10 +35,12 @@ function systemInstruction(language: 'ar' | 'en', agentName: string) {
 }
 function sendError(res: Response, status: number, code: string, message: string) { if (res.headersSent) { res.write(JSON.stringify({ type: 'error', code, message }) + '\n'); res.end(); return; } res.status(status).json({ code, message }); }
 
-function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, messages: ReturnType<typeof normalizeMessages>) {
+function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, messages: ReturnType<typeof normalizeMessages>, useSearch: boolean) {
   const ai = new GoogleGenAI({ apiKey });
   return async (selected: ModelDescriptor, request: ModelRequest) => {
-    const stream = await ai.models.generateContentStream({ model: selected.id, contents: messages, config: { temperature: request.temperature ?? 0.35, topP: 0.9, maxOutputTokens: Math.min(request.maxTokens ?? 4096, DEFAULT_AGENT_BUDGET.maxResponseChars), systemInstruction: request.system ?? systemInstruction(language, agentName), tools: [{ googleSearch: {} }] } });
+    const config: Record<string, unknown> = { temperature: request.temperature ?? 0.35, topP: 0.9, maxOutputTokens: Math.min(request.maxTokens ?? 4096, DEFAULT_AGENT_BUDGET.maxResponseChars), systemInstruction: request.system ?? systemInstruction(language, agentName) };
+    if (useSearch) config.tools = [{ googleSearch: {} }];
+    const stream = await ai.models.generateContentStream({ model: selected.id, contents: messages, config });
     let output = '';
     for await (const chunk of stream) { const text = typeof (chunk as { text?: unknown }).text === 'string' ? (chunk as { text: string }).text : ''; if (text) output += text; }
     if (!output.trim()) throw new Error('The selected model returned an empty response.');
@@ -52,30 +54,35 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     const requestId = getRequestId(req);
     const runId = `run_${requestId}`;
     res.setHeader('X-Request-Id', requestId);
+    if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server.');
+    const messages = normalizeMessages(body.messages);
+    if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
     if (!requestDeduplicator.begin(requestId)) return sendError(res, 409, 'REQUEST_IN_PROGRESS', 'This request is already being processed.');
+
     let run = createRunSummary(runId);
     let aborted = false;
     req.once('aborted', () => { aborted = true; });
     try {
-      if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server.');
-      const messages = normalizeMessages(body.messages);
-      if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
       const language = getLanguage(body.language);
       const agentName = getAgentName(body.agentName);
       const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
       const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(8, Math.floor(body.maxModels))) : 1;
-      const plan = routeTask({ prompt: latestPrompt, capabilities: inferCapabilities(latestPrompt), maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
+      const capabilities = inferCapabilities(latestPrompt);
+      const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
       const geminiModels = plan.ensemble.filter(candidate => candidate.provider === 'gemini');
       const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini');
       const selectedModels = geminiModels.length ? geminiModels : (fallback ? [fallback] : []);
       if (!selectedModels.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
-      const gateway = new ModelGateway(createGeminiInvoker(apiKey, language, agentName, messages));
+
+      const useSearch = capabilities.includes('search');
+      const gateway = new ModelGateway(createGeminiInvoker(apiKey, language, agentName, messages, useSearch));
       res.setHeader('X-Adam-Model', selectedModels.map(m => m.id).join(','));
       res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders?.();
       run = appendRunEvent(run, { phase: 'planning', at: Date.now() });
+
       const outputs: string[] = [];
       for (const selectedModel of selectedModels) {
         if (aborted) break;
