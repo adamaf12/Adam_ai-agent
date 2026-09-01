@@ -5,6 +5,8 @@ export interface ModelDescriptor { id: string; provider: ModelProvider; displayN
 export interface RoutingTask { prompt: string; capabilities?: ModelCapability[]; maxModels?: number; preferSpeed?: boolean; budget?: number; }
 export interface RoutingPlan { primary: ModelDescriptor; ensemble: ModelDescriptor[]; strategy: 'single' | 'ensemble'; }
 
+export const MAX_SWARM_MODELS = 1000;
+
 export class ModelRegistry {
   private readonly models = new Map<string, ModelDescriptor>();
   register(model: ModelDescriptor) { this.models.set(model.id, model); }
@@ -62,7 +64,7 @@ export function routeTask(task: RoutingTask): RoutingPlan {
   const candidates = modelRegistry.enabled().filter(model => task.budget === undefined || model.cost <= task.budget);
   if (!candidates.length) throw new Error('No enabled model matches the current routing constraints.');
   const ranked = candidates.sort((a, b) => score(b, task) - score(a, task));
-  const maxModels = Math.max(1, Math.min(task.maxModels ?? 1, 8));
+  const maxModels = Math.max(1, Math.min(task.maxModels ?? 1, MAX_SWARM_MODELS));
   const primary = ranked[0];
   return maxModels === 1 ? { primary, ensemble: [primary], strategy: 'single' } : { primary, ensemble: ranked.slice(0, maxModels), strategy: 'ensemble' };
 }
