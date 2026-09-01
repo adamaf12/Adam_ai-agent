@@ -19,12 +19,16 @@ test('provider adapter rejects empty responses', async () => {
   await assert.rejects(() => adapter.invoke(model, request), /empty response/i);
 });
 
-test('provider adapter sends an abort signal to stalled providers', async () => {
-  const adapter = new FetchProviderAdapter(async (_url, init) => {
-    assert.ok(init?.signal);
-    return new Promise(() => {});
-  });
-  const pending = adapter.invoke(model, request);
-  assert.ok(pending instanceof Promise);
-  await new Promise(resolve => setTimeout(resolve, 10));
+test('provider adapter aborts stalled providers', async () => {
+  const previous = process.env.ADAM_PROVIDER_TIMEOUT_MS;
+  process.env.ADAM_PROVIDER_TIMEOUT_MS = '5000';
+  try {
+    const adapter = new FetchProviderAdapter(async (_url, init) => await new Promise((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+    }));
+    await assert.rejects(() => adapter.invoke(model, request), /timed out/i);
+  } finally {
+    if (previous === undefined) delete process.env.ADAM_PROVIDER_TIMEOUT_MS;
+    else process.env.ADAM_PROVIDER_TIMEOUT_MS = previous;
+  }
 });
