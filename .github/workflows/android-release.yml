@@ -3,7 +3,7 @@ name: Android APK Release
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'rebuild/adam-ai-v2']
+    branches: [main]
     tags: ['v*']
 
 permissions:
@@ -15,42 +15,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
-
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Setup Android
         uses: android-actions/setup-android@v3
-
       - name: Install Android build tools
         run: |
           sdkmanager --licenses </dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Build web app
         run: npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
-
       - name: Add Android platform if missing
         run: |
           if [ ! -d android ]; then npx cap add android; fi
-
       - name: Sync Capacitor
         run: npx cap sync android
-
       - name: Configure installable release signing
         working-directory: android
         run: |
@@ -82,11 +73,9 @@ jobs:
               s = s[:insert_at] + '\n            signingConfig signingConfigs.release' + s[insert_at:]
           p.write_text(s)
           PY
-
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-
       - name: Verify APK signature and prepare download
         run: |
           set -euo pipefail
@@ -96,27 +85,16 @@ jobs:
             find android/app/build/outputs -type f -name '*.apk' -print || true
             exit 1
           fi
-          APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit 2>/dev/null || true)"
-          if [ -z "$APKSIGNER" ]; then
-            echo "No executable apksigner found under ${ANDROID_HOME}/build-tools"
-            find "${ANDROID_HOME}/build-tools" -name apksigner -type f -print || true
-            exit 1
-          fi
-          echo "Using apksigner: $APKSIGNER"
-          "$APKSIGNER" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
-          VERSION="${VERSION//\//-}"
           cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
           ls -lh release/*.apk
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Adam-AI-Agent-release-apk
+          name: Adam-AI-Agent-${{ github.ref_name }}
           path: release/*.apk
-          if-no-files-found: error
-
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
