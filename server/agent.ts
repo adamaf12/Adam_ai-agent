@@ -5,7 +5,7 @@ import { DEFAULT_AGENT_BUDGET } from '../src/core/agent/agentBudget';
 import { DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from '../src/core/agent/retryPolicy';
 import { requestDeduplicator } from '../src/core/agent/requestDedup';
 import { appendRunEvent, createRunSummary } from '../src/core/agent/runTelemetry';
-import { modelRegistry, registerRemoteModels, routeTask, type ModelDescriptor } from '../src/core/models/modelSwarm';
+import { MAX_SWARM_MODELS, modelRegistry, registerRemoteModels, routeTask, type ModelDescriptor } from '../src/core/models/modelSwarm';
 import { createAgentModelGateway, inferCapabilities } from '../src/core/models/agentModelGateway';
 import type { ModelRequest } from '../src/core/models/modelGateway';
 
@@ -16,6 +16,7 @@ const MAX_MESSAGE_CHARS = 30_000;
 const MAX_AGENT_NAME_CHARS = 40;
 const MAX_REQUEST_ID_CHARS = 128;
 const CATALOG_TIMEOUT_MS = Math.max(3_000, Number(process.env.ADAM_CATALOG_TIMEOUT_MS ?? 10_000));
+const SWARM_CONCURRENCY = Math.max(1, Math.min(MAX_SWARM_MODELS, Number(process.env.ADAM_SWARM_CONCURRENCY ?? 8)));
 let remoteCatalogPromise: Promise<void> | null = null;
 
 async function hydrateRemoteCatalog() {
@@ -72,6 +73,20 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
   };
 }
 
+async function invokeWithRetry(selectedModel: ModelDescriptor, invoke: (selected: ModelDescriptor, request: ModelRequest) => Promise<string>, request: ModelRequest, run: ReturnType<typeof createRunSummary>, aborted: () => boolean) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= DEFAULT_RETRY_POLICY.maxAttempts && !aborted(); attempt += 1) {
+    try {
+      return await invoke(selectedModel, request);
+    } catch (error) {
+      lastError = error;
+      if (aborted() || !isRetryableError(error) || attempt >= DEFAULT_RETRY_POLICY.maxAttempts) break;
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs(attempt)));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`Model ${selectedModel.id} failed.`);
+}
+
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
   app.post('/api/agent', async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as AgentRequest;
@@ -91,11 +106,11 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const language = getLanguage(body.language);
       const agentName = getAgentName(body.agentName);
       const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
-      const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(8, Math.floor(body.maxModels))) : 1;
+      const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(MAX_SWARM_MODELS, Math.floor(body.maxModels))) : 1;
       const capabilities = inferCapabilities(latestPrompt);
       const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
       const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini');
-      const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])];
+      const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])].slice(0, MAX_SWARM_MODELS);
       if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
 
       const useSearch = capabilities.includes('search');
@@ -104,32 +119,31 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
+      res.setHeader('X-Adam-Swarm-Concurrency', String(SWARM_CONCURRENCY));
       res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders?.();
-      run = appendRunEvent(run, { phase: 'planning', at: Date.now(), detail: `registry:${modelRegistry.size()}` });
+      run = appendRunEvent(run, { phase: 'planning', at: Date.now(), detail: `registry:${modelRegistry.size()};candidates:${candidates.length}` });
 
       let output = '';
-      for (const selectedModel of candidates) {
-        if (aborted || output) break;
-        for (let attempt = 1; attempt <= DEFAULT_RETRY_POLICY.maxAttempts && !aborted && !output; attempt += 1) {
-          try {
-            run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt, detail: selectedModel.id });
-            output = await invoke(selectedModel, { prompt: latestPrompt, system: systemInstruction(language, agentName), temperature: 0.35, maxTokens: 4096 });
-          } catch (error) {
-            if (aborted || !isRetryableError(error) || attempt >= DEFAULT_RETRY_POLICY.maxAttempts) break;
-            await new Promise(resolve => setTimeout(resolve, retryDelayMs(attempt)));
-          }
-        }
+      let winner: ModelDescriptor | null = null;
+      for (let offset = 0; offset < candidates.length && !aborted && !output; offset += SWARM_CONCURRENCY) {
+        const batch = candidates.slice(offset, offset + SWARM_CONCURRENCY);
+        const results = await Promise.allSettled(batch.map(async selectedModel => {
+          run = appendRunEvent(run, { phase: 'executing', at: Date.now(), attempt: 1, detail: selectedModel.id });
+          return { model: selectedModel, text: await invokeWithRetry(selectedModel, invoke, { prompt: latestPrompt, system: systemInstruction(language, agentName), temperature: 0.35, maxTokens: 4096 }, run, () => aborted) };
+        }));
+        const success = results.find((result): result is PromiseFulfilledResult<{ model: ModelDescriptor; text: string }> => result.status === 'fulfilled' && Boolean(result.value.text?.trim()));
+        if (success) { winner = success.value.model; output = success.value.text; }
       }
       if (!output.trim() && !aborted) throw new Error('No model returned a usable response.');
       if (aborted) { run = appendRunEvent(run, { phase: 'cancelled', at: Date.now() }); return; }
-      run = appendRunEvent(run, { phase: 'verifying', at: Date.now() });
+      run = appendRunEvent(run, { phase: 'verifying', at: Date.now(), detail: winner?.id ?? 'fallback' });
       run = appendRunEvent(run, { phase: 'responding', at: Date.now() });
       res.write(JSON.stringify({ type: 'delta', text: output.trim() }) + '\n');
       run = appendRunEvent(run, { phase: 'completed', at: Date.now() });
-      res.write(JSON.stringify({ type: 'done', model: candidates.map(m => m.id).slice(0, 8), swarmSize: Math.min(candidates.length, 8), registrySize: modelRegistry.size() }) + '\n');
+      res.write(JSON.stringify({ type: 'done', model: winner?.id ?? candidates[0].id, tried: candidates.length, swarmSize: candidates.length, registrySize: modelRegistry.size() }) + '\n');
       res.end();
     } catch (error: unknown) {
       if (aborted) return;
