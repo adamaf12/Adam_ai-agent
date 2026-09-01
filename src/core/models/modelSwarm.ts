@@ -26,13 +26,15 @@ export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);
 
 function normalizeCapability(value: unknown): ModelCapability | null {
-  const text = String(value ?? '').toLowerCase();
-  if (text.includes('code')) return 'coding';
-  if (text.includes('reason')) return 'reasoning';
-  if (text.includes('math')) return 'math';
-  if (text.includes('vision')) return 'vision';
-  if (text.includes('search')) return 'search';
-  if (text.includes('arab')) return 'arabic';
+  const text = String(value ?? '').trim().toLowerCase();
+  if (text === 'code' || text === 'coding' || text.includes('program')) return 'coding';
+  if (text === 'reason' || text === 'reasoning' || text.includes('reason')) return 'reasoning';
+  if (text === 'math' || text.includes('mathemat')) return 'math';
+  if (text === 'vision' || text.includes('image')) return 'vision';
+  if (text === 'search' || text.includes('web')) return 'search';
+  if (text === 'arabic' || text.includes('arab')) return 'arabic';
+  if (text === 'fast' || text.includes('speed')) return 'fast';
+  if (text === 'general') return 'general';
   return null;
 }
 
