@@ -96,9 +96,6 @@ jobs:
             find android/app/build/outputs -type f -name '*.apk' -print || true
             exit 1
           fi
-
-          # Locate the installed build-tools dynamically instead of assuming one
-          # exact Android SDK build-tools directory is executable.
           APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit 2>/dev/null || true)"
           if [ -z "$APKSIGNER" ]; then
             echo "No executable apksigner found under ${ANDROID_HOME}/build-tools"
@@ -107,9 +104,9 @@ jobs:
           fi
           echo "Using apksigner: $APKSIGNER"
           "$APKSIGNER" verify --verbose "$APK"
-
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
+          VERSION="${VERSION//\//-}"
           cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
           ls -lh release/*.apk
 
