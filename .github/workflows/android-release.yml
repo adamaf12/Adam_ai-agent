@@ -29,7 +29,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Install Android build tools
         run: |
-          sdkmanager --licenses </dev/null || true
+          yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -85,15 +85,21 @@ jobs:
             find android/app/build/outputs -type f -name '*.apk' -print || true
             exit 1
           fi
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit 2>/dev/null || true)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "No executable apksigner found under ${ANDROID_HOME}/build-tools"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
+          VERSION="${VERSION//\//-}"
           cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
           ls -lh release/*.apk
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Adam-AI-Agent-${{ github.ref_name }}
+          name: Adam-AI-Agent-release-apk
           path: release/*.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
