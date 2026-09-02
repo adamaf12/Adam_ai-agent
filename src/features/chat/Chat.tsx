@@ -1,4 +1,4 @@
-import { ArrowUp, Bot, RotateCcw, Sparkles, Square, Trash2 } from 'lucide-react';
+import { Bot, Brain, Code2, Languages, RotateCcw, Sparkles, Trash2, WandSparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Message } from '../../core/domain';
 import { httpAgentClient, httpChatClient } from '../../core/ai/client';
@@ -15,8 +15,12 @@ import { copy } from '../../core/i18n';
 import { clearConversation, loadConversation, saveConversation } from '../../core/storage';
 
 const EMPTY_CONVERSATION = { id: 'default', title: 'Adam', messages: [] as Message[], updatedAt: Date.now() };
+
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
-  if (intent.type === 'task.create') { const title = typeof (data as { title?: unknown })?.title === 'string' ? (data as { title: string }).title : intent.title; return language === 'ar' ? `تمت إضافة المهمة: **${title}**` : `Task added: **${title}**`; }
+  if (intent.type === 'task.create') {
+    const title = typeof (data as { title?: unknown })?.title === 'string' ? (data as { title: string }).title : intent.title;
+    return language === 'ar' ? `تمت إضافة المهمة: **${title}**` : `Task added: **${title}**`;
+  }
   return language === 'ar' ? 'تم حفظ هذه المعلومة في ذاكرة Adam المحلية.' : 'Saved to Adam’s local memory.';
 }
 
@@ -28,23 +32,60 @@ export function Chat({ language, agentName, copy: heroCopy }: { language: Langua
   const [lastPrompt, setLastPrompt] = useState('');
   const controller = useRef<AbortController | null>(null);
   const t = copy(language);
-  const suggestions = useMemo(() => language === 'ar' ? ['اشرح لي الذكاء الاصطناعي ببساطة', 'ساعدني في كتابة كود', 'خطط لي يومي'] : ['Explain AI simply', 'Help me write code', 'Plan my day'], [language]);
-  useEffect(() => { if (!busy) saveConversation({ ...EMPTY_CONVERSATION, messages, updatedAt: Date.now() }); }, [messages, busy]);
+
+  const quickActions = useMemo(() => language === 'ar' ? [
+    { icon: Brain, title: 'مساعد ذكي', text: 'اسأل Adam عن أي شيء', prompt: 'ساعدني في هذا الموضوع: ' },
+    { icon: WandSparkles, title: 'كتابة نصوص', text: 'مقال، رسالة أو فكرة', prompt: 'ساعدني في كتابة: ' },
+    { icon: Languages, title: 'ترجمة', text: 'ترجمة دقيقة وسريعة', prompt: 'ترجم إلى العربية: ' },
+    { icon: Code2, title: 'برمجة', text: 'اكتب أو أصلح الكود', prompt: 'ساعدني في كتابة الكود التالي: ' },
+  ] : [
+    { icon: Brain, title: 'AI Assistant', text: 'Ask Adam anything', prompt: 'Help me with this: ' },
+    { icon: WandSparkles, title: 'Write', text: 'Article, message or idea', prompt: 'Help me write: ' },
+    { icon: Languages, title: 'Translate', text: 'Fast accurate translation', prompt: 'Translate to English: ' },
+    { icon: Code2, title: 'Coding', text: 'Write or fix code', prompt: 'Help me write this code: ' },
+  ], [language]);
+
+  const suggestions = useMemo(() => language === 'ar'
+    ? ['اشرح لي الذكاء الاصطناعي ببساطة', 'خطط لي يومي', 'ساعدني في الدراسة']
+    : ['Explain AI simply', 'Plan my day', 'Help me study'], [language]);
+
+  useEffect(() => {
+    if (!busy) saveConversation({ ...EMPTY_CONVERSATION, messages, updatedAt: Date.now() });
+  }, [messages, busy]);
 
   const send = async (text: string) => {
-    const clean = text.trim(); if (!clean || busy) return;
-    const user = createUserMessage(clean); const assistant = createAssistantMessage(); const next = [...messages, user];
-    const route = routePrompt(clean); const capability = toCapabilityRequest(route); const localIntent = parseLocalIntent(clean);
+    const clean = text.trim();
+    if (!clean || busy) return;
+    const user = createUserMessage(clean);
+    const assistant = createAssistantMessage();
+    const next = [...messages, user];
+    const route = routePrompt(clean);
+    const capability = toCapabilityRequest(route);
+    const localIntent = parseLocalIntent(clean);
     const client = requiresDedicatedCapability(capability.capability) ? httpAgentClient : httpChatClient;
-    setResponse(createResponseState(route.intent)); setLastPrompt(clean); setError(null); setBusy(true); setMessages(current => [...current, user, assistant]);
-    const abort = new AbortController(); controller.current = abort;
+
+    setResponse(createResponseState(route.intent));
+    setLastPrompt(clean);
+    setError(null);
+    setBusy(true);
+    setMessages(current => [...current, user, assistant]);
+
+    const abort = new AbortController();
+    controller.current = abort;
     try {
       if (localIntent) {
-        const input = localIntent.type === 'task.create' ? { title: localIntent.title } : { content: localIntent.content, category: localIntent.category };
-        const result = await executeAgentTool({ name: localIntent.type, input }, abort.signal); if (!result.ok) throw new Error(result.error ?? 'The local action could not be completed.');
+        const input = localIntent.type === 'task.create'
+          ? { title: localIntent.title }
+          : { content: localIntent.content, category: localIntent.category };
+        const result = await executeAgentTool({ name: localIntent.type, input }, abort.signal);
+        if (!result.ok) throw new Error(result.error ?? 'The local action could not be completed.');
         const confirmation = localConfirmation(language, localIntent, result.data);
-        setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: confirmation } : m)); setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: confirmation }) : current); setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current); return;
+        setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: confirmation } : m));
+        setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: confirmation }) : current);
+        setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current);
+        return;
       }
+
       await client.send({ messages: next, language, agentName, maxModels: route.intent === 'chat' ? 1 : 3 }, abort.signal, partial => {
         setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: partial.slice(current.content.length) }) : current);
         setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: partial } : m));
@@ -54,18 +95,67 @@ export function Chat({ language, agentName, copy: heroCopy }: { language: Langua
       if ((err as Error).name === 'AbortError') return;
       const message = err instanceof Error ? err.message : 'AI request failed';
       setResponse(current => current ? reduceResponseEvent(current, { type: 'error', code: 'AI_ERROR', message }) : current);
-      setMessages(current => current.filter(m => m.id !== assistant.id)); setError(message);
-    } finally { setBusy(false); controller.current = null; }
+      setMessages(current => current.filter(m => m.id !== assistant.id));
+      setError(message);
+    } finally {
+      setBusy(false);
+      controller.current = null;
+    }
   };
+
   const stop = () => controller.current?.abort();
-  const clear = () => { if (!busy) { setMessages([]); setError(null); setResponse(null); clearConversation(); } };
+  const clear = () => {
+    if (!busy) {
+      setMessages([]);
+      setError(null);
+      setResponse(null);
+      clearConversation();
+    }
+  };
 
   return <section className="chat-page">
     <div className="chat-header glass-panel">
-      <div className="chat-identity"><div className="adam-orb"><Sparkles size={17}/></div><div><span className="eyebrow">ADAM AI</span><h1>{messages.length ? (language === 'ar' ? 'المحادثة' : 'Conversation') : heroCopy.title}</h1><p>{messages.length ? (language === 'ar' ? 'اسأل بشكل طبيعي. Adam يتولى الباقي.' : 'Ask naturally. Adam handles the rest.') : heroCopy.subtitle}</p></div></div>
-      <div className="chat-header-actions"><span className="agent-mode"><i/> {response?.route === 'web' ? (language === 'ar' ? 'معلومات حديثة' : 'Current info') : (language === 'ar' ? 'جاهز' : 'Ready')}</span><button className="icon-button" onClick={clear} disabled={busy} aria-label={language === 'ar' ? 'مسح' : 'Clear'}><Trash2 size={17}/></button></div>
+      <div className="chat-identity">
+        <div className="adam-orb"><Sparkles size={17}/></div>
+        <div>
+          <span className="eyebrow">ADAM AI</span>
+          <h1>{messages.length ? (language === 'ar' ? 'المحادثة' : 'Conversation') : heroCopy.title}</h1>
+          <p>{messages.length ? (language === 'ar' ? 'اسأل بشكل طبيعي. Adam يتولى الباقي.' : 'Ask naturally. Adam handles the rest.') : heroCopy.subtitle}</p>
+        </div>
+      </div>
+      <div className="chat-header-actions">
+        <span className="agent-mode"><i/> {response?.route === 'web' ? (language === 'ar' ? 'معلومات حديثة' : 'Current info') : (language === 'ar' ? 'جاهز' : 'Ready')}</span>
+        <button className="icon-button" onClick={clear} disabled={busy} aria-label={language === 'ar' ? 'مسح' : 'Clear'}><Trash2 size={17}/></button>
+      </div>
     </div>
-    <div className="chat-scroll">{messages.length === 0 ? <><div className="welcome"><div className="welcome-orb"><Bot size={27}/></div><h2>{language === 'ar' ? `أهلاً، أنا ${agentName}` : `Hi, I'm ${agentName}`}</h2><p>{language === 'ar' ? 'اكتب سؤالك مباشرة — لا تحتاج لاختيار نموذج.' : 'Ask directly — you do not need to choose a model.'}</p></div><div className="suggestions">{suggestions.map(s => <button key={s} onClick={() => send(s)}>{s}</button>)}</div></> : messages.map(message => <MessageBubble key={message.id} message={message} language={language}/>)}{busy && <StreamingIndicator label={language === 'ar' ? 'Adam يعمل على إجابتك…' : 'Adam is working on it…'}/>} {error && <div className="error-banner"><strong>{language === 'ar' ? 'لم تصل إجابة' : 'No answer yet'}</strong><span>{language === 'ar' ? 'حدث انقطاع في المحرك. سيُعاد توجيه الطلب عند المحاولة التالية.' : 'The response path was interrupted. The next attempt can use a fallback engine.'}</span><button onClick={() => lastPrompt && send(lastPrompt)}><RotateCcw size={14}/> {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button></div>}</div>
+
+    <div className="chat-scroll">
+      {messages.length === 0 ? <>
+        <div className="welcome">
+          <div className="welcome-orb"><Bot size={27}/></div>
+          <h2>{language === 'ar' ? `أهلاً، أنا ${agentName}` : `Hi, I'm ${agentName}`}</h2>
+          <p>{language === 'ar' ? 'اسألني مباشرة أو اختر اختصارًا للبدء بسرعة.' : 'Ask directly or choose a shortcut to get started.'}</p>
+        </div>
+
+        <div className="quick-actions" aria-label={language === 'ar' ? 'اختصارات سريعة' : 'Quick actions'}>
+          {quickActions.map(({ icon: Icon, title, text, prompt }) => <button className="quick-action" key={title} onClick={() => send(prompt)}>
+            <span className="quick-action-icon"><Icon size={18}/></span>
+            <span><strong>{title}</strong><small>{text}</small></span>
+          </button>)}
+        </div>
+
+        <div className="suggestions">
+          {suggestions.map(s => <button key={s} onClick={() => send(s)}>{s}</button>)}
+        </div>
+      </> : messages.map(message => <MessageBubble key={message.id} message={message} language={language}/>)}
+
+      {busy && <StreamingIndicator label={language === 'ar' ? 'Adam يعمل على إجابتك…' : 'Adam is working on it…'}/>} 
+      {error && <div className="error-banner">
+        <strong>{language === 'ar' ? 'لم تصل إجابة' : 'No answer yet'}</strong>
+        <span>{language === 'ar' ? 'حدث انقطاع في المحرك. سيُعاد توجيه الطلب عند المحاولة التالية.' : 'The response path was interrupted. The next attempt can use a fallback engine.'}</span>
+        <button onClick={() => lastPrompt && send(lastPrompt)}><RotateCcw size={14}/> {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>
+      </div>}
+    </div>
     <Composer language={language} busy={busy} onSend={send} onStop={stop}/>
   </section>;
 }
