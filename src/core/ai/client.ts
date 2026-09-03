@@ -6,9 +6,8 @@ import { classifyChatError, toUserFacingChatError } from './errors';
 import { getRetryDelayMs, shouldRetryChatError } from './retry';
 
 const configuredApiBase = (import.meta.env.VITE_ADAM_API_URL ?? '').replace(/\/$/, '');
-// Native Capacitor builds have no Express server at their local origin. Use the
-// deployed API as the safe production fallback, while browser builds keep the
-// same-origin API unless an explicit URL is configured.
+// Native Capacitor builds have no Express server at their local origin.
+// The stable production Vercel domain is the fallback so Android can reach Adam.
 const isNative = typeof window !== 'undefined' && /^(capacitor|ionic):$/i.test(window.location.protocol);
 const apiBase = configuredApiBase || (isNative ? 'https://adam-ai-agent.vercel.app' : '');
 const wait = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => { if (signal.aborted) { reject(new DOMException('The request was cancelled.', 'AbortError')); return; } const timer = setTimeout(resolve, ms); signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('The request was cancelled.', 'AbortError')); }, { once: true }); });
