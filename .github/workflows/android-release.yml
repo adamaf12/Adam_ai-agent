@@ -3,7 +3,7 @@ name: Android APK Release
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'rebuild/adam-ai-v2']
     tags: ['v*']
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Install Android build tools
         run: |
-          sdkmanager --licenses </dev/null || true
+          yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -47,27 +47,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p app/build/keys
-          keytool -genkeypair -v \
-            -keystore app/build/keys/adam-release.jks \
-            -storepass adam-release-password \
-            -keypass adam-release-password \
-            -alias adam-release \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Adam AI Agent, OU=Adam, O=Adam AI Agent, L=Blida, ST=Blida, C=DZ"
+          keytool -genkeypair -v -keystore app/build/keys/adam-release.jks -storepass adam-release-password -keypass adam-release-password -alias adam-release -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Adam AI Agent, OU=Adam, O=Adam AI Agent, L=Blida, ST=Blida, C=DZ"
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/build.gradle')
           s = p.read_text()
           if 'signingConfigs {' not in s:
-              marker = 'android {\n'
-              block = '''android {\n    signingConfigs {\n        release {\n            storeFile file("build/keys/adam-release.jks")\n            storePassword "adam-release-password"\n            keyAlias "adam-release"\n            keyPassword "adam-release-password"\n        }\n    }\n'''
-              s = s.replace(marker, block, 1)
+              s = s.replace('android {\n', '''android {\n    signingConfigs {\n        release {\n            storeFile file("build/keys/adam-release.jks")\n            storePassword "adam-release-password"\n            keyAlias "adam-release"\n            keyPassword "adam-release-password"\n        }\n    }\n''', 1)
           if 'signingConfig signingConfigs.release' not in s:
               build_types = s.find('buildTypes {')
-              if build_types < 0:
-                  raise SystemExit('buildTypes block not found')
               release = s.find('release {', build_types)
-              if release < 0:
+              if build_types < 0 or release < 0:
                   raise SystemExit('release build type not found')
               insert_at = release + len('release {')
               s = s[:insert_at] + '\n            signingConfig signingConfigs.release' + s[insert_at:]
@@ -80,20 +70,19 @@ jobs:
         run: |
           set -euo pipefail
           APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          if [ -z "$APK" ]; then
-            echo "No release APK was produced."
-            find android/app/build/outputs -type f -name '*.apk' -print || true
-            exit 1
-          fi
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          test -n "$APK"
+          APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
+          VERSION="${VERSION//\//-}"
           cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
           ls -lh release/*.apk
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Adam-AI-Agent-${{ github.ref_name }}
+          name: Adam-AI-Agent-release-apk
           path: release/*.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
