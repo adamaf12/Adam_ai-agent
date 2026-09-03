@@ -5,7 +5,12 @@ import { parseStreamLines, type StreamEvent } from './streamParser';
 import { classifyChatError, toUserFacingChatError } from './errors';
 import { getRetryDelayMs, shouldRetryChatError } from './retry';
 
-const apiBase = (import.meta.env.VITE_ADAM_API_URL ?? '').replace(/\/$/, '');
+const configuredApiBase = (import.meta.env.VITE_ADAM_API_URL ?? '').replace(/\/$/, '');
+// Native Capacitor builds have no Express server at their local origin. Use the
+// deployed API as the safe production fallback, while browser builds keep the
+// same-origin API unless an explicit URL is configured.
+const isNative = typeof window !== 'undefined' && /^(capacitor|ionic):$/i.test(window.location.protocol);
+const apiBase = configuredApiBase || (isNative ? 'https://adam-ai-agent.vercel.app' : '');
 const wait = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => { if (signal.aborted) { reject(new DOMException('The request was cancelled.', 'AbortError')); return; } const timer = setTimeout(resolve, ms); signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('The request was cancelled.', 'AbortError')); }, { once: true }); });
 
 async function streamRequestOnce(url: string, request: ChatRequest, signal: AbortSignal, onDelta: (text: string) => void) {
@@ -35,8 +40,6 @@ export const httpAgentClient: ChatClient = {
     catch (error) {
       if (signal.aborted) throw error;
       if (error instanceof ChatError && [400, 409].includes(error.status ?? 0)) throw error;
-      // Agent is an enhancement over the reliable chat path: if routing/swarm fails,
-      // transparently fall back so ordinary questions never end with a blank response.
       return streamRequest(`${apiBase}/api/chat`, request, signal, onDelta);
     }
   },
