@@ -1,0 +1,1 @@
+Vercel serverless API entry for the Adam AI Agent backend.
