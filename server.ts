@@ -2,7 +2,6 @@ import 'dotenv/config';
 import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { registerAgentRoute } from './server/agent';
@@ -12,11 +11,26 @@ const port = Number(process.env.PORT ?? 3000);
 const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.7-flash';
 const apiKey = process.env.GEMINI_API_KEY?.trim() ?? '';
 const rootDir = process.cwd();
-const publicDir = path.join(rootDir, 'dist');
+const publicDir = `${rootDir}/dist`;
 
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use((_req, res, next) => { res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin'); res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()'); res.setHeader('Cross-Origin-Opener-Policy', 'same-origin'); next(); });
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  const origin = _req.headers.origin;
+  if (origin && (/^https:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /^capacitor:\/\//.test(origin) || /^ionic:\/\//.test(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Request-Id');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  if (_req.method === 'OPTIONS') return res.status(204).end();
+  next();
+});
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false }));
@@ -25,7 +39,7 @@ function sendError(res: express.Response, status: number, code: string, message:
 function normalizeMessages(input: unknown) { if (!Array.isArray(input)) return []; return input.filter((item): item is { role: string; content: string } => Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string')).slice(-40).map(item => ({ role: item.role === 'assistant' || item.role === 'model' ? 'model' : 'user', parts: [{ text: item.content.slice(0, 30_000) }] })); }
 function systemInstruction(language: string, agentName: string) { const lang = language === 'ar' ? 'Arabic' : 'English'; return `You are ${agentName || 'Adam'}, a reliable personal AI agent. Reply primarily in ${lang} unless the user clearly asks for another language. Answer normal questions directly, preserve conversation context, never invent actions or tool results, and clearly distinguish known facts from uncertainty. For current information use appropriate grounding only when needed.`; }
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.2.1' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, model, configured: Boolean(apiKey), agent: true, version: '2.3.0' }));
 
 app.post('/api/chat', async (req, res) => {
   if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
@@ -75,9 +89,9 @@ app.post('/api/chat', async (req, res) => {
 registerAgentRoute(app, apiKey, model);
 
 async function startServer() {
-  if (process.env.NODE_ENV === 'production') { app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' })); app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html'))); }
+  if (process.env.NODE_ENV === 'production') { app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' })); app.get('*', (_req, res) => res.sendFile(`${publicDir}/index.html`)); }
   else if (process.env.NODE_ENV !== 'test') { const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' }); app.use(vite.middlewares); }
-  if (process.env.NODE_ENV !== 'test') app.listen(port, () => console.log(`Adam AI v2 listening on http://localhost:${port}`));
+  if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') app.listen(port, () => console.log(`Adam AI v2 listening on http://localhost:${port}`));
 }
-if (process.env.NODE_ENV !== 'test') void startServer();
+if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') void startServer();
 export { app, startServer };
