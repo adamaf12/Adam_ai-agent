@@ -1,4 +1,4 @@
-name: Android APK Release
+name: Android APK + AAB Release
 
 on:
   workflow_dispatch:
@@ -15,33 +15,52 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
+
       - name: Setup Android
         uses: android-actions/setup-android@v3
+
       - name: Install Android build tools
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Build web app
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build current Adam web application
         run: npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+
       - name: Add Android platform if missing
         run: |
           if [ ! -d android ]; then npx cap add android; fi
+
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Force Gradle JDK 21
+        working-directory: android
+        run: echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+
       - name: Configure installable release signing
         working-directory: android
         run: |
@@ -73,37 +92,48 @@ jobs:
               s = s[:insert_at] + '\n            signingConfig signingConfigs.release' + s[insert_at:]
           p.write_text(s)
           PY
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
-      - name: Verify APK signature and prepare download
+
+      - name: Build signed release AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify Android outputs
         run: |
           set -euo pipefail
-          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          if [ -z "$APK" ]; then
-            echo "No release APK was produced."
-            find android/app/build/outputs -type f -name '*.apk' -print || true
-            exit 1
-          fi
+          DEBUG_APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          RELEASE_APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          RELEASE_AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$DEBUG_APK"
+          test -s "$RELEASE_APK"
+          test -s "$RELEASE_AAB"
           APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit 2>/dev/null || true)"
-          if [ -z "$APKSIGNER" ]; then
-            echo "No executable apksigner found under ${ANDROID_HOME}/build-tools"
-            exit 1
-          fi
-          "$APKSIGNER" verify --verbose "$APK"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$RELEASE_APK"
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"
           VERSION="${VERSION//\//-}"
-          cp "$APK" "release/Adam-AI-Agent-${VERSION}.apk"
-          ls -lh release/*.apk
-      - name: Upload APK artifact
+          cp "$RELEASE_APK" "release/Adam-AI-Agent-${VERSION}.apk"
+          cp "$RELEASE_AAB" "release/Adam-AI-Agent-${VERSION}.aab"
+          ls -lh release/*
+
+      - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Adam-AI-Agent-release-apk
-          path: release/*.apk
+          name: Adam-AI-Agent-android-${{ github.sha }}
+          path: release/*
+          if-no-files-found: error
+
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: release/*.apk
+          files: release/*
