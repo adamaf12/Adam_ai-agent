@@ -7,6 +7,7 @@ import {
   Languages,
   Plus,
   RotateCcw,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   WandSparkles,
@@ -52,6 +53,7 @@ import { proactiveEngine, type ProactiveEvent } from '../../core/agent/proactive
 import { verifyAndCorrectResponse } from '../../core/agent/deterministicVerifier';
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { InfiniteMemoryModal } from './InfiniteMemoryModal';
+import { ChatSessionDrawer } from './ChatSessionDrawer';
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
   if (intent.type === 'task.create') {
@@ -89,6 +91,7 @@ export function Chat({
   const [proactiveAlerts, setProactiveAlerts] = useState<ProactiveEvent[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+  const [isSessionDrawerOpen, setIsSessionDrawerOpen] = useState(false);
   const [memoryStats, setMemoryStats] = useState(() => getInfiniteMemoryStats());
 
   const controller = useRef<AbortController | null>(null);
@@ -375,75 +378,41 @@ export function Chat({
 
   return (
     <section className="chat-page">
-      <div className="chat-header glass-panel">
-        <div className="chat-identity">
-          <div className="adam-orb"><Sparkles size={17} /></div>
-          <div>
-            <span className="eyebrow">ADAM AI</span>
-            <h1>
-              {messages.length
-                ? currentConversation.title || (language === 'ar' ? 'المحادثة' : 'Conversation')
-                : heroCopy.title}
-            </h1>
-            <p>
-              {messages.length
-                ? (language === 'ar' ? 'اسأل بشكل طبيعي. Adam يتولى الباقي مع ذاكرة مستمرة.' : 'Ask naturally. Adam handles the rest with continuous memory.')
-                : heroCopy.subtitle}
-            </p>
-          </div>
-        </div>
-
-        <div className="chat-header-actions">
-          <span className="agent-mode">
-            <i /> {response?.route === 'web' ? (language === 'ar' ? 'معلومات حديثة' : 'Current info') : (language === 'ar' ? 'جاهز' : 'Ready')}
+      {/* Sleek Minimalist Session Bar (Replacing the bulky stacked banner) */}
+      <div className="chat-subnav-bar">
+        <div className="chat-subnav-info">
+          <span className="agent-status-dot" title={language === 'ar' ? 'متصل وجاهز' : 'Connected'} />
+          <span className="chat-subnav-title" title={currentConversation.title}>
+            {messages.length
+              ? currentConversation.title || (language === 'ar' ? 'المحادثة' : 'Conversation')
+              : (language === 'ar' ? 'جلسة جديدة' : 'New Session')}
           </span>
-
-          {/* Chat History Drawer Trigger */}
-          <button
-            className="header-action-btn"
-            onClick={() => setIsHistoryOpen(true)}
-            title={language === 'ar' ? 'سجل المحادثات السابقة' : 'Past Conversations'}
-            aria-label={language === 'ar' ? 'السجل' : 'History'}
-          >
-            <Clock size={14} />
-            <span>{language === 'ar' ? `السجل (${conversations.length})` : `History (${conversations.length})`}</span>
-          </button>
-
-          {/* Infinite Memory Trigger */}
-          <button
-            className="header-action-btn header-action-btn--memory"
-            onClick={() => {
-              setMemoryStats(getInfiniteMemoryStats());
-              setIsMemoryModalOpen(true);
-            }}
-            title={language === 'ar' ? 'ذاكرة Adam اللانهائية المستمرة' : "Adam's Infinite Memory"}
-            aria-label="Infinite Memory"
-          >
-            <Brain size={14} />
-            <span>{language === 'ar' ? `الذاكرة (${memoryStats.total})` : `Memory (${memoryStats.total})`}</span>
-          </button>
-
-          {/* New Chat Button */}
-          <button
-            className="header-action-btn header-action-btn--primary"
-            onClick={handleStartNewChat}
-            title={t.newChat}
-            aria-label={t.newChat}
-          >
-            <Plus size={14} />
-            <span>{t.newChat}</span>
-          </button>
-
-          {/* Clear Current Chat */}
-          <button
-            className="icon-button"
-            onClick={handleClearCurrentMessages}
-            title={language === 'ar' ? 'مسح رسائل هذه المحادثة' : 'Clear current conversation messages'}
-            aria-label={language === 'ar' ? 'مسح' : 'Clear'}
-          >
-            <Trash2 size={16} />
-          </button>
         </div>
+
+        {/* Side Panel Trigger Button (زر جانبي أنيق للتحكم بالجلسة والسجل والذاكرة) */}
+        <button
+          type="button"
+          onClick={() => {
+            setMemoryStats(getInfiniteMemoryStats());
+            setIsSessionDrawerOpen(true);
+          }}
+          className="chat-session-btn"
+          title={language === 'ar' ? 'فتح لوحة التحكم بالجلسة والذاكرة والسجل' : 'Open Session Controls & Memory'}
+          aria-label="Session Controls"
+        >
+          <SlidersHorizontal size={14} className="text-emerald-400" />
+          <span className="chat-session-btn-text">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
+          <div className="chat-session-badges">
+            <span className="session-mini-badge" title={language === 'ar' ? 'عدد المحادثات' : 'Chats'}>
+              <Clock size={10} />
+              {conversations.length}
+            </span>
+            <span className="session-mini-badge session-mini-badge--memory" title={language === 'ar' ? 'عدد الذكريات' : 'Memory'}>
+              <Brain size={10} />
+              {memoryStats.total}
+            </span>
+          </div>
+        </button>
       </div>
 
       <div className="chat-scroll">
@@ -516,6 +485,29 @@ export function Chat({
       </div>
 
       <Composer language={language} busy={busy} onSend={send} onStop={stop} />
+
+      {/* Session Control Side Drawer (مستخرج عبر الزر الجانبي) */}
+      <ChatSessionDrawer
+        isOpen={isSessionDrawerOpen}
+        onClose={() => setIsSessionDrawerOpen(false)}
+        language={language}
+        currentConversation={currentConversation}
+        conversationsCount={conversations.length}
+        memoryCount={memoryStats.total}
+        agentStatus={
+          response?.route === 'web'
+            ? (language === 'ar' ? 'بحث مباشر بالويب' : 'Live Web Search')
+            : (language === 'ar' ? 'جاهز ومتصل' : 'Ready & Connected')
+        }
+        onNewChat={handleStartNewChat}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenMemory={() => {
+          setMemoryStats(getInfiniteMemoryStats());
+          setIsMemoryModalOpen(true);
+        }}
+        onClearCurrentMessages={handleClearCurrentMessages}
+        onRenameConversation={handleRenameConversation}
+      />
 
       {/* History Drawer Modal */}
       <ChatHistoryDrawer

@@ -36,10 +36,12 @@ export function Composer({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert(
-        language === 'ar'
-          ? 'المتصفح لا يدعم ميزة الإملاء الصوتي المباشر.'
-          : 'Speech recognition is not supported in this browser.'
+      setDraft((prev) =>
+        prev
+          ? `${prev} (${language === 'ar' ? 'الإملاء الصوتي غير مدعوم في هذا المتصفح' : 'Speech recognition not supported'})`
+          : language === 'ar'
+          ? 'الإملاء الصوتي غير مدعوم في هذا المتصفح'
+          : 'Speech recognition not supported'
       );
       return;
     }
