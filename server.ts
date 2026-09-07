@@ -448,8 +448,11 @@ app.post('/api/chat', async (req, res) => {
       for (const config of configsToTry) {
         if (aborted || res.writableEnded || res.destroyed || modelSuccess) break;
         try {
-          const stream = await ai.models.generateContentStream({ model: currentModel, contents: messages, config });
-          for await (const chunk of stream) {
+          const streamPromise = ai.models.generateContentStream({ model: currentModel, contents: messages, config });
+          const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('GEMINI_STREAM_TIMEOUT')), 40000));
+          const stream = await Promise.race([streamPromise, timeoutPromise]);
+
+          for await (const chunk of stream as any) {
             if (aborted || res.writableEnded || res.destroyed) break;
 
             // Extract Google Search grounding metadata if present in stream chunk

@@ -363,8 +363,21 @@ export function Chat({
       if ((err as Error).name === 'AbortError') return;
       const message = err instanceof Error ? err.message : 'AI request failed';
       setResponse(current => current ? reduceResponseEvent(current, { type: 'error', code: 'AI_ERROR', message }) : current);
-      setMessages(current => current.filter(m => m.id !== assistant.id));
-      setError(message);
+      if (streamedOutput && streamedOutput.trim().length > 0) {
+        // Keep partial answer and finalize conversation state
+        setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current);
+        const finalSavedConv: ChatConversation = {
+          ...initialConv,
+          messages: [...next, { ...assistant, content: streamedOutput }],
+          updatedAt: Date.now(),
+        };
+        saveConversation(finalSavedConv);
+        setCurrentConversation(finalSavedConv);
+        setConversations(loadAllConversations());
+      } else {
+        setMessages(current => current.filter(m => m.id !== assistant.id));
+        setError(message);
+      }
     } finally {
       setBusy(false);
       controller.current = null;

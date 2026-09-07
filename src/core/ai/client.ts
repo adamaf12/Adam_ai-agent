@@ -11,15 +11,43 @@ const apiBase = configuredApiBase || (isNative ? 'https://adam-ai-agent.vercel.a
 const wait = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => { if (signal.aborted) { reject(new DOMException('The request was cancelled.', 'AbortError')); return; } const timer = setTimeout(resolve, ms); signal.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('The request was cancelled.', 'AbortError')); }, { once: true }); });
 
 async function streamRequestOnce(url: string, request: ChatRequest, signal: AbortSignal, onDelta: (text: string) => void) {
-  const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' }, body: JSON.stringify(request), signal });
-  if (!response.ok) { let payload: { code?: string; message?: string } = {}; try { payload = await response.json(); } catch {} const userError = toUserFacingChatError({ status: response.status, code: payload.code, message: payload.message }); throw new ChatError(userError.code, userError.message, response.status); }
-  if (!response.body) throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
-  const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let text = ''; let completed = false;
-  const consume = (input: string) => { const parsed = parseStreamLines(input); buffer = parsed.remainder; for (const event of parsed.events) { const streamEvent: StreamEvent = event; if (streamEvent.type === 'delta') { text += streamEvent.text; onDelta(text); } else if (streamEvent.type === 'error') throw new ChatError(streamEvent.code, streamEvent.message); else if (streamEvent.type === 'done') completed = true; } };
-  while (true) { const { value, done } = await reader.read(); if (done) break; consume(buffer + decoder.decode(value, { stream: true })); }
-  consume(buffer + decoder.decode());
-  if (buffer.trim() || !completed || !text.trim()) throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
-  return createAssistantMessage(text) as Message;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort('REQUEST_TIMEOUT'), 45000);
+
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutController.signal]) : timeoutController.signal;
+
+  try {
+    const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' }, body: JSON.stringify(request), signal: combinedSignal });
+    if (!response.ok) { let payload: { code?: string; message?: string } = {}; try { payload = await response.json(); } catch {} const userError = toUserFacingChatError({ status: response.status, code: payload.code, message: payload.message }); throw new ChatError(userError.code, userError.message, response.status); }
+    if (!response.body) throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
+    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let text = ''; let completed = false;
+    const consume = (input: string) => { const parsed = parseStreamLines(input); buffer = parsed.remainder; for (const event of parsed.events) { const streamEvent: StreamEvent = event; if (streamEvent.type === 'delta') { if (streamEvent.text) { text += streamEvent.text; onDelta(text); } } else if (streamEvent.type === 'error') throw new ChatError(streamEvent.code, streamEvent.message); else if (streamEvent.type === 'done') completed = true; } };
+
+    try {
+      while (true) { const { value, done } = await reader.read(); if (done) break; consume(buffer + decoder.decode(value, { stream: true })); }
+      consume(buffer + decoder.decode());
+    } catch (readErr: any) {
+      if (text.trim().length > 0) {
+        return createAssistantMessage(text) as Message;
+      }
+      throw readErr;
+    }
+
+    if (!completed && !text.trim()) {
+      throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
+    }
+    return createAssistantMessage(text) as Message;
+  } catch (err: any) {
+    if (err === 'REQUEST_TIMEOUT' || err?.name === 'TimeoutError' || (combinedSignal.aborted && !signal.aborted)) {
+      if (typeof text !== 'undefined' && text.trim().length > 0) {
+        return createAssistantMessage(text) as Message;
+      }
+      throw new ChatError('TIMEOUT', 'انتهت مهلة انتظار المحرك (Timeout).');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function streamRequest(url: string, request: ChatRequest, signal: AbortSignal, onDelta: (text: string) => void) {
