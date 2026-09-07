@@ -1,7 +1,7 @@
 import type { Language } from './domain';
 
 export const copy = (language: Language) => language === 'ar' ? {
-  nav: { chat: 'المحادثة', tasks: 'المهام', memory: 'الذاكرة', workspace: 'مساحة العمل', settings: 'الإعدادات' },
+  nav: { chat: 'المحادثة', tasks: 'المهام', memory: 'الذاكرة', workspace: 'مساحة العمل', media: 'استوديو الصور والفيديو', hermes: 'محرك Hermes الذكي', settings: 'الإعدادات' },
   newChat: 'محادثة جديدة',
   send: 'إرسال',
   stop: 'إيقاف',
@@ -11,7 +11,7 @@ export const copy = (language: Language) => language === 'ar' ? {
   online: 'متصل',
   local: 'يعمل محلياً',
 } : {
-  nav: { chat: 'Chat', tasks: 'Tasks', memory: 'Memory', workspace: 'Workspace', settings: 'Settings' },
+  nav: { chat: 'Chat', tasks: 'Tasks', memory: 'Memory', workspace: 'Workspace', media: 'Media Studio', hermes: 'Hermes Engine', settings: 'Settings' },
   newChat: 'New chat',
   send: 'Send',
   stop: 'Stop',

@@ -1,0 +1,322 @@
+{
+  "skills": [
+    {
+      "id": "skill_interactive_ui_apps",
+      "name": "Interactive HTML5/JS Live App Synthesis",
+      "displayNameAr": "توليد التطبيقات والأدوات التفاعلية الحية",
+      "category": "ui",
+      "description": "Generates completely standalone, single-file HTML5/CSS/JS widgets that run immediately in the live chat sandbox.",
+      "triggers": [
+        "حاسبة",
+        "calculator",
+        "لعبة",
+        "game",
+        "تطبيق",
+        "app",
+        "widget",
+        "أداة",
+        "مؤقت",
+        "timer",
+        "تفاعلي",
+        "interactive",
+        "html"
+      ],
+      "proceduralSteps": [
+        "Encapsulate complete CSS (Tailwind/modern dark styles) and JS within a single ```html ... ``` block.",
+        "Ensure event listeners, state updates, and DOM manipulations are completely bug-free.",
+        "Provide clear, responsive typography and sleek dark UI aesthetics with smooth interactions."
+      ],
+      "bestPractices": [
+        "Never rely on external unbundled CSS files",
+        "Use semantic HTML elements with distinct IDs",
+        "Handle window resize and device touch gracefully"
+      ],
+      "acquiredAt": 1787768646836,
+      "lastUsedAt": 1788635744252,
+      "usageCount": 53,
+      "successRate": 0.98,
+      "level": 9,
+      "origin": "builtin"
+    },
+    {
+      "id": "skill_arabic_nlp_mastery",
+      "name": "Advanced Arabic Linguistic & Conceptual Synthesis",
+      "displayNameAr": "الإتقان اللغوي والمفاهيمي العربي المتقدم",
+      "category": "reasoning",
+      "description": "Delivers eloquent, grammatically sound, high-density Arabic technical and creative responses.",
+      "triggers": [
+        "عربي",
+        "شرح",
+        "ترجم",
+        "لخص",
+        "اعراب",
+        "بلاغة",
+        "صياغة",
+        "تقرير",
+        "مقال"
+      ],
+      "proceduralSteps": [
+        "Maintain authentic Arabic terminology alongside common industry English technical terms when helpful.",
+        "Use structured headings, scannable bullet points, and accurate punctuation.",
+        "Formulate concise executive summaries followed by deep analytical proofs."
+      ],
+      "bestPractices": [
+        "Avoid robotic literal translations",
+        "Adopt professional and friendly tone",
+        "Structure answers logically with Markdown"
+      ],
+      "acquiredAt": 1787941446836,
+      "lastUsedAt": 1788635740894,
+      "usageCount": 79,
+      "successRate": 0.99,
+      "level": 10,
+      "origin": "builtin"
+    },
+    {
+      "id": "skill_algorithmic_problem_solving",
+      "name": "Step-by-Step Algorithmic & Code Architecture",
+      "displayNameAr": "التحليل الخوارزمي وبناء النظم البرمجية",
+      "category": "coding",
+      "description": "Deconstructs complex engineering problems into clean, robust, and performant modular TypeScript/Python solutions.",
+      "triggers": [
+        "كود",
+        "code",
+        "برمجة",
+        "algorithm",
+        "خوارزمية",
+        "typescript",
+        "python",
+        "react",
+        "api",
+        "server",
+        "database",
+        "حل مشكلة"
+      ],
+      "proceduralSteps": [
+        "Formulate algorithmic complexity (Time & Space O(n)).",
+        "Handle edge cases (nullish values, empty inputs, network timeouts, error boundaries).",
+        "Provide production-ready code with types and clear comments."
+      ],
+      "bestPractices": [
+        "Avoid placeholder stubs (// TODO)",
+        "Always include strong typing",
+        "Follow SOLID and clean code principles"
+      ],
+      "acquiredAt": 1788114246836,
+      "lastUsedAt": 1788632646836,
+      "usageCount": 38,
+      "successRate": 0.97,
+      "level": 8,
+      "origin": "builtin"
+    },
+    {
+      "id": "skill_scientific_math_reasoning",
+      "name": "Scientific, Financial & Mathematical Deduction",
+      "displayNameAr": "الاستنتاج الرياضي والعلمي والمالي الدقيق",
+      "category": "math",
+      "description": "Solves advanced math, statistics, calculus, and financial formulas with verified step-by-step proofs.",
+      "triggers": [
+        "رياضيات",
+        "math",
+        "معادلة",
+        "احسب",
+        "calculate",
+        "نسبة",
+        "إحصاء",
+        "قانون",
+        "فيزياء",
+        "finance"
+      ],
+      "proceduralSteps": [
+        "State given variables and identify the target equation.",
+        "Break calculation into verifiable intermediate steps.",
+        "Highlight the final verified numerical or symbolic answer clearly."
+      ],
+      "bestPractices": [
+        "Double-check arithmetic and boundary bounds",
+        "Format equations cleanly with standard symbols"
+      ],
+      "acquiredAt": 1788200646836,
+      "lastUsedAt": 1788632646836,
+      "usageCount": 22,
+      "successRate": 0.96,
+      "level": 8,
+      "origin": "builtin"
+    },
+    {
+      "id": "skill_data_structuring_json",
+      "name": "Structured Data Extraction & Schema Synthesis",
+      "displayNameAr": "استخراج وهيكلة البيانات بصيغ JSON وجداول",
+      "category": "data",
+      "description": "Transforms unstructured text, tables, and complex prompts into strict, validated JSON schemas.",
+      "triggers": [
+        "json",
+        "جدول",
+        "table",
+        "هيكلة",
+        "بيانات",
+        "data",
+        "csv",
+        "مخطط",
+        "schema"
+      ],
+      "proceduralSteps": [
+        "Identify entity types, keys, and values from raw context.",
+        "Format output in strictly valid JSON or Markdown table syntax.",
+        "Eliminate syntax errors and trailing comma traps."
+      ],
+      "bestPractices": [
+        "Ensure valid JSON parsing capability",
+        "Use clean key naming conventions (camelCase or snake_case)"
+      ],
+      "acquiredAt": 1788287046836,
+      "lastUsedAt": 1788632646836,
+      "usageCount": 19,
+      "successRate": 0.98,
+      "level": 9,
+      "origin": "builtin"
+    },
+    {
+      "id": "skill_auto_6cc74b1c",
+      "name": "Dynamic Heuristic (اشرح الذكاء الاصطناعي ببساطة)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: اشرح الذكاء الاصطناعي ببساطة",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"اشرح الذكاء الاصطناعي ببساطة\".",
+      "triggers": [
+        "اشرح",
+        "الذكاء",
+        "الاصطناعي",
+        "ببساطة"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [اشرح, الذكاء, الاصطناعي, ببساطة]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1788633348820,
+      "lastUsedAt": 1788633531136,
+      "usageCount": 3,
+      "successRate": 0.95,
+      "level": 2,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_ac7a4d21",
+      "name": "Dynamic Heuristic (صورة لقط يشرب قهوة)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: صورة لقط يشرب قهوة",
+      "category": "ui",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"صورة لقط يشرب قهوة\".",
+      "triggers": [
+        "صورة",
+        "لقط",
+        "يشرب",
+        "قهوة"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [صورة, لقط, يشرب, قهوة]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1788633566415,
+      "lastUsedAt": 1788635736696,
+      "usageCount": 7,
+      "successRate": 0.95,
+      "level": 2,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_c99a1fa2",
+      "name": "Dynamic Heuristic (اكتب دالة فيبوناتشي بلغة)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: اكتب دالة فيبوناتشي بلغة",
+      "category": "coding",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"اكتب دالة فيبوناتشي بلغة\".",
+      "triggers": [
+        "اكتب",
+        "دالة",
+        "فيبوناتشي",
+        "بلغة"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [اكتب, دالة, فيبوناتشي, بلغة]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1788633689865,
+      "lastUsedAt": 1788633689865,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_96a14ad2",
+      "name": "Dynamic Heuristic (بتحليل منطقي لمفهوم الحوسبة)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: بتحليل منطقي لمفهوم الحوسبة",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"بتحليل منطقي لمفهوم الحوسبة\".",
+      "triggers": [
+        "بتحليل",
+        "منطقي",
+        "لمفهوم",
+        "الحوسبة"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [بتحليل, منطقي, لمفهوم, الحوسبة]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1788633701230,
+      "lastUsedAt": 1788633701230,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_40dd0e4e",
+      "name": "Dynamic Heuristic (جاس فوق كرسي منظر)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: جاس فوق كرسي منظر",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"جاس فوق كرسي منظر\".",
+      "triggers": [
+        "جاس",
+        "فوق",
+        "كرسي",
+        "منظر"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [جاس, فوق, كرسي, منظر]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1788633960235,
+      "lastUsedAt": 1788635230121,
+      "usageCount": 2,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    }
+  ],
+  "totalExecutions": 15,
+  "lastSavedAt": 1788635744252
+}

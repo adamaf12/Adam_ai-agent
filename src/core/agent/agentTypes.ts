@@ -11,7 +11,7 @@ const hasArabicPhrase = (value: string, terms: string[]) => terms.some((term) =>
 const route = (intent: AgentIntent, reason: string, confidence: number): AgentRoute => ({ intent, reason, confidence: Math.max(0, Math.min(1, confidence)) });
 
 const signals: Record<Exclude<AgentIntent, 'chat'>, { en: string[]; ar: string[]; reason: string }> = {
-  creative: { en: ['image', 'video', 'draw', 'generate', 'design'], ar: ['صورة', 'فيديو', 'ارسم', 'أنشئ', 'انشئ', 'صمم', 'صمّم'], reason: 'The request explicitly asks for creative generation.' },
+  creative: { en: ['image', 'photo', 'picture', 'wallpaper', 'video', 'draw', 'illustration'], ar: ['صورة', 'صوره', 'صور', 'فيديو', 'ارسم', 'رسمة', 'خلفية', 'توليد صورة'], reason: 'The request explicitly asks for visual or media generation.' },
   memory: { en: ['remember', 'forget', 'memory', 'save this'], ar: ['تذكر', 'تذكّر', 'انس', 'انسى', 'ذاكرة', 'احفظ هذا'], reason: 'The user is asking to manage persistent memory.' },
   task: { en: ['task', 'todo', 'remind', 'schedule', 'deadline', 'finish'], ar: ['مهمة', 'مهام', 'ذكرني', 'تذكير', 'موعد', 'أنجز', 'انجز'], reason: 'The request is action-oriented and related to task management.' },
   web: { en: ['latest', 'today', 'current', 'news', 'weather', 'price', 'recent', 'search', 'who is', 'what happened'], ar: ['اليوم', 'الآن', 'حالي', 'حالية', 'آخر', 'اخر', 'أخبار', 'اخبار', 'سعر', 'ابحث', 'الطقس', 'مؤخرًا', 'مؤخرا'], reason: 'The request depends on current or externally verifiable information.' },
@@ -25,7 +25,9 @@ export function routePrompt(text: string): AgentRoute {
     .map(([intent, signal]) => {
       const englishHits = signal.en.filter(term => hasEnglishToken(value, [term])).length;
       const arabicHits = signal.ar.filter(term => hasArabicPhrase(value, [term])).length;
-      return { intent, score: englishHits + arabicHits, englishHits, arabicHits, reason: signal.reason };
+      const actionMultiplier = intent === 'creative' ? 2.5 : intent === 'task' || intent === 'memory' ? 1.5 : 1.0;
+      const rawHits = englishHits + arabicHits;
+      return { intent, score: rawHits * actionMultiplier, englishHits, arabicHits, reason: signal.reason };
     })
     .filter(candidate => candidate.score > 0)
     .sort((a, b) => b.score - a.score || b.arabicHits - a.arabicHits);

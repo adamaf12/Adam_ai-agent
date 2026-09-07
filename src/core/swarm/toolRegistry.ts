@@ -17,5 +17,7 @@ toolRegistry.registerMany([
   { id: 'vercel', name: 'Vercel', kind: 'development', capabilities: ['deploy', 'preview', 'frontend'], enabled: true },
   { id: 'supabase', name: 'Supabase', kind: 'data', capabilities: ['database', 'auth', 'storage'], enabled: true },
   { id: 'sentry', name: 'Sentry', kind: 'observability', capabilities: ['errors', 'monitoring', 'debugging'], enabled: true },
+  { id: 'image_generator', name: 'Adam Image Studio', kind: 'design', capabilities: ['image', 'photo', 'vision', 'draw', 'design', 'art'], enabled: true },
+  { id: 'video_generator', name: 'Adam Cinema Studio', kind: 'design', capabilities: ['video', 'animation', 'cinema', 'motion', 'film'], enabled: true },
   { id: 'posthog', name: 'PostHog', kind: 'observability', capabilities: ['analytics', 'product'], enabled: true },
 ]);

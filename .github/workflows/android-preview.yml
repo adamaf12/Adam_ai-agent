@@ -2,7 +2,7 @@ name: Android Preview
 on:
   workflow_dispatch:
   push:
-    branches: ["rebuild/adam-ai-v2"]
+    branches: [main, master, "rebuild/adam-ai-v2"]
 
 permissions:
   contents: read

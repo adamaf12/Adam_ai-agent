@@ -3,7 +3,9 @@ import { ModelRequest } from './modelGateway';
 
 export interface ProviderAdapter { invoke(model: ModelDescriptor, request: ModelRequest): Promise<string>; }
 
-const PROVIDER_TIMEOUT_MS = Math.max(5_000, Number(process.env.ADAM_PROVIDER_TIMEOUT_MS ?? 45_000));
+function getProviderTimeoutMs(): number {
+  return Math.max(50, Number(process.env.ADAM_PROVIDER_TIMEOUT_MS ?? 45_000));
+}
 
 function providerEndpoint(model: ModelDescriptor) {
   if (model.endpoint) return model.endpoint;
@@ -20,8 +22,9 @@ export class FetchProviderAdapter implements ProviderAdapter {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
     const key = model.provider === 'pollinations' ? process.env.POLLINATIONS_API_KEY?.trim() : undefined;
     if (key) headers.Authorization = `Bearer ${key}`;
+    const timeoutMs = getProviderTimeoutMs();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await this.fetchImpl(endpoint, {
         method: 'POST', headers, signal: controller.signal,
@@ -37,7 +40,7 @@ export class FetchProviderAdapter implements ProviderAdapter {
       if (!normalized.trim()) throw new Error(`${model.id}: provider returned an empty response.`);
       return normalized;
     } catch (error) {
-      if ((error as { name?: string })?.name === 'AbortError') throw new Error(`${model.id}: provider timed out after ${PROVIDER_TIMEOUT_MS}ms.`);
+      if ((error as { name?: string })?.name === 'AbortError') throw new Error(`${model.id}: provider timed out after ${timeoutMs}ms.`);
       throw error;
     } finally {
       clearTimeout(timer);

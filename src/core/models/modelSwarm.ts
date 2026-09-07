@@ -18,9 +18,12 @@ export class ModelRegistry {
 }
 
 const builtInModels: ModelDescriptor[] = [
-  { id: 'gemini-2.5-flash', provider: 'gemini', displayName: 'Gemini 2.5 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 8.8, speed: 9.5, cost: 2, enabled: true },
-  { id: 'gemini-2.5-pro', provider: 'gemini', displayName: 'Gemini 2.5 Pro', capabilities: ['general','reasoning','coding','math','vision','arabic'], quality: 9.5, speed: 7.2, cost: 6, enabled: true },
-  { id: 'gemini-2.5-flash-lite', provider: 'gemini', displayName: 'Gemini 2.5 Flash Lite', capabilities: ['general','fast','arabic'], quality: 7.7, speed: 10, cost: 1, enabled: true },
+  { id: 'gemini-3.1-flash-lite', provider: 'gemini', displayName: 'Gemini 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.3, speed: 10, cost: 1, enabled: true },
+  { id: 'gemini-3.7-flash', provider: 'gemini', displayName: 'Gemini 3.7 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.6, cost: 1, enabled: true },
+  { id: 'gemini-3.5-flash', provider: 'gemini', displayName: 'Gemini 3.5 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 9.4, speed: 9.7, cost: 1, enabled: true },
+  { id: 'gemini-flash-lite-latest', provider: 'gemini', displayName: 'Gemini Flash Lite Latest', capabilities: ['general','fast','arabic'], quality: 9.0, speed: 9.9, cost: 1, enabled: true },
+  { id: 'gemini-3.8-flash', provider: 'gemini', displayName: 'Gemini 3.8 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 9.5, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-flash-latest', provider: 'gemini', displayName: 'Gemini Flash Latest', capabilities: ['general','fast','coding','arabic'], quality: 9.0, speed: 9.5, cost: 1, enabled: true },
 ];
 export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);

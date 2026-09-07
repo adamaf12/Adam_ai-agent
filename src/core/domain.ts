@@ -1,6 +1,6 @@
 export type Language = 'ar' | 'en';
 export type Theme = 'system' | 'light' | 'dark' | 'glass' | 'glass-dark' | 'aurora';
-export type ViewId = 'chat' | 'tasks' | 'memory' | 'workspace' | 'settings';
+export type ViewId = 'chat' | 'tasks' | 'memory' | 'workspace' | 'media' | 'hermes' | 'settings';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type MemoryCategory = 'preference' | 'fact' | 'goal' | 'instruction';
@@ -14,7 +14,7 @@ export interface Message {
 }
 
 export interface AppPreferences { agentName: string; language: Language; theme: Theme; onboardingComplete: boolean; }
-export interface ChatConversation { id: string; title: string; messages: Message[]; updatedAt: number; }
+export interface ChatConversation { id: string; title: string; messages: Message[]; updatedAt: number; createdAt?: number; }
 export interface Task { id: string; title: string; notes: string; completed: boolean; priority: TaskPriority; dueAt?: number; createdAt: number; updatedAt: number; }
 export interface Memory { id: string; content: string; category: MemoryCategory; createdAt: number; updatedAt: number; }
 

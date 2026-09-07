@@ -1,6 +1,6 @@
-import type { AgentProfile, ModelAssignment, SwarmTask } from './types';
-import { routeModel } from './modelRouter';
-import { inferCapabilities } from './capabilityRouter';
+import type { AgentProfile, ModelAssignment, SwarmTask } from './types.ts';
+import { routeModel } from './modelRouter.ts';
+import { inferCapabilities } from './capabilityRouter.ts';
 
 export function buildMission(mission: string, id = 'mission'): SwarmTask {
   const requiredCapabilities = inferCapabilities(mission);

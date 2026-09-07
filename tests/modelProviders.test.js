@@ -21,7 +21,7 @@ test('provider adapter rejects empty responses', async () => {
 
 test('provider adapter aborts stalled providers', async () => {
   const previous = process.env.ADAM_PROVIDER_TIMEOUT_MS;
-  process.env.ADAM_PROVIDER_TIMEOUT_MS = '5000';
+  process.env.ADAM_PROVIDER_TIMEOUT_MS = '100';
   try {
     const adapter = new FetchProviderAdapter(async (_url, init) => await new Promise((_, reject) => {
       init?.signal?.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));

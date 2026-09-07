@@ -3,7 +3,7 @@ name: Android APK Release
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, master]
     tags: ['v*']
 
 permissions:
