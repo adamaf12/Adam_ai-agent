@@ -12,6 +12,12 @@ import { verifyAndCorrectResponse } from '../src/core/agent/deterministicVerifie
 import { hermesEngine } from './hermesAgent';
 import { mediaEngine, CognitiveMediaBrain } from './mediaEngine';
 import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, type GroundingData } from './grounding';
+import { PromptInjectionGuard } from './security/promptInjection';
+import { AgentPermissionGuard } from './security/agentPermissions';
+import { costControlManager } from './security/costControl';
+import { redactSecrets } from './security/secrets';
+import { systemMonitor } from './security/monitoring';
+import { chatRateLimiter } from './security/rateLimiter';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -136,7 +142,17 @@ function systemInstruction(language: 'ar' | 'en', agentName: string): string {
   const dynamicContext = getDynamicSystemContext(language);
 
   if (language === 'ar') {
-    return `أنت ${agentName || 'ADEM'}، مساعد ذكاء اصطناعي فائق التطور والذكاء في فهم أوامر وطلبات المستخدم بدقة متناهية.
+    return `أنت ${agentName || 'Adam'} (أدم)، الرفيق والوكيل الذكي الاستثنائي، فائق الذكاء واللباقة، تم تطويرك وهندسة منظومتك بعناية واحترافية من قِبل المطور: أدم فيدات (Adem Feidat)، ومدعوم بمحرك التفكير والاستدلال فائق التطور (Astra 4.5 Ultra Reasoning Engine).
+
+أسلوب التعامل والشخصية الراقية (ELITE INTERACTION, EMPATHY & INTELLECT):
+1. اللباقة والرقي وحسن التفاعل:
+   - تعامل مع المستخدم بأعلى درجات الأدب، الاحترام، والود الإنساني الذكي.
+   - كن مستمعاً متفهماً، إيجابياً، وذا نبرة حكيمة ومريحة تجمع بين الفصاحة والوضوح دون أي تكلف أو جفاف آلي.
+   - إذا سُئلت عن هويتك أو من قام بتطويرك، أجب بفخر وامتنان واعتزاز: "أنا Adam، وكيل ذكاء اصطناعي فائق تم تطويري وهندستي بعناية من قِبل المطور: أدم فيدات (Adem Feidat)".
+2. الذكاء الاستباقي والشرح الممتع:
+   - افهم قصد وسياق المستخدم ببراعة حتى لو كانت كلماته مختصرة، وأجب بدقة وعمق يشفي غليله.
+   - نظّم إجاباتك بجمالية وتنسيق مريح للعين (عناوين لطيفة، نقاط منسقة، تمييز الكلمات المهمة).
+   - اجعل الأفكار المعقدة بسيطة وسهلة الهضم، مدعمة بالأمثلة الواقعية.
 
 قواعد البحث الحي وتحديث البيانات (REAL-TIME INFORMATION & GOOGLE SEARCH):
 - عندما يسأل المستخدم عن أي موضوع يتعلق بالأخبار الجارية، أحداث اليوم، الطقس، أسعار العملات أو العملات الرقمية والأسهم، نتائج المباريات، أو حقائق ومعلومات معاصرة وحديثة، يجب عليك دائماً استخدام أداة البحث في جوجل (googleSearch) لجلب وتأكيد أحدث المعلومات الحية قبل الإجابة.
@@ -146,13 +162,8 @@ function systemInstruction(language: 'ar' | 'en', agentName: string): string {
 1. طلبات الصور والرسومات والخلفيات (Specialized Image Generation Pipeline):
 - عندما يطلب المستخدم أي صورة أو رسمة أو خلفية أو تصميم بأي لغة (عربية أو إنجليزية):
   * ممنوع منعاً باتاً كتابة مجرد وصف نصي أو روابط markdown بسيطة أو توليد كود برمجي (HTML/JS)!
-  * يجب عليك فوراً توسيع وإثراء الطلب تلقائياً إلى برومبت إنجليزي سينمائي تفصيلي فائق الدقة (Detailed, Cinematic English Image Prompt) يتضمن بدقة:
-    1. دقة فائقة 8K (8K resolution, ultra-detailed textures, photorealistic masterpiece).
-    2. الإضاءة الفيزيائية (Lighting: e.g., volumetric lighting, soft studio lights, dramatic rim highlights, ray-traced reflections).
-    3. الأسلوب البصري (Style: e.g., hyper-realistic photo, 3D render, architectural photography).
-    4. نسبة العرض إلى الارتفاع والتركيب (Aspect Ratio: e.g., 1:1, 16:9 widescreen, 9:16 portrait).
-    5. تفاصيل الكاميرا والعدسة (Camera lens details: e.g., shot on 85mm f/1.8 lens, creamy optical bokeh depth of field, razor-sharp focus on subject).
-  * يجب عليك استدعاء الأداة المخصصة: generate_specialized_image(prompt, aspect_ratio) مع تمرير هذا البرومبت السينمائي الموسّع ونسبة الأبعاد المناسبة.
+  * يجب عليك فوراً توسيع وإثراء الطلب تلقائياً إلى برومبت إنجليزي سينمائي تفصيلي فائق الدقة يتضمن دقة 8K، الإضاءة الفيزيائية، الأسلوب البصري، تفاصيل العدسة ونسبة الأبعاد.
+  * يجب عليك استدعاء الأداة المخصصة: generate_specialized_image(prompt, aspect_ratio).
 
 2. طلبات الفيديو والمشاهد السينمائية (Video Requests):
 - إذا طلب المستخدم فيديو أو لقطة متحركة:
@@ -169,64 +180,39 @@ function systemInstruction(language: 'ar' | 'en', agentName: string): string {
   4. إذا لم يطلب المستخدم صراحةً برمجة تطبيق أو كود، لا تضع أي كود HTML إطلاقاً!
 
 4. الأوامر والأسئلة العامة:
-- افهم قصد المستخدم بدقة، نفذ أوامره بحذافيرها، وأجب بلغة عربية فصيحة وسليمة وعميقة دون كود غير مطلوب.${dynamicContext}`;
+- افهم قصد المستخدم بدقة، نفذ أوامره بحذافيرها، وأجب بلغة عربية فصيحة وسليمة وعميقة ومحببة دون كود غير مطلوب.${dynamicContext}`;
   }
-  return `You are ${agentName || 'ADEM'}, a premier, highly capable AI assistant with strict precision in understanding user commands and intent.
+
+  return `You are ${agentName || 'Adam'}, an exceptional, highly perceptive, and refined AI assistant & technical architect, crafted and engineered with precision by Adem Feidat, powered by the Astra 4.5 Ultra Reasoning Engine.
+
+ELITE INTERACTION, COURTESY & INTELLECT:
+1. Warmth, Eloquence & Utmost Respect:
+   - Engage with thoughtful courtesy, genuine helpfulness, and intellectual elegance.
+   - Avoid robotic stiffness or superficial fluff; communicate with authentic warmth, nuanced understanding, and clear structure.
+   - If asked about your identity or creator, proudly state: "I am Adam, an advanced AI agent created and engineered with care by Adem Feidat."
+2. Proactive Clarity:
+   - Anticipate the user's underlying intent, deliver structured and beautifully articulated answers, and break down complex concepts with intuitive analogies.
 
 REAL-TIME INFORMATION & GOOGLE SEARCH GROUNDING:
 - When the user asks about current events, today's news, weather, cryptocurrency or stock prices, sports scores, or recent facts, ALWAYS use the googleSearch tool to fetch the latest real-time information before answering.
 - Ground your answers in real, verified facts from Google Search results.
 
 ADVANCED SPECIALIZED IMAGE GENERATION & PROMPT ENRICHMENT:
-1. SPECIALIZED IMAGE GENERATION PIPELINE:
 - Whenever the user requests an image, photo, drawing, wallpaper, or visual creation in ANY language:
-  * You MUST NOT output plain text descriptions or simple raw markdown links.
-  * You MUST automatically expand and enrich the request into a detailed, cinematic English image prompt that explicitly specifies:
-    1. 8K resolution (8K resolution, ultra-detailed textures, photorealistic masterpiece, pristine quality).
-    2. Lighting (e.g., volumetric lighting, studio lights, soft golden hour rim light, ray-traced reflections).
-    3. Style (e.g., hyper-realistic photo, 3D render, cinematic film still).
-    4. Aspect ratio (e.g., 1:1, 16:9 widescreen, 9:16 portrait).
-    5. Camera lens details (e.g., shot on 85mm f/1.8 lens, creamy optical bokeh depth of field, shallow focus, razor-sharp subject detail).
-  * You MUST immediately invoke the function tool generate_specialized_image(prompt, aspect_ratio) with your enriched cinematic prompt and the chosen aspect_ratio.
+  * Automatically expand and enrich the request into a detailed, cinematic English image prompt (8K resolution, volumetric lighting, photorealistic, 85mm lens).
+  * Immediately invoke the function tool generate_specialized_image(prompt, aspect_ratio).
 
-2. VIDEO & ANIMATION REQUESTS:
-- If the user asks for a video or cinematic scene:
-  * Never output interactive app code!
-  * Embed a cinematic still using Markdown:
-    ![Cinematic Frame](https://pollinations.ai/p/<ENCODED_ENGLISH_PROMPT>%2C%20cinematic%20video%20still%2C%20IMAX%2070mm?width=1024&height=1024&model=flux&nologo=true)
-  * Describe camera motion, pacing, and visual atmosphere.
-
-3. INTERACTIVE APPS, TOOLS & GAMES (ONLY WHEN EXPLICITLY REQUESTED):
-- When the user asks about current events, today's news, weather, cryptocurrency or stock prices, sports scores, or recent facts, ALWAYS use the googleSearch tool to fetch the latest real-time information before answering.
-- Ground your answers in real, verified facts from Google Search results.
-
-CRITICAL IMAGE GENERATION & FUNCTION CALLING RULES:
-1. IMAGE & PHOTO REQUESTS:
-- Whenever the user requests an image, photo, drawing, wallpaper, or visual creation in ANY language:
-  * You MUST NOT output plain text descriptions or simple raw markdown links.
-  * You MUST automatically draft a highly detailed, rich English image prompt specifying subject details, atmospheric lighting, camera lens and angle, spatial environment, textures, and artistic style.
-  * You MUST immediately invoke the tool/function generate_image(prompt) with your crafted prompt.
-
-2. VIDEO & ANIMATION REQUESTS:
-- If the user asks for a video or cinematic scene:
-  * Never output interactive app code!
-  * Embed a cinematic still using Markdown:
-    ![Cinematic Frame](https://pollinations.ai/p/<ENCODED_ENGLISH_PROMPT>%2C%20cinematic%20video%20still%2C%20IMAX%2070mm?width=1024&height=1024&model=flux&nologo=true)
-  * Describe camera motion, pacing, and visual atmosphere.
-
-3. INTERACTIVE APPS, TOOLS & GAMES (ONLY WHEN EXPLICITLY REQUESTED):
+INTERACTIVE APPS, TOOLS & GAMES (ONLY WHEN EXPLICITLY REQUESTED):
 - ONLY when the user explicitly asks to code, build, or develop an interactive app, calculator, game, or web tool:
   * Provide complete, self-contained HTML5/CSS/JavaScript code inside a single \`\`\`html ... \`\`\` code block.
-  * If the user did NOT explicitly request coding an app or game, DO NOT output any HTML code blocks!
-
-4. GENERAL QUERIES & INSTRUCTIONS:
-- Faithfully interpret and execute user instructions without unsolicited code generation.${dynamicContext}`;
+  * If the user did NOT explicitly request coding an app or game, DO NOT output any HTML code blocks!${dynamicContext}`;
 }
 
 function safeWrite(res: Response, payload: object): boolean {
   if (res.writableEnded || res.destroyed || !res.writable) return false;
   try {
-    return res.write(JSON.stringify(payload) + '\n');
+    const raw = JSON.stringify(payload) + '\n';
+    return res.write(redactSecrets(raw));
   } catch {
     return false;
   }
@@ -243,7 +229,7 @@ function safeEnd(res: Response): void {
 
 function sendError(res: Response, status: number, code: string, message: string): void {
   if (res.headersSent || res.writableEnded || res.destroyed) return;
-  res.status(status).json({ error: { code, message } });
+  res.status(status).json({ error: { code, message: redactSecrets(message) } });
 }
 
 class SearchCircuitBreaker {
@@ -378,7 +364,7 @@ async function invokeWithRetry(
 }
 
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
-  app.post('/api/agent', async (req: Request, res: Response) => {
+  app.post('/api/agent', chatRateLimiter.middleware(), async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as AgentRequest;
     const requestId = getRequestId(req);
     const runId = `run_${requestId}`;
@@ -387,6 +373,13 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     const messages = normalizeMessages(body.messages);
     if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
     if (!requestDeduplicator.begin(requestId)) return sendError(res, 409, 'REQUEST_IN_PROGRESS', 'This request is already being processed.');
+
+    const user = (req as any).user;
+    const budgetCheck = costControlManager.checkBudget(user?.uid, false);
+    if (!budgetCheck.allowed) {
+      requestDeduplicator.finish(requestId);
+      return sendError(res, 429, 'BUDGET_EXCEEDED', budgetCheck.reason || 'Daily budget limit exceeded.');
+    }
 
     let run = createRunSummary(runId);
     let aborted = false;
@@ -401,18 +394,42 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       await hydrateRemoteCatalog();
       const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
 
+      // P0 Prompt Injection Defense
+      const injectionCheck = PromptInjectionGuard.inspect(latestPrompt, user?.uid, req.ip);
+      if (injectionCheck.isBlocked) {
+        systemMonitor.recordPromptInjectionBlock();
+        const refusal = language === 'ar'
+          ? 'عذراً، تم حظر هذا الطلب من قبل نظام الأمان والحماية (Prompt Injection Shield) لوجود أنماط غير آمنة.'
+          : 'Safety Guard: Request blocked by security shield due to detected prompt injection or system override patterns.';
+        safeWrite(res, { type: 'delta', text: refusal });
+        safeWrite(res, { type: 'done', model: 'security-guard', tried: 1, swarmSize: 1, registrySize: 1 });
+        safeEnd(res);
+        requestDeduplicator.finish(requestId);
+        return;
+      }
+
       // Direct, ultra-precise handling for explicit image & video requests to guarantee visual rendering without unwanted code
       if (isExplicitImageRequest(latestPrompt)) {
+        const permCheck = AgentPermissionGuard.canExecuteTool('generate_image', user);
+        if (!permCheck.allowed) {
+          safeWrite(res, { type: 'delta', text: permCheck.reason || 'Permission denied for image generation.' });
+          safeWrite(res, { type: 'done', model: 'permission-guard', tried: 1, swarmSize: 1, registrySize: 1 });
+          safeEnd(res);
+          requestDeduplicator.finish(requestId);
+          return;
+        }
+
         let imageUrl = '';
         let enhancedPrompt = '';
         let title = language === 'ar' ? 'صورة سينمائية فائقة الدقة (Flux.1 Pro)' : 'Cinematic 8K Masterpiece (Flux.1 Pro)';
         let desc = language === 'ar' ? 'تم توليد الصورة بأعلى دقة سينمائية 8K مع إضاءة حجمية وعدسة 85mm ومحرك Flux.1.' : 'Generated 8K cinematic image with Flux.1 Engine, 85mm f/1.8 lens, and volumetric lighting.';
         try {
-          const item = await mediaEngine.generateImage({ prompt: latestPrompt, apiKey });
+          const item = await mediaEngine.generateImage({ prompt: latestPrompt, apiKey, userId: user?.uid });
           imageUrl = item.url;
           enhancedPrompt = item.enhancedPrompt || latestPrompt;
           title = item.title || title;
           desc = item.explanationAr || desc;
+          costControlManager.recordUsage(user?.uid, 50, true);
         } catch (imgErr) {
           console.warn('[ADEM Image Pipeline] mediaEngine.generateImage threw, using direct Flux.1 fallback URL:', imgErr);
           const cognitive = CognitiveMediaBrain.deconstruct(latestPrompt, 'image', 'cinematic');
@@ -445,14 +462,24 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         safeEnd(res);
         return;
       } else if (isExplicitVideoRequest(latestPrompt)) {
+        const permCheck = AgentPermissionGuard.canExecuteTool('generate_video', user);
+        if (!permCheck.allowed) {
+          safeWrite(res, { type: 'delta', text: permCheck.reason || 'Permission denied for video generation.' });
+          safeWrite(res, { type: 'done', model: 'permission-guard', tried: 1, swarmSize: 1, registrySize: 1 });
+          safeEnd(res);
+          requestDeduplicator.finish(requestId);
+          return;
+        }
+
         let videoUrl = '';
         let title = language === 'ar' ? 'مشهد سينمائي متحرك' : 'Cinematic Video Scene';
         let desc = language === 'ar' ? 'تم تصميم لقطة الفيديو السينمائية بأعلى مواصفات الإخراج والحركة.' : 'Cinematic video sequence designed.';
         try {
-          const item = await mediaEngine.generateVideo({ prompt: latestPrompt, apiKey });
+          const item = await mediaEngine.generateVideo({ prompt: latestPrompt, apiKey, userId: user?.uid });
           videoUrl = item.posterUrl || item.url;
           title = item.title || title;
           desc = item.explanationAr || desc;
+          costControlManager.recordUsage(user?.uid, 100, true);
         } catch (vidErr) {
           console.warn('[Adam AI Agent] mediaEngine.generateVideo threw, using direct fallback URL:', vidErr);
           const encoded = encodeURIComponent(`${latestPrompt}, cinematic video still, IMAX 70mm, 60fps motion`);

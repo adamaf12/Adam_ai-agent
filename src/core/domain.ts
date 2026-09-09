@@ -1,6 +1,6 @@
 export type Language = 'ar' | 'en';
 export type Theme = 'system' | 'light' | 'dark' | 'glass' | 'glass-dark' | 'aurora';
-export type ViewId = 'chat' | 'tasks' | 'memory' | 'workspace' | 'media' | 'hermes' | 'settings';
+export type ViewId = 'chat' | 'tasks' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'settings';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type MemoryCategory = 'preference' | 'fact' | 'goal' | 'instruction';

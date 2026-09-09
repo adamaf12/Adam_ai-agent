@@ -37,6 +37,7 @@ export interface SemanticAnalysis {
 
 export interface MediaItem {
   id: string;
+  userId?: string;
   type: MediaType;
   title: string;
   originalPrompt: string;
@@ -396,13 +397,21 @@ export class MediaEngine {
     }
   }
 
-  public getGallery(): MediaItem[] {
-    return this.items;
+  public getGallery(userId?: string, isAdmin = false): MediaItem[] {
+    if (isAdmin || !userId) {
+      return this.items;
+    }
+    return this.items.filter(it => it.userId === userId || !it.userId);
   }
 
-  public deleteItem(id: string): boolean {
+  public deleteItem(id: string, userId?: string, isAdmin = false): boolean {
     const idx = this.items.findIndex(it => it.id === id);
     if (idx !== -1) {
+      const item = this.items[idx];
+      // If user is specified and not admin, ensure they own the item
+      if (userId && !isAdmin && item.userId && item.userId !== userId) {
+        return false;
+      }
       this.items.splice(idx, 1);
       this.saveGallery();
       return true;
@@ -546,6 +555,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     seed?: number;
     apiKey?: string;
     model?: 'flux' | 'turbo';
+    userId?: string;
   }): Promise<MediaItem> {
     const style = params.style || 'photorealistic';
     const aspectRatio = params.aspectRatio || '1:1';
@@ -589,6 +599,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       height: dims.height,
       style,
       seed,
+      userId: params.userId,
       createdAt: Date.now(),
     };
 
@@ -609,6 +620,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     fps?: number;
     seed?: number;
     apiKey?: string;
+    userId?: string;
   }): Promise<MediaItem> {
     const style = params.style || 'cinematic';
     const motion = params.motion || 'drone_fpv';
@@ -649,6 +661,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       duration,
       fps,
       seed,
+      userId: params.userId,
       createdAt: Date.now(),
     };
 
@@ -667,6 +680,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     aspectRatio?: AspectRatio;
     seed?: number;
     apiKey?: string;
+    userId?: string;
   }): Promise<MediaItem> {
     const style = params.style || 'photorealistic';
     const aspectRatio = params.aspectRatio || '1:1';
@@ -699,6 +713,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       height: dims.height,
       style,
       seed,
+      userId: params.userId,
       createdAt: Date.now(),
     };
 

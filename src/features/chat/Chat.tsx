@@ -1,19 +1,17 @@
 import {
   Bell,
   Bot,
-  Brain,
   Clock,
-  Code2,
   Languages,
   Plus,
   RotateCcw,
   SlidersHorizontal,
   Sparkles,
   Trash2,
-  WandSparkles,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import type { ChatConversation, Language, Message } from '../../core/domain';
 import { httpAgentClient, httpChatClient } from '../../core/ai/client';
 import { routePrompt } from '../../core/agent/agentTypes';
@@ -75,11 +73,15 @@ export function Chat({
   agentName,
   copy: heroCopy,
   onNewChat,
+  onOpenSandbox,
+  onSessionMetaChange,
 }: {
   language: Language;
   agentName: string;
   copy: { title: string; subtitle: string };
   onNewChat?: () => void;
+  onOpenSandbox?: (appId: string) => void;
+  onSessionMetaChange?: (meta: { title: string; count: number }) => void;
 }) {
   const [currentConversation, setCurrentConversation] = useState<ChatConversation>(() => loadConversation());
   const [conversations, setConversations] = useState<ChatConversation[]>(() => loadAllConversations());
@@ -96,22 +98,6 @@ export function Chat({
 
   const controller = useRef<AbortController | null>(null);
   const t = copy(language);
-
-  const quickActions = useMemo(() => language === 'ar' ? [
-    { icon: Brain, title: 'مساعد ذكي', text: 'اسأل Adam عن أي شيء', prompt: 'ساعدني في هذا الموضوع: ' },
-    { icon: WandSparkles, title: 'كتابة نصوص', text: 'مقال، رسالة أو فكرة', prompt: 'ساعدني في كتابة: ' },
-    { icon: Languages, title: 'ترجمة', text: 'ترجمة دقيقة وسريعة', prompt: 'ترجم إلى العربية: ' },
-    { icon: Code2, title: 'برمجة', text: 'اكتب أو أصلح الكود', prompt: 'ساعدني في كتابة الكود التالي: ' },
-  ] : [
-    { icon: Brain, title: 'AI Assistant', text: 'Ask Adam anything', prompt: 'Help me with this: ' },
-    { icon: WandSparkles, title: 'Write', text: 'Article, message or idea', prompt: 'Help me write: ' },
-    { icon: Languages, title: 'Translate', text: 'Fast accurate translation', prompt: 'Translate to English: ' },
-    { icon: Code2, title: 'Coding', text: 'Write or fix code', prompt: 'Help me write this code: ' },
-  ], [language]);
-
-  const suggestions = useMemo(() => language === 'ar'
-    ? ['اشرح لي الذكاء الاصطناعي ببساطة', 'خطط لي يومي', 'ساعدني في الدراسة']
-    : ['Explain AI simply', 'Plan my day', 'Help me study'], [language]);
 
   // Sync active conversation changes
   useEffect(() => {
@@ -139,6 +125,33 @@ export function Chat({
       proactiveEngine.stop();
     };
   }, []);
+
+  // Broadcast session meta (title & conversation count) to AppShell
+  useEffect(() => {
+    const title = messages.length
+      ? currentConversation.title || (language === 'ar' ? 'المحادثة' : 'Conversation')
+      : (language === 'ar' ? 'جلسة جديدة' : 'New Session');
+    onSessionMetaChange?.({ title, count: conversations.length });
+  }, [currentConversation.title, messages.length, conversations.length, language, onSessionMetaChange]);
+
+  // Support opening session drawer from AppShell via custom event
+  useEffect(() => {
+    const openDrawer = () => {
+      setMemoryStats(getInfiniteMemoryStats());
+      setIsSessionDrawerOpen(true);
+    };
+    window.addEventListener('adam:open-session-drawer', openDrawer);
+    return () => window.removeEventListener('adam:open-session-drawer', openDrawer);
+  }, []);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Smooth scroll down when new messages appear or stream starts
+  useEffect(() => {
+    if (messages.length > 0 || busy) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages.length, busy]);
 
   const handleStartNewChat = () => {
     if (controller.current) {
@@ -378,8 +391,8 @@ export function Chat({
 
   return (
     <section className="chat-page">
-      {/* Sleek Minimalist Session Bar (Replacing the bulky stacked banner) */}
-      <div className="chat-subnav-bar">
+      {/* Sleek Minimalist Session Bar (Desktop only, as mobile has unified this into the single ultra-thin top navbar) */}
+      <div className="chat-subnav-bar desktop-only">
         <div className="chat-subnav-info">
           <span className="agent-status-dot" title={language === 'ar' ? 'متصل وجاهز' : 'Connected'} />
           <span className="chat-subnav-title" title={currentConversation.title}>
@@ -389,7 +402,7 @@ export function Chat({
           </span>
         </div>
 
-        {/* Side Panel Trigger Button (زر جانبي أنيق للتحكم بالجلسة والسجل والذاكرة) */}
+        {/* Side Panel Trigger Button (زر أنيق للتحكم بالجلسة والسجل والذاكرة) */}
         <button
           type="button"
           onClick={() => {
@@ -400,16 +413,12 @@ export function Chat({
           title={language === 'ar' ? 'فتح لوحة التحكم بالجلسة والذاكرة والسجل' : 'Open Session Controls & Memory'}
           aria-label="Session Controls"
         >
-          <SlidersHorizontal size={14} className="text-emerald-400" />
-          <span className="chat-session-btn-text">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
+          <SlidersHorizontal size={13} className="text-emerald-400" />
+          <span className="chat-session-btn-text desktop-only">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
           <div className="chat-session-badges">
             <span className="session-mini-badge" title={language === 'ar' ? 'عدد المحادثات' : 'Chats'}>
               <Clock size={10} />
               {conversations.length}
-            </span>
-            <span className="session-mini-badge session-mini-badge--memory" title={language === 'ar' ? 'عدد الذكريات' : 'Memory'}>
-              <Brain size={10} />
-              {memoryStats.total}
             </span>
           </div>
         </button>
@@ -435,46 +444,51 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <>
-            <div className="welcome">
-              <div className="welcome-orb"><Bot size={27} /></div>
-              <h2>{language === 'ar' ? `أهلاً، أنا ${agentName}` : `Hi, I'm ${agentName}`}</h2>
-              <p>{language === 'ar' ? 'اسألني مباشرة أو اختر اختصارًا للبدء بسرعة.' : 'Ask directly or choose a shortcut to get started.'}</p>
-            </div>
-
-            <div className="quick-actions" aria-label={language === 'ar' ? 'اختصارات سريعة' : 'Quick actions'}>
-              {quickActions.map(({ icon: Icon, title, text, prompt }) => (
-                <button className="quick-action" key={title} onClick={() => send(prompt)}>
-                  <span className="quick-action-icon"><Icon size={18} /></span>
-                  <span><strong>{title}</strong><small>{text}</small></span>
-                </button>
-              ))}
-            </div>
-
-            <div className="suggestions">
-              {suggestions.map(s => <button key={s} onClick={() => send(s)}>{s}</button>)}
-            </div>
-          </>
+          <div className="welcome">
+            <div className="welcome-orb"><Bot size={28} /></div>
+            <h2>{language === 'ar' ? `أهلاً، أنا ${agentName}` : `Hi, I'm ${agentName}`}</h2>
+            <p>{language === 'ar' ? 'اكتب رسالتك بالأسفل للبدء مباشرة.' : 'Type your message below to get started.'}</p>
+          </div>
         ) : (
-          messages.map(message => <MessageBubble key={message.id} message={message} language={language} />)
+          <AnimatePresence initial={false}>
+            {messages.map((message, idx) => {
+              const prevUser = messages
+                .slice(0, idx)
+                .reverse()
+                .find((m) => m.role === 'user');
+              const userPrompt = prevUser?.content || '';
+              return (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  language={language}
+                  userPrompt={userPrompt}
+                  onOpenSandbox={onOpenSandbox}
+                />
+              );
+            })}
+          </AnimatePresence>
         )}
 
-        {busy && (
-          <StreamingIndicator
-            label={
-              /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
-              !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
-                ? (language === 'ar' ? 'Adam يولد الصورة ويضبط الإضاءة السينمائية…' : 'Adam is synthesizing and rendering the image…')
-                : (language === 'ar' ? 'Adam يعمل على إجابتك…' : 'Adam is working on it…')
-            }
-            isImage={
-              /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
-              !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
-            }
-            language={language}
-            prompt={lastPrompt}
-          />
-        )}
+        <AnimatePresence>
+          {busy && (
+            <StreamingIndicator
+              key="chat-streaming-indicator"
+              label={
+                /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
+                !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
+                  ? (language === 'ar' ? 'Adam يولد الصورة ويضبط الإضاءة السينمائية…' : 'Adam is synthesizing and rendering the image…')
+                  : (language === 'ar' ? 'Adam يعمل على إجابتك…' : 'Adam is working on it…')
+              }
+              isImage={
+                /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
+                !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
+              }
+              language={language}
+              prompt={lastPrompt}
+            />
+          )}
+        </AnimatePresence>
         {error && (
           <div className="error-banner">
             <strong>{language === 'ar' ? 'لم تصل إجابة' : 'No answer yet'}</strong>
@@ -482,6 +496,7 @@ export function Chat({
             <button onClick={() => lastPrompt && send(lastPrompt)}><RotateCcw size={14} /> {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>
           </div>
         )}
+        <div ref={messagesEndRef} className="h-2 w-full flex-none pointer-events-none" />
       </div>
 
       <Composer language={language} busy={busy} onSend={send} onStop={stop} />

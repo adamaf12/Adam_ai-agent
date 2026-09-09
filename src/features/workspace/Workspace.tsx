@@ -1,4 +1,4 @@
-import { Calendar, Cloud, Code, FileText, Globe, Mail, Sparkles } from 'lucide-react';
+import { Calendar, Cloud, Code, FileText, Gamepad2, Globe, Mail, Sparkles } from 'lucide-react';
 import type { Language, ViewId } from '../../core/domain';
 
 interface WorkspaceProps {
@@ -11,6 +11,8 @@ const c = {
   ar: {
     title: 'مساحة العمل',
     subtitle: 'اربط أدواتك وخدماتك للوصول إلى أعلى إنتاجية مع Adam.',
+    apps: 'مشغل الألعاب والتطبيقات',
+    appsSub: 'بيئة تشغيل تفاعلية مستقلة لتجربة ألعاب وتطبيقات HTML/JS فوراً.',
     google: 'Google Workspace',
     googleSub: 'البحث والوصول إلى ملفات Google Drive والمستندات الذكية.',
     calendar: 'التقويم والمواعيد',
@@ -27,6 +29,8 @@ const c = {
   en: {
     title: 'Workspace Hub',
     subtitle: 'Connect your tools and services to amplify your flow with Adam.',
+    apps: 'Games & Apps Sandbox',
+    appsSub: 'Dedicated interactive environment to run and play HTML/JS apps instantly.',
     google: 'Google Workspace',
     googleSub: 'Search and interact with your Google Drive files and documents.',
     calendar: 'Calendar & Schedule',
@@ -47,12 +51,19 @@ export function Workspace({ language, onSelectAction, onNavigate }: WorkspacePro
 
   const tools = [
     {
+      id: 'apps',
+      icon: Gamepad2,
+      title: t.apps,
+      desc: t.appsSub,
+      prompt: language === 'ar' ? 'اصنع لي لعبة أركيد أو تطبيق تفاعلي' : 'Build me an interactive arcade game or web app',
+      primary: true,
+    },
+    {
       id: 'google',
       icon: Cloud,
       title: t.google,
       desc: t.googleSub,
       prompt: language === 'ar' ? 'افحص ملفاتي في Google Drive ولخص أحدث المستندات.' : 'Check my Google Drive and summarize recent documents.',
-      primary: true,
     },
     {
       id: 'calendar',
@@ -92,6 +103,10 @@ export function Workspace({ language, onSelectAction, onNavigate }: WorkspacePro
   ];
 
   const handleCardClick = (id: string, prompt: string) => {
+    if (id === 'apps' && onNavigate) {
+      onNavigate('apps');
+      return;
+    }
     if (id === 'media' && onNavigate) {
       onNavigate('media');
       return;

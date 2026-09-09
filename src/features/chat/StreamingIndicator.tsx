@@ -1,5 +1,6 @@
 import React from 'react';
 import { LoaderCircle, Sparkles, Image as ImageIcon, Wand2 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export function StreamingIndicator({
   label,
@@ -13,10 +14,19 @@ export function StreamingIndicator({
   prompt?: string;
 }) {
   const isAr = language === 'ar';
+  const slideX = isAr ? 14 : -14;
 
   if (isImage) {
     return (
-      <div className="message-row" role="status" aria-live="polite">
+      <motion.div
+        initial={{ opacity: 0, y: 12, x: slideX, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -6, scale: 0.98 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="message-row"
+        role="status"
+        aria-live="polite"
+      >
         <div className="message-avatar">
           <Sparkles size={16} className="text-indigo-400 animate-pulse" />
         </div>
@@ -67,14 +77,20 @@ export function StreamingIndicator({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="streaming">
+    <motion.div
+      initial={{ opacity: 0, y: 10, x: slideX }}
+      animate={{ opacity: 1, y: 0, x: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="streaming"
+    >
       <LoaderCircle size={15} className="spin" />
       <span>{label}</span>
-    </div>
+    </motion.div>
   );
 }
