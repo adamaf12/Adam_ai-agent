@@ -2,14 +2,12 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   CalendarCheck,
-  ChevronDown,
   Film,
   Gamepad2,
-  Lock,
+  LayoutGrid,
   MessageCircle,
   Settings2,
-  ShieldAlert,
-  Unlock,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import type { Language, ViewId } from '../core/domain';
@@ -26,7 +24,6 @@ const mobileNavItems: NavItemDef[] = [
   { id: 'apps', icon: Gamepad2, labelAr: 'الألعاب والتطبيقات', labelEn: 'Apps & Games' },
   { id: 'tasks', icon: CalendarCheck, labelAr: 'المهام', labelEn: 'Tasks' },
   { id: 'media', icon: Film, labelAr: 'الوسائط', labelEn: 'Media' },
-  { id: 'security', icon: ShieldAlert, labelAr: 'الأمان والحماية', labelEn: 'Security & WAF' },
   { id: 'settings', icon: Settings2, labelAr: 'الإعدادات', labelEn: 'Settings' },
 ];
 
@@ -40,7 +37,6 @@ export function BottomNav({
   onChange: (view: ViewId) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const activeItem = mobileNavItems.find((item) => item.id === active) || mobileNavItems[0];
 
   // Close when clicking outside or pressing Escape
   useEffect(() => {
@@ -55,14 +51,12 @@ export function BottomNav({
 
   const handleSelect = (id: ViewId) => {
     onChange(id);
-    setIsOpen(false); // Auto-collapse into the side lock to maximize user workspace
+    setIsOpen(false);
   };
-
-  const currentShortLabel = language === 'ar' ? activeItem.labelAr.split(' ')[0] : activeItem.labelEn.split(' ')[0];
 
   return (
     <>
-      {/* 1. Floating Side Lock Button (قفل جانبي عائم يختصر الشريط بالكامل ويزيد مساحة الرؤية) */}
+      {/* 1. Floating Side Navigation Button */}
       <div className="mobile-side-lock-container">
         <button
           type="button"
@@ -70,22 +64,22 @@ export function BottomNav({
           onClick={() => setIsOpen((prev) => !prev)}
           title={
             isOpen
-              ? (language === 'ar' ? 'قفل وإخفاء شريط التنقل' : 'Lock & Hide Navigation')
-              : (language === 'ar' ? 'فتح شريط التنقل (قفل جانبي)' : 'Open Navigation (Side Lock)')
+              ? (language === 'ar' ? 'إغلاق القائمة' : 'Close Menu')
+              : (language === 'ar' ? 'فتح القائمة' : 'Open Menu')
           }
-          aria-label={isOpen ? 'Lock Navigation' : 'Open Navigation'}
+          aria-label={isOpen ? 'Close Menu' : 'Open Menu'}
           aria-expanded={isOpen}
         >
           <div className="mobile-side-lock-icon-wrap">
             {isOpen ? (
-              <Unlock size={15} className="text-emerald-400" />
+              <X size={15} className="text-slate-200" />
             ) : (
-              <Lock size={15} className="text-emerald-400" />
+              <LayoutGrid size={15} className="text-emerald-400" />
             )}
             <span className="mobile-side-lock-dot" />
           </div>
           <span className="mobile-side-lock-label">
-            {isOpen ? (language === 'ar' ? 'قفل' : 'Lock') : currentShortLabel}
+            {isOpen ? (language === 'ar' ? 'إغلاق' : 'Close') : (language === 'ar' ? 'القائمة' : 'Menu')}
           </span>
         </button>
       </div>
@@ -99,14 +93,14 @@ export function BottomNav({
         />
       )}
 
-      {/* 3. Pop-out Floating Navigation Dock (يخرج عند الطلب فقط لزيادة مساحة العمل) */}
+      {/* 3. Pop-out Floating Navigation Dock */}
       <div
         className={`mobile-nav-popout ${isOpen ? 'mobile-nav-popout--open' : 'mobile-nav-popout--closed'}`}
         aria-hidden={!isOpen}
         {...(!isOpen ? { inert: true } : {})}
       >
         <div className="mobile-nav-popout-inner glass-panel">
-          {/* Top Bar inside the Popout with Quick Lock/Hide Button */}
+          {/* Top Bar inside the Popout */}
           <div className="mobile-nav-popout-header">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
@@ -119,12 +113,11 @@ export function BottomNav({
               type="button"
               className="mobile-nav-lock-close-btn"
               onClick={() => setIsOpen(false)}
-              title={language === 'ar' ? 'قفل وإخفاء الشريط' : 'Lock & Hide'}
+              title={language === 'ar' ? 'إغلاق' : 'Close'}
               tabIndex={isOpen ? 0 : -1}
             >
-              <Lock size={13} className="text-emerald-400" />
-              <span>{language === 'ar' ? 'قفل وإخفاء' : 'Lock & Hide'}</span>
-              <ChevronDown size={14} className="text-slate-400" />
+              <X size={13} className="text-slate-400" />
+              <span>{language === 'ar' ? 'إغلاق' : 'Close'}</span>
             </button>
           </div>
 

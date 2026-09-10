@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Plus,
   Settings2,
-  ShieldAlert,
   Sparkles,
   Film,
   Zap,
@@ -45,7 +44,6 @@ const navItems: Array<{
   { id: 'workspace', icon: Sparkles, key: 'workspace' },
   { id: 'media', icon: Film, key: 'media' },
   { id: 'memory', icon: Brain, key: 'memory' },
-  { id: 'security', icon: ShieldAlert, key: 'security' },
   { id: 'settings', icon: Settings2, key: 'settings' },
 ];
 

@@ -4,4 +4,4 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/sitemap.xml
+Sitemap: /sitemap.xml

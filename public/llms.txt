@@ -14,6 +14,6 @@
 - `GET /api/health`: System health and status check.
 
 ## Navigation & Discovery
-- [Home Application](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/)
-- [Sitemap](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/sitemap.xml)
-- [Robots.txt](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/robots.txt)
+- [Home Application](/)
+- [Sitemap](/sitemap.xml)
+- [Robots.txt](/robots.txt)
