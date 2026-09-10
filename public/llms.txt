@@ -1,0 +1,19 @@
+# Adam AI — Personal Operating System & Autonomous Intelligence
+
+> Adam AI is a next-generation Personal Operating System combining a conversational core, autonomous agents, multi-tool execution, persistent memory, and rigorous verification.
+
+## Core Capabilities
+- **Autonomous Agent Swarm**: Self-directed reasoning, task planning, and background execution.
+- **Persistent Memory & Context**: Long-term semantic recall and user preference synchronization.
+- **Multi-Tool Execution**: Web search, media generation, code evaluation, and structured data handling.
+- **Human-in-the-Loop Verification**: Deterministic checks and safety boundaries.
+
+## Endpoints & API Reference
+- `POST /api/chat`: Primary conversational streaming endpoint.
+- `POST /api/agent`: Autonomous agent execution endpoint.
+- `GET /api/health`: System health and status check.
+
+## Navigation & Discovery
+- [Home Application](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/)
+- [Sitemap](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/sitemap.xml)
+- [Robots.txt](https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app/robots.txt)

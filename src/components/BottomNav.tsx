@@ -103,6 +103,7 @@ export function BottomNav({
       <div
         className={`mobile-nav-popout ${isOpen ? 'mobile-nav-popout--open' : 'mobile-nav-popout--closed'}`}
         aria-hidden={!isOpen}
+        {...(!isOpen ? { inert: true } : {})}
       >
         <div className="mobile-nav-popout-inner glass-panel">
           {/* Top Bar inside the Popout with Quick Lock/Hide Button */}
@@ -119,6 +120,7 @@ export function BottomNav({
               className="mobile-nav-lock-close-btn"
               onClick={() => setIsOpen(false)}
               title={language === 'ar' ? 'قفل وإخفاء الشريط' : 'Lock & Hide'}
+              tabIndex={isOpen ? 0 : -1}
             >
               <Lock size={13} className="text-emerald-400" />
               <span>{language === 'ar' ? 'قفل وإخفاء' : 'Lock & Hide'}</span>
@@ -138,6 +140,7 @@ export function BottomNav({
                   className={`mobile-nav-popout-item ${isActive ? 'mobile-nav-popout-item--active' : ''}`}
                   onClick={() => handleSelect(id)}
                   aria-current={isActive ? 'page' : undefined}
+                  tabIndex={isOpen ? 0 : -1}
                 >
                   {isActive && (
                     <motion.div

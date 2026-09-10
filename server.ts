@@ -57,7 +57,7 @@ app.use(corsMiddleware);
 app.use(systemMonitor.middleware());
 
 // 3. Compression & JSON payload size defense
-app.use(compression());
+app.use(compression({ level: 6, threshold: 512 }));
 app.use(express.json({ limit: '1mb' }));
 
 // 4. Session & Authentication Middleware (populates req.user)
@@ -688,10 +688,10 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     };
 
     const candidateModels = Array.from(new Set([
-      'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
       'gemini-3.6-flash',
+      'gemini-3.5-flash',
       'gemini-3.8-flash',
       model,
     ].filter(Boolean)));
@@ -952,8 +952,21 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 async function startServer() {
   try {
     if (process.env.NODE_ENV === 'production') {
-      app.use(express.static(publicDir, { index: 'index.html', maxAge: '1h' }));
-      app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
+      app.use(express.static(publicDir, {
+        index: false,
+        maxAge: '7d',
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+          }
+        }
+      }));
+      app.get('*', (_req, res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.sendFile(path.join(publicDir, 'index.html'));
+      });
     } else if (process.env.NODE_ENV !== 'test') {
       const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
       app.use(vite.middlewares);
