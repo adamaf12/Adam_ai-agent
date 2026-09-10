@@ -1,4 +1,8 @@
 import type { Express, Request, Response } from 'express';
+import dns from 'node:dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 import { randomUUID } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import { DEFAULT_AGENT_BUDGET } from '../src/core/agent/agentBudget';
@@ -9,9 +13,12 @@ import { MAX_SWARM_MODELS, modelRegistry, registerRemoteModels, routeTask, type 
 import { createAgentModelGateway, inferCapabilities } from '../src/core/models/agentModelGateway';
 import type { ModelRequest } from '../src/core/models/modelGateway';
 import { verifyAndCorrectResponse } from '../src/core/agent/deterministicVerifier';
+import { buildMission } from '../src/core/swarm/missionPlanner';
+import { planSwarm } from '../src/core/swarm/swarmPlanner';
+import { agentRegistry } from '../src/core/swarm/agentRegistry';
 import { hermesEngine } from './hermesAgent';
 import { mediaEngine, CognitiveMediaBrain } from './mediaEngine';
-import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, type GroundingData } from './grounding';
+import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, isTodayDateQuery, fetchLiveWebKnowledge, type GroundingData, type GroundingSource } from './grounding';
 import { PromptInjectionGuard } from './security/promptInjection';
 import { AgentPermissionGuard } from './security/agentPermissions';
 import { costControlManager } from './security/costControl';
@@ -154,9 +161,10 @@ function systemInstruction(language: 'ar' | 'en', agentName: string): string {
    - نظّم إجاباتك بجمالية وتنسيق مريح للعين (عناوين لطيفة، نقاط منسقة، تمييز الكلمات المهمة).
    - اجعل الأفكار المعقدة بسيطة وسهلة الهضم، مدعمة بالأمثلة الواقعية.
 
-قواعد البحث الحي وتحديث البيانات (REAL-TIME INFORMATION & GOOGLE SEARCH):
-- عندما يسأل المستخدم عن أي موضوع يتعلق بالأخبار الجارية، أحداث اليوم، الطقس، أسعار العملات أو العملات الرقمية والأسهم، نتائج المباريات، أو حقائق ومعلومات معاصرة وحديثة، يجب عليك دائماً استخدام أداة البحث في جوجل (googleSearch) لجلب وتأكيد أحدث المعلومات الحية قبل الإجابة.
-- استشهد بالحقائق الدقيقة والحديثة بناءً على نتائج البحث الحي.
+قواعد الإجابة وتحديث البيانات والبحث في الشبكة (REAL-TIME DATE & WEB KNOWLEDGE DIRECTIVES):
+- قاعدة اليوم وتاريخ اليوم الصارمة: عند سؤالك عن "اليوم" أو "تاريخ اليوم" أو "ما هو اليوم" أو الوقت الحالي، قدّم إجابة مباشرة، قطعية، صحيحة، وبسيطة مستندة حصراً إلى تاريخ وساعة اليوم المذكورة في السياق الزمني المباشر (مثل: اليوم هو الخميس، 10 سبتمبر 2026م).
+- قاعدة الأسئلة العامة والمعلومات من الشبكة: عند سؤالك عن أي موضوع آخر أو معلومة أو استفسار عام، قدّم إجابة صحيحة وبسيطة ومباشرة ومستندة إلى معلومات موثوقة من الشبكة بدون أي تعقيد أو حشو غير ضروري.
+- إذا توفرت نتائج بحث حي أو معلومات ويب، استشهد بالحقائق المباشرة بكل سلاسة واذكر المصادر إذا كانت مفيدة.
 
 قواعد توليد الصور المتخصصة المتقدمة (ADVANCED SPECIALIZED IMAGE GENERATION & PROMPT ENRICHMENT):
 1. طلبات الصور والرسومات والخلفيات (Specialized Image Generation Pipeline):
@@ -246,91 +254,134 @@ class SearchCircuitBreaker {
 
 export const searchCircuitBreaker = new SearchCircuitBreaker();
 
-function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, _useSearch: boolean) {
+function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, useSearch: boolean) {
   const ai = new GoogleGenAI({ apiKey });
   return async (modelDesc: ModelDescriptor, req: ModelRequest): Promise<string> => {
-    const baseConfig = {
+    const promptText = req.prompt;
+    const isToday = isTodayDateQuery(promptText);
+
+    // Fetch live web knowledge if needed
+    let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
+    if (!isToday && (useSearch || promptText.length > 5)) {
+      try {
+        webGrounding = await fetchLiveWebKnowledge(promptText, language);
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    let augmentedSystem = systemInstruction(language, agentName);
+    if (isToday) {
+      const now = new Date();
+      const arDate = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      let hijri = '';
+      try {
+        hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+      } catch {}
+      const hijriStr = hijri ? ` (الموافق هجرياً: ${hijri})` : '';
+      augmentedSystem += `\n\nتأكيد حاسم وفوري لتاريخ اليوم: اليوم هو "${arDate}م${hijriStr}". أجب مباشرة وبكل ثقة وبساطة بذكر اليوم وتاريخ اليوم.`;
+    } else if (webGrounding.knowledgeContext) {
+      augmentedSystem += `\n${webGrounding.knowledgeContext}`;
+    }
+
+    const baseConfig: any = {
       temperature: req.temperature ?? 0.35,
       maxOutputTokens: req.maxTokens ?? 4096,
-      systemInstruction: systemInstruction(language, agentName),
+      systemInstruction: augmentedSystem,
     };
-    const contents = [...history.slice(0, -1), { role: 'user' as const, parts: [{ text: req.prompt }] }];
 
-    const configsToTry: any[] = searchCircuitBreaker.isAvailable()
-      ? [
-          { ...baseConfig, tools: [{ googleSearch: {} }, { functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations }] },
-          { ...baseConfig, tools: [{ googleSearch: {} }] },
-          { ...baseConfig, tools: [{ functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations }] },
-          baseConfig,
-        ]
-      : [
-          { ...baseConfig, tools: [{ functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations }] },
-          baseConfig,
-        ];
+    const contents = history.length > 0
+      ? [...history.slice(0, -1), { role: 'user' as const, parts: [{ text: promptText }] }]
+      : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
-    for (const config of configsToTry) {
-      try {
-        const response = await ai.models.generateContent({ model: modelDesc.id, contents, config });
-        let textResult = response.text || '';
+    const modelVariants = [
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.6-flash',
+      'gemini-3.8-flash',
+      modelDesc.id,
+    ];
+    const uniqueModels = [...new Set(modelVariants.filter(Boolean))];
 
-        // Check for function calls (generate_specialized_image & generate_image)
-        const fnCalls = (response as any).functionCalls || (response as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
-        if (fnCalls && fnCalls.length) {
-          for (const fn of fnCalls) {
-            if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
-              const detailedPrompt = String(fn.args?.prompt || req.prompt).trim();
-              const aspect = String(fn.args?.aspect_ratio || fn.args?.aspectRatio || '1:1').trim();
-              try {
-                const item = await mediaEngine.generateImage({
-                  prompt: detailedPrompt,
-                  aspectRatio: (aspect as any) || '1:1',
-                  apiKey,
-                });
-                const cardPayload = {
-                  imageUrl: item.url,
-                  enhancedPrompt: item.enhancedPrompt,
-                  originalPrompt: req.prompt,
-                  title: item.title || (language === 'ar' ? 'صورة سينمائية فائقة الدقة (Flux.1)' : 'Cinematic 8K Masterpiece (Flux.1)'),
-                  aspectRatio: item.aspectRatio || aspect,
-                  engine: 'Flux.1 High-Performance Engine',
-                };
-                textResult = `:::image-card\n${JSON.stringify(cardPayload)}\n:::\n` + textResult;
-              } catch {
-                const seed = Date.now();
-                const flux = buildFluxEngineUrl(detailedPrompt, aspect, seed);
-                const cardPayload = {
-                  imageUrl: flux.url,
-                  enhancedPrompt: detailedPrompt,
-                  originalPrompt: req.prompt,
-                  title: language === 'ar' ? 'صورة سينمائية فائقة الدقة (Flux.1)' : 'Cinematic 8K Masterpiece (Flux.1)',
-                  aspectRatio: aspect,
-                  engine: 'Flux.1 High-Performance Engine',
-                };
-                textResult = `:::image-card\n${JSON.stringify(cardPayload)}\n:::\n` + textResult;
+    for (const modelId of uniqueModels) {
+      // Try with search if available and requested, then fallback to tool-free
+      const canTryNativeSearch = useSearch && searchCircuitBreaker.isAvailable() && !isToday;
+      const configsToTry = canTryNativeSearch
+        ? [
+            { ...baseConfig, tools: [{ googleSearch: {} }] },
+            baseConfig,
+          ]
+        : [baseConfig];
+
+      for (const config of configsToTry) {
+        try {
+          const response = await ai.models.generateContent({ model: modelId, contents, config });
+          let textResult = response.text || '';
+
+          // Check for function calls
+          const fnCalls = (response as any).functionCalls || (response as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
+          if (fnCalls && fnCalls.length) {
+            for (const fn of fnCalls) {
+              if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
+                const detailedPrompt = String(fn.args?.prompt || promptText).trim();
+                const aspect = String(fn.args?.aspect_ratio || fn.args?.aspectRatio || '1:1').trim();
+                try {
+                  const item = await mediaEngine.generateImage({
+                    prompt: detailedPrompt,
+                    aspectRatio: (aspect as any) || '1:1',
+                    apiKey,
+                  });
+                  const cardPayload = {
+                    imageUrl: item.url,
+                    enhancedPrompt: item.enhancedPrompt,
+                    originalPrompt: promptText,
+                    title: item.title || (language === 'ar' ? 'صورة سينمائية فائقة الدقة (Flux.1)' : 'Cinematic 8K Masterpiece (Flux.1)'),
+                    aspectRatio: item.aspectRatio || aspect,
+                    engine: 'Flux.1 High-Performance Engine',
+                  };
+                  textResult = `:::image-card\n${JSON.stringify(cardPayload)}\n:::\n` + textResult;
+                } catch {
+                  const seed = Date.now();
+                  const flux = buildFluxEngineUrl(detailedPrompt, aspect, seed);
+                  const cardPayload = {
+                    imageUrl: flux.url,
+                    enhancedPrompt: detailedPrompt,
+                    originalPrompt: promptText,
+                    title: language === 'ar' ? 'صورة سينمائية فائقة الدقة (Flux.1)' : 'Cinematic 8K Masterpiece (Flux.1)',
+                    aspectRatio: aspect,
+                    engine: 'Flux.1 High-Performance Engine',
+                  };
+                  textResult = `:::image-card\n${JSON.stringify(cardPayload)}\n:::\n` + textResult;
+                }
               }
             }
           }
-        }
 
-        // Extract Google Search grounding metadata
-        const metadata = (response as any).groundingMetadata || (response as any).candidates?.[0]?.groundingMetadata;
-        if (metadata) {
-          const grounding = extractGroundingMetadata(metadata);
-          if (grounding.sources.length > 0 || grounding.queries.length > 0) {
-            textResult = textResult + `\n\n:::grounding-sources\n${JSON.stringify(grounding)}\n:::\n`;
-          }
-        }
+          // Grounding sources omitted per user request
 
-        if (textResult.trim()) return textResult;
-      } catch (err: any) {
-        const msg = String(err?.message || '').toLowerCase();
-        const code = Number(err?.status ?? err?.code ?? 0);
-        if (code === 429 || msg.includes('quota') || msg.includes('resource_exhausted')) {
-          if (config.tools) {
-            searchCircuitBreaker.trip();
+          if (textResult.trim()) return textResult;
+        } catch (err: any) {
+          const errMsg = String(err?.message || err);
+          if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+            // Google Search tool quota exhausted: trip circuit breaker for 1 hour
+            searchCircuitBreaker.trip(60 * 60 * 1000);
           }
+          console.warn(`[Gemini Invoker] Attempt failed on ${modelId}:`, errMsg.slice(0, 120));
         }
       }
+    }
+
+    // Direct string prompt fallback
+    try {
+      const resp = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: promptText,
+        config: baseConfig,
+      });
+      if (resp.text?.trim()) return resp.text.trim();
+    } catch (e) {
+      console.warn('[Gemini Invoker] Fallback failed:', e);
     }
 
     return '';
@@ -387,11 +438,12 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
     const agentName = getAgentName(body.agentName);
     res.on('error', () => {});
     req.on('error', () => {});
-    req.once('aborted', () => { aborted = true; });
-    req.once('close', () => { aborted = true; });
+    res.once('close', () => {
+      if (!res.writableFinished) aborted = true;
+    });
 
     try {
-      await hydrateRemoteCatalog();
+      hydrateRemoteCatalog().catch(() => {});
       const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
 
       // P0 Prompt Injection Defense
@@ -503,6 +555,15 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       }
 
       const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(MAX_SWARM_MODELS, Math.floor(body.maxModels))) : 1;
+      let mission: any;
+      let swarmPlan: any;
+      try {
+        mission = buildMission(latestPrompt);
+        swarmPlan = planSwarm(mission, agentRegistry.enabled());
+      } catch (err) {
+        mission = { id: 'fallback', mission: latestPrompt, requiredCapabilities: ['fast'], maxAgents: 1, parallelism: 1 };
+        swarmPlan = { task: mission, assignments: [], waves: [] };
+      }
       const capabilities = inferCapabilities(latestPrompt);
       const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
       const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini');
@@ -517,11 +578,12 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
       res.setHeader('X-Adam-Swarm-Concurrency', String(SWARM_CONCURRENCY));
+      res.setHeader('X-Adam-Mission-Team', swarmPlan.assignments.map(a => a.agentId).join(','));
       res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders?.();
-      run = appendRunEvent(run, { phase: 'planning', at: Date.now(), detail: `registry:${modelRegistry.size()};candidates:${candidates.length}` });
+      run = appendRunEvent(run, { phase: 'planning', at: Date.now(), detail: `mission:${mission.id};team:${swarmPlan.assignments.length};candidates:${candidates.length}` });
 
       let output = '';
       let winner: ModelDescriptor | null = null;

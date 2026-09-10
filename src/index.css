@@ -1014,6 +1014,27 @@ input, textarea {
   max-width: 980px;
   margin: 0 auto;
   position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Reduced background contrast and visual focus during active AI generation / processing */
+.chat-page--busy .chat-subnav-bar,
+.chat-page--busy .proactive-banner,
+.chat-page--busy .welcome {
+  opacity: 0.6;
+  filter: saturate(80%);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.chat-page--busy .message-row:not(:last-child) {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.chat-page--busy .message-row:last-child {
+  opacity: 1;
+  transform: scale(1.002);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Minimalist Single-Line Session Subnav Bar */

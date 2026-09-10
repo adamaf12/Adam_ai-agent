@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import dns from 'node:dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -37,7 +41,7 @@ process.on('unhandledRejection', (reason: any) => {
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
-const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.1-flash-lite';
+const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.5-flash';
 const apiKey = secretsManager.getGeminiApiKey();
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');
@@ -67,7 +71,8 @@ export function safeWrite(res: express.Response, chunk: object | string): boolea
   try {
     const raw = typeof chunk === 'string' ? chunk : JSON.stringify(chunk) + '\n';
     const payload = redactSecrets(raw);
-    return res.write(payload);
+    res.write(payload);
+    return true;
   } catch {
     return false;
   }
@@ -110,7 +115,7 @@ function normalizeMessages(input: unknown) {
     .map(item => ({ role: item.role === 'assistant' || item.role === 'model' ? 'model' : 'user', parts: [{ text: item.content.slice(0, 30_000) }] }));
 }
 
-import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, type GroundingData } from './server/grounding';
+import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, isTodayDateQuery, fetchLiveWebKnowledge, type GroundingData, type GroundingSource } from './server/grounding';
 
 export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
   functionDeclarations: [
@@ -509,8 +514,9 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   res.on('error', () => {});
   req.on('error', () => {});
   let aborted = false;
-  req.once('aborted', () => { aborted = true; });
-  req.once('close', () => { aborted = true; });
+  res.once('close', () => {
+    if (!res.writableFinished) aborted = true;
+  });
 
   if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
   const messages = normalizeMessages(req.body?.messages);
@@ -648,44 +654,66 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     });
 
     const requiresSearch = searchCircuitBreaker.isAvailable() && /\b(search the web|google search|search online|live search)\b|ابحث في الويب|بحث في جوجل/i.test(userPrompt);
+    const isToday = isTodayDateQuery(userPrompt);
+
+    // Fetch live web knowledge if needed for factual or general questions
+    let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
+    if (!isToday && (requiresSearch || userPrompt.length > 5)) {
+      try {
+        webGrounding = await fetchLiveWebKnowledge(userPrompt, language);
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    let finalSystemInstruction = hermesAugmentedInstruction;
+    if (isToday) {
+      const now = new Date();
+      const arDate = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      let hijri = '';
+      try {
+        hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+      } catch {}
+      const hijriStr = hijri ? ` (الموافق هجرياً: ${hijri})` : '';
+      finalSystemInstruction += `\n\nتأكيد حاسم وفوري لتاريخ وساعة اليوم: اليوم هو "${arDate}م${hijriStr}". أجب عن تاريخ أو اليوم بإجابة بسيطة، قطعية، ومباشرة.`;
+    } else if (webGrounding.knowledgeContext) {
+      finalSystemInstruction += `\n${webGrounding.knowledgeContext}`;
+    }
 
     const baseConfig: any = {
       temperature: 0.35,
       topP: 0.95,
       maxOutputTokens: 8192,
-      systemInstruction: hermesAugmentedInstruction,
+      systemInstruction: finalSystemInstruction,
     };
 
     const candidateModels = Array.from(new Set([
-      'gemini-3.7-flash',
-      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
-      'gemini-2.5-pro',
-      'gemini-flash-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.6-flash',
+      'gemini-3.8-flash',
       model,
     ].filter(Boolean)));
     let output = '';
     let lastError: any = null;
-    let accumulatedGrounding: GroundingData = { sources: [], queries: [] };
+    let accumulatedGrounding: GroundingData = isToday
+      ? { sources: [], queries: [] }
+      : {
+          sources: webGrounding.sources || [],
+          queries: webGrounding.queries || [],
+        };
 
     for (const currentModel of candidateModels) {
       if (aborted || res.writableEnded || res.destroyed) break;
 
-      // Enable Google Search grounding and Image Generation tools
-      const hybridTools: any[] = [
-        { googleSearch: {} },
-        { functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations },
-      ];
-
-      const configsToTry = searchCircuitBreaker.isAvailable()
+      const canTrySearch = requiresSearch && searchCircuitBreaker.isAvailable() && !isToday;
+      const configsToTry = canTrySearch
         ? [
-            { ...baseConfig, tools: hybridTools, toolConfig: { includeServerSideToolInvocations: true } },
             { ...baseConfig, tools: [{ googleSearch: {} }] },
-            { ...baseConfig, tools: [{ functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations }] },
             baseConfig,
           ]
         : [
-            { ...baseConfig, tools: [{ functionDeclarations: GENERATE_IMAGE_TOOL.functionDeclarations }] },
             baseConfig,
           ];
 
@@ -760,11 +788,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
             const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : '';
             if (text) {
               output += text;
-              const written = safeWrite(res, { type: 'delta', text });
-              if (!written) {
-                aborted = true;
-                break;
-              }
+              safeWrite(res, { type: 'delta', text });
             }
           }
           if (aborted || res.writableEnded || res.destroyed) return;
@@ -833,11 +857,12 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           }
         } catch (err: any) {
           lastError = err;
+          console.error('[Adam AI Chat Error on model', currentModel, ']:', err?.status, err?.message || err);
           const msg = String(err?.message || '').toLowerCase();
           const code = Number(err?.status ?? err?.code ?? 0);
           if (code === 429 || msg.includes('quota') || msg.includes('resource_exhausted')) {
             if (config.tools) {
-              searchCircuitBreaker.trip();
+              searchCircuitBreaker.trip(60 * 60 * 1000);
             }
           }
         }
@@ -846,12 +871,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       if (output.trim()) break; // Success!
     }
 
-    // Append Google Search Grounding Sources payload if sources or queries were returned
-    if (output.trim() && (accumulatedGrounding.sources.length > 0 || accumulatedGrounding.queries.length > 0)) {
-      const sourcesPayload = `\n\n:::grounding-sources\n${JSON.stringify(accumulatedGrounding)}\n:::\n`;
-      output += sourcesPayload;
-      safeWrite(res, { type: 'delta', text: sourcesPayload });
-    }
+    // Grounding sources omitted per user request
 
     if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
       console.warn('[Adam AI chat] Gemini models unavailable or quota exceeded, attempting remote model gateway fallback...');

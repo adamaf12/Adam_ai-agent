@@ -390,7 +390,7 @@ export function Chat({
   const stop = () => controller.current?.abort();
 
   return (
-    <section className="chat-page">
+    <section className={busy ? "chat-page chat-page--busy" : "chat-page"}>
       {/* Sleek Minimalist Session Bar (Desktop only, as mobile has unified this into the single ultra-thin top navbar) */}
       <div className="chat-subnav-bar desktop-only">
         <div className="chat-subnav-info">

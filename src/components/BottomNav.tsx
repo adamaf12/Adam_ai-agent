@@ -8,6 +8,7 @@ import {
   Lock,
   MessageCircle,
   Settings2,
+  ShieldAlert,
   Unlock,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ const mobileNavItems: NavItemDef[] = [
   { id: 'apps', icon: Gamepad2, labelAr: 'الألعاب والتطبيقات', labelEn: 'Apps & Games' },
   { id: 'tasks', icon: CalendarCheck, labelAr: 'المهام', labelEn: 'Tasks' },
   { id: 'media', icon: Film, labelAr: 'الوسائط', labelEn: 'Media' },
+  { id: 'security', icon: ShieldAlert, labelAr: 'الأمان والحماية', labelEn: 'Security & WAF' },
   { id: 'settings', icon: Settings2, labelAr: 'الإعدادات', labelEn: 'Settings' },
 ];
 

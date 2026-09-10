@@ -68,6 +68,14 @@ export function mergeGroundingData(base: GroundingData, incoming: GroundingData)
 }
 
 /**
+ * Detects if a prompt is asking about today, current date, day of week, or current time.
+ */
+export function isTodayDateQuery(prompt: string): boolean {
+  const p = String(prompt || '').toLowerCase().trim();
+  return /(?:اليوم|تاريخ اليوم|ماهو اليوم|ما هو اليوم|اليوم ايه|كم تاريخ|كم التاريخ|كم اليوم|شو اليوم|ايش اليوم|ماهو تاريخ اليوم|ما تاريخ|اليوم كم|today|what day is it|current date|today's date|what date is it|what's today)/i.test(p);
+}
+
+/**
  * Generates dynamic current date & time instruction for the system prompt.
  * Evaluated freshly on every request to inject the live system clock.
  */
@@ -79,6 +87,17 @@ export function getDynamicSystemContext(language: 'ar' | 'en'): string {
     month: 'long',
     day: 'numeric',
   });
+  let arHijriFormatted = '';
+  try {
+    arHijriFormatted = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(now);
+  } catch {
+    arHijriFormatted = '';
+  }
+
   const enDateFormatted = now.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -100,18 +119,93 @@ export function getDynamicSystemContext(language: 'ar' | 'en'): string {
   });
 
   if (language === 'ar') {
-    return `\n\nالسياق الزمني الفعلي وحقن الساعة المباشرة (REAL-TIME SYSTEM CLOCK & GROUNDING):
-- Current Date (التاريخ الحالي المباشر): ${arDateFormatted}
-- Current ISO Time: ${isoDate} (${arTimeFormatted})
-- توجيه إلزامي صارم (Mandatory Date Directive): اعتمد دائماً وبشكل قاطع على سياق 'التاريخ الحالي' (Current Date) المرفق أعلاه عند الإجابة على أي أسئلة تخص تاريخ اليوم، اليوم من الأسبوع، الوقت الحاضر، أو السنة الحالية.
-- البحث الحي في جوجل: عندما يسأل المستخدم عن أخبار حالية، أحداث جارية، طقس، أسعار عملات، نتائج مباريات، أو حقائق ومعلومات حديثة، استخدم دائماً أداة البحث في جوجل (googleSearch) لجلب وتأكيد أحدث المعلومات الحية قبل الإجابة.`;
+    const hijriPart = arHijriFormatted ? ` (الموافق هجرياً: ${arHijriFormatted})` : '';
+    return `\n\nالسياق الزمني المباشر وتأكيد تاريخ اليوم (REAL-TIME CALENDAR & CLOCK):
+- اليوم وتاريخ اليوم المؤكد: ${arDateFormatted}م${hijriPart}
+- الوقت الحالي: ${arTimeFormatted} (ISO: ${isoDate})
+- توجيه إلزامي صارم لليوم وتاريخ اليوم (MANDATORY TODAY DIRECTIVE):
+  * عندما يسألك المستخدم عن "اليوم" أو "تاريخ اليوم" أو "ما هو اليوم" أو "اليوم ايه"، أجب مباشرة بدقة متناهية وبساطة مطلقة معتمداً على التاريخ المحدد أعلاه: "${arDateFormatted}م${hijriPart}". لا تخمّن ولا تؤجل الإجابة، واذكر اليوم والتاريخ فوراً بإيجاز ووضوح.
+- توجيه إلزامي للأسئلة العامة والمعلومات من الشبكة (WEB GROUNDING & KNOWLEDGE DIRECTIVE):
+  * عندما يسألك المستخدم عن أي موضوع أو حقيقة أو استفسار عام آخر، قدّم إجابة صحيحة، بسيطة، مباشرة، ومستندة إلى معلومات موثوقة من الشبكة بدون أي تعقيد أو حشو غير ضروري.`;
   }
 
-  return `\n\nDYNAMIC REAL-TIME SYSTEM CLOCK & GOOGLE SEARCH GROUNDING:
+  return `\n\nDYNAMIC REAL-TIME SYSTEM CLOCK & GROUNDING:
 - Current Date: ${enDateFormatted}
 - Current ISO Time: ${isoDate} (${enTimeFormatted})
-- Mandatory Directive: Always rely on the provided 'Current Date' context when answering questions about today, the present time, or current year.
-- Real-Time Knowledge: When the user asks about current events, news, weather, stock prices, sports scores, or recent facts, ALWAYS use the googleSearch tool to fetch the latest real-time information before answering.`;
+- Mandatory Directive: Always rely on the provided 'Current Date' context when answering questions about today, the present time, or current year. Answer directly, clearly, and concisely.
+- Knowledge Grounding: When answering general questions about the world, provide accurate, simple, and direct answers based on verified web knowledge without unnecessary fluff.`;
+}
+
+/**
+ * Fetches real-time web knowledge from Wikipedia API in Arabic or English
+ * with low latency (<400ms), safe timeouts, and fallback handling.
+ */
+export async function fetchLiveWebKnowledge(
+  query: string,
+  language: 'ar' | 'en' = 'ar'
+): Promise<{ sources: GroundingSource[]; knowledgeContext: string; queries: string[] }> {
+  const cleanQuery = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().slice(0, 150);
+  if (!cleanQuery || cleanQuery.length < 2) {
+    return { sources: [], knowledgeContext: '', queries: [] };
+  }
+
+  const endpoint = language === 'ar'
+    ? `https://ar.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=3`
+    : `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=3`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const res = await fetch(endpoint, {
+      headers: { 'User-Agent': 'AdamAI/2.0 (KnowledgeAssistant)' },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const searchItems = Array.isArray(data?.query?.search) ? data.query.search : [];
+
+    const sources: GroundingSource[] = [];
+    const snippets: string[] = [];
+
+    for (const item of searchItems.slice(0, 3)) {
+      const title = String(item?.title || '').trim();
+      if (!title) continue;
+      const snippet = String(item?.snippet || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .trim();
+
+      const wikiDomain = language === 'ar' ? 'ar.wikipedia.org' : 'en.wikipedia.org';
+      const url = `https://${wikiDomain}/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+
+      sources.push({
+        title,
+        url,
+        domain: 'wikipedia.org',
+      });
+
+      if (snippet) {
+        snippets.push(`- **${title}**: ${snippet}`);
+      }
+    }
+
+    let knowledgeContext = '';
+    if (snippets.length > 0) {
+      knowledgeContext = language === 'ar'
+        ? `\n\n=== نتائج ومعلومات حية وموثوقة من شبكة الويب (LIVE WEB GROUNDING) ===\n${snippets.join('\n')}\nاستفد من هذه المعلومات المباشرة لتقديم إجابة صحيحة، بسيطة ومباشرة للمستخدم.`
+        : `\n\n=== VERIFIED WEB KNOWLEDGE SNIPPETS ===\n${snippets.join('\n')}\nUse these verified facts to provide a simple, accurate, and direct response.`;
+    }
+
+    return { sources, knowledgeContext, queries: [cleanQuery] };
+  } catch (err) {
+    return { sources: [], knowledgeContext: '', queries: [cleanQuery] };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**

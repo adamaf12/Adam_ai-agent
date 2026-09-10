@@ -18,12 +18,12 @@ export class ModelRegistry {
 }
 
 const builtInModels: ModelDescriptor[] = [
-  { id: 'gemini-3.1-flash-lite', provider: 'gemini', displayName: 'Gemini 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.3, speed: 10, cost: 1, enabled: true },
-  { id: 'gemini-3.7-flash', provider: 'gemini', displayName: 'Gemini 3.7 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.6, cost: 1, enabled: true },
-  { id: 'gemini-3.5-flash', provider: 'gemini', displayName: 'Gemini 3.5 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 9.4, speed: 9.7, cost: 1, enabled: true },
-  { id: 'gemini-flash-lite-latest', provider: 'gemini', displayName: 'Gemini Flash Lite Latest', capabilities: ['general','fast','arabic'], quality: 9.0, speed: 9.9, cost: 1, enabled: true },
-  { id: 'gemini-3.8-flash', provider: 'gemini', displayName: 'Gemini 3.8 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 9.5, speed: 9.8, cost: 1, enabled: true },
-  { id: 'gemini-flash-latest', provider: 'gemini', displayName: 'Gemini Flash Latest', capabilities: ['general','fast','coding','arabic'], quality: 9.0, speed: 9.5, cost: 1, enabled: true },
+  { id: 'gemini-3.6-flash', provider: 'gemini', displayName: 'Gemini 3.6 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.9, cost: 1, enabled: true },
+  { id: 'gemini-3.5-flash-lite', provider: 'gemini', displayName: 'Gemini 3.5 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.6, speed: 10, cost: 1, enabled: true },
+  { id: 'gemini-3.8-flash', provider: 'gemini', displayName: 'Gemini 3.8 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-3.7-flash', provider: 'gemini', displayName: 'Gemini 3.7 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.7, speed: 9.7, cost: 1, enabled: true },
+  { id: 'gemini-3.1-flash-lite', provider: 'gemini', displayName: 'Gemini 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.5, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-3.1-pro-preview', provider: 'gemini', displayName: 'Gemini 3.1 Pro Preview', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.2, cost: 2, enabled: true },
 ];
 export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);

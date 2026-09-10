@@ -10,6 +10,7 @@ import { Settings } from './features/settings/Settings';
 import { Workspace } from './features/workspace/Workspace';
 import { MediaStudio } from './features/media/MediaStudio';
 import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
+import { SecurityVulnerabilityLab } from './features/security/SecurityVulnerabilityLab';
 import { Onboarding } from './features/onboarding/Onboarding';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
@@ -156,6 +157,7 @@ export default function App() {
               onRunPromptInChat={() => setActiveView('chat')}
             />
           )}
+          {activeView === 'security' && <SecurityVulnerabilityLab language={preferences.language} />}
           {activeView === 'settings' && (
             <Settings
               language={preferences.language}

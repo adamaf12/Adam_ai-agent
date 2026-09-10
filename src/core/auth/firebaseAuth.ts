@@ -10,9 +10,14 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../../firebase-applet-config.json';
 
+const resolvedConfig = {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || 'AIzaSyAGiutifaCSS6W0rgsY7ko4BrPigR6dLBc',
+};
+
 let app: FirebaseApp;
 if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
+  app = initializeApp(resolvedConfig);
 } else {
   app = getApp();
 }
