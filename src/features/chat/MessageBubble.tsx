@@ -3,9 +3,13 @@ import { Bot, Check, Code2, Copy, Gamepad2, Play, User } from 'lucide-react';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Message } from '../../core/domain';
+import type { Message, ViewId } from '../../core/domain';
 import { ImageCard } from './ImageCard';
+import { ImageViewerModal } from './ImageViewerModal';
 import { GroundingSources, type GroundingSource } from './GroundingSources';
+import { AppLauncherCard, type AppLauncherData } from './AppLauncherCard';
+import { AgentActionCard } from './AgentActionCard';
+import { extractAgentActions } from '../../core/agent/ademDuoAutonomousAgent';
 import { extractAppCode, saveSandboxApp } from '../../core/appSandboxStorage';
 
 function extractPromptFromUrl(src: string): string {
@@ -26,6 +30,7 @@ interface MessageBubbleProps {
   language: 'ar' | 'en';
   userPrompt?: string;
   onOpenSandbox?: (appId: string) => void;
+  onNavigateView?: (view: ViewId, extraParam?: string) => void;
 }
 
 export function MessageBubble({
@@ -33,9 +38,11 @@ export function MessageBubble({
   language,
   userPrompt,
   onOpenSandbox,
+  onNavigateView,
 }: MessageBubbleProps) {
   const assistant = message.role === 'assistant';
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<number | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; alt?: string } | null>(null);
 
   // Check if message contains structured image card payload
   const imageCardMatch = message.content.match(/:::image-card\s*([\s\S]*?)\s*:::/i);
@@ -62,10 +69,22 @@ export function MessageBubble({
     } catch {}
   }
 
+  // Check if message contains structured app-launcher payload
+  const appLauncherMatch = message.content.match(/:::app-launcher\s*([\s\S]*?)\s*:::/i);
+  let appLauncherData: AppLauncherData | null = null;
+  if (appLauncherMatch) {
+    try {
+      appLauncherData = JSON.parse(appLauncherMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured autonomous agent actions
+  const agentActions = extractAgentActions(message.content);
+
   // Check if message contains runnable app/game code
   const appData = assistant ? extractAppCode(message.content) : null;
 
-  // Clean raw image card or grounding tags from display markdown
+  // Clean raw image card or grounding or app launcher or agent action tags from display markdown
   let displayMarkdown = message.content;
   if (imageCardMatch) {
     displayMarkdown = displayMarkdown.replace(/:::image-card\s*[\s\S]*?\s*:::/gi, '').trim();
@@ -75,6 +94,12 @@ export function MessageBubble({
   }
   if (groundingMatch) {
     displayMarkdown = displayMarkdown.replace(/:::grounding-sources\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (appLauncherMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::app-launcher\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (agentActions.length > 0) {
+    displayMarkdown = displayMarkdown.replace(/:::agent-action\s*[\s\S]*?\s*:::/gi, '').trim();
   }
 
   const copy = () => navigator.clipboard?.writeText(displayMarkdown || message.content);
@@ -138,6 +163,42 @@ export function MessageBubble({
           </span>
         </div>
 
+        {/* User Attached Images Gallery */}
+        {message.images && message.images.length > 0 && (
+          <div className="my-2 flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>{language === 'ar' ? '⚡ تم الفحص والإدراك البصري التلقائي للمكونات' : '⚡ Auto-Perception & Instant Vision Active'}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {message.images.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() =>
+                    setSelectedImage({
+                      url: imgUrl,
+                      alt: language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`,
+                    })
+                  }
+                  className="group relative block overflow-hidden rounded-xl border border-slate-700/80 hover:border-emerald-500/80 bg-slate-900/90 shadow-md transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                  title={language === 'ar' ? 'انقر لتكبير وعرض الصورة' : 'Click to expand image'}
+                >
+                  <img
+                    src={imgUrl}
+                    alt={language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`}
+                    className="max-h-52 max-w-xs object-cover rounded-xl"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2 text-xs text-white font-medium">
+                    <span>{language === 'ar' ? '🔍 تكبير' : '🔍 Expand'}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Dedicated Image Card if Structured Function Call Payload exists */}
         {imageCardData && (
           <ImageCard
@@ -150,6 +211,27 @@ export function MessageBubble({
             language={language}
           />
         )}
+
+        {/* Dedicated App Launcher Card when app command is triggered */}
+        {appLauncherData && (
+          <AppLauncherCard
+            data={appLauncherData}
+            language={language}
+            onNavigateView={onNavigateView}
+            onOpenSandbox={onOpenSandbox}
+          />
+        )}
+
+        {/* Dedicated Autonomous Agent Action Cards (Code execution, Terminal runner, Files, Tasks) */}
+        {agentActions.map((action, idx) => (
+          <AgentActionCard
+            key={idx}
+            action={action}
+            language={language}
+            onNavigateView={onNavigateView}
+            onOpenSandbox={onOpenSandbox}
+          />
+        ))}
 
         {/* Dedicated App / Game Launcher Banner when code is generated */}
         {assistant && appData && (
@@ -333,6 +415,13 @@ export function MessageBubble({
           </button>
         )}
       </div>
+
+      <ImageViewerModal
+        imageUrl={selectedImage?.url || null}
+        altText={selectedImage?.alt}
+        onClose={() => setSelectedImage(null)}
+        language={language}
+      />
     </motion.article>
   );
 }

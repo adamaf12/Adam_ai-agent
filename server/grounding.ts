@@ -79,7 +79,7 @@ export function isTodayDateQuery(prompt: string): boolean {
  * Generates dynamic current date & time instruction for the system prompt.
  * Evaluated freshly on every request to inject the live system clock.
  */
-export function getDynamicSystemContext(language: 'ar' | 'en'): string {
+export function getDynamicSystemContext(language: 'ar' | 'en' | 'fr' | string = 'ar'): string {
   const now = new Date();
   const arDateFormatted = now.toLocaleDateString('ar-EG', {
     weekday: 'long',

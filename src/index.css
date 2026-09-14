@@ -188,9 +188,9 @@ input, textarea {
   gap: 12px;
   z-index: 50;
   border-bottom: 1px solid var(--border);
-  background: rgba(10, 18, 14, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   flex-wrap: nowrap;
 }
 
@@ -216,38 +216,94 @@ input, textarea {
   transform: scale(1.02);
 }
 
+.navbar-center-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: min(980px, calc(100vw - 320px));
+  min-width: 0;
+  flex: 1;
+  justify-content: center;
+}
+
 .navbar-center {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3.5px;
   background: var(--surface-2);
   padding: 4px 6px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .navbar-center::-webkit-scrollbar {
   display: none;
 }
 
+.navbar-scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: all 0.16s ease;
+}
+
+.navbar-scroll-btn:hover {
+  background: var(--surface-hover);
+  color: var(--accent);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.navbar-scroll-btn--left {
+  left: -12px;
+}
+
+.navbar-scroll-btn--right {
+  right: -12px;
+}
+
 .nav-pill {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 14px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-secondary);
   border-radius: var(--radius-full);
   border: 1px solid transparent;
   background: transparent;
-  transition: color 0.16s ease;
+  transition: color 0.16s ease, background-color 0.16s ease;
   white-space: nowrap;
   cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@media (min-width: 821px) and (max-width: 1120px) {
+  .nav-pill {
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
 }
 
 .nav-pill:hover {
@@ -551,251 +607,16 @@ input, textarea {
 }
 
 /* ==========================================================================
-   MOBILE SIDE LOCK & POP-OUT NAVIGATION DOCK
+   MINIMAL CORNER LOCK & POP-OUT NAVIGATION DRAWER
    ========================================================================== */
 
-.mobile-side-lock-container {
-  display: none;
-}
-
-.mobile-nav-popout {
-  display: none;
-}
-
 @media (max-width: 820px) {
-  /* Floating Side Lock Button (قفل على الجانب - تم رفعه لأعلى) */
-  .mobile-side-lock-container {
-    display: block;
-    position: fixed;
-    bottom: 124px; /* Raised comfortably above composer and input area */
-    inset-inline-start: 12px;
-    z-index: 45;
-    pointer-events: auto;
+  .main-content {
+    padding-top: 46px;
+    padding-bottom: 0px; /* Zero wasted space - maximized chat & workspace */
   }
-
-  .mobile-side-lock-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 35px;
-    padding: 0 12px 0 9px;
-    background: rgba(10, 20, 16, 0.9);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-full);
-    color: var(--text);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 12px var(--accent-glow);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-
-  :root[data-theme='light'] .mobile-side-lock-btn {
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 12px rgba(15, 159, 110, 0.15);
-  }
-
-  .mobile-side-lock-btn:active {
-    transform: scale(0.94);
-  }
-
-  .mobile-side-lock-btn--active {
-    border-color: var(--accent);
-    background: var(--surface-2);
-  }
-
-  .mobile-side-lock-icon-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-  }
-
-  .mobile-side-lock-dot {
-    position: absolute;
-    top: -1px;
-    right: -1px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  .mobile-side-lock-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.01em;
-  }
-
-  /* Backdrop Overlay */
-  .mobile-nav-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    z-index: 55;
-  }
-
-  /* Popout Navigation Dock */
-  .mobile-nav-popout {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 60;
-    padding: 0 12px 14px;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;
-    pointer-events: none;
-  }
-
-  .mobile-nav-popout--open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .mobile-nav-popout--closed {
-    transform: translateY(110%);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .mobile-nav-popout-inner {
-    background: rgba(12, 22, 17, 0.95);
-    backdrop-filter: blur(32px) saturate(180%);
-    -webkit-backdrop-filter: blur(32px) saturate(180%);
-    border: 1px solid var(--border-strong);
-    border-radius: 24px;
-    padding: 12px 14px 14px;
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(39, 214, 155, 0.15);
-    max-width: 500px;
-    margin: 0 auto;
-  }
-
-  :root[data-theme='light'] .mobile-nav-popout-inner {
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.14);
-  }
-
-  .mobile-nav-popout-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .mobile-nav-lock-close-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: var(--radius-full);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    font-size: 11.5px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.16s ease;
-  }
-
-  .mobile-nav-lock-close-btn:hover,
-  .mobile-nav-lock-close-btn:active {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: var(--surface-hover);
-  }
-
-  .mobile-nav-popout-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-  }
-
-  .mobile-nav-popout-item {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 4px;
-    border-radius: 16px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.16s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-nav-popout-item:active {
-    transform: scale(0.95);
-  }
-
-  .mobile-nav-popout-active-bg {
-    position: absolute;
-    inset: 0;
-    border-radius: 16px;
-    background: var(--accent-subtle);
-    border: 1px solid var(--border-strong);
-    pointer-events: none;
-  }
-
-  .mobile-nav-popout-item--active {
-    color: var(--accent);
-  }
-
-  .mobile-nav-popout-icon-box {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: var(--surface-2);
-  }
-
-  .mobile-nav-popout-item--active .mobile-nav-popout-icon-box {
-    background: var(--surface-hover);
-    color: var(--accent);
-  }
-
-  .mobile-nav-popout-glow-dot {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent);
-  }
-
-  .mobile-nav-popout-item-label {
-    font-size: 10.5px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
-  }
-
-  .mobile-nav-popout-item--active .mobile-nav-popout-item-label {
-    font-weight: 700;
-    color: var(--text);
+  .chat-page {
+    padding-bottom: 0;
   }
 }
 
@@ -1491,9 +1312,9 @@ input, textarea {
 
 /* Composer */
 .composer-wrap {
-  padding: 12px 24px 20px;
+  padding: 8px 16px 14px;
   width: 100%;
-  max-width: 980px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -1503,15 +1324,23 @@ input, textarea {
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--border-strong);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-  transition: all 0.18s ease;
+  border-radius: 28px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 15px var(--accent-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme='light'] .composer {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
 }
 
 .composer:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 8px 24px var(--accent-glow);
+  box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.25);
 }
 
 .composer textarea {
@@ -2086,3 +1915,18 @@ input, textarea {
   will-change: opacity, transform, filter;
 }
 
+/* Map Engine & GPS UI Animations */
+@keyframes pulseGpsRadar {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}

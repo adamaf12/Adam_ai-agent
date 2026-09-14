@@ -23,8 +23,8 @@ export function generateLocalFallbackResponse({
 
   if (isGreeting) {
     return language === 'ar'
-      ? `أهلاً وسهلاً بك! أنا **${agentName}**، مساعدك الشخصي الذكي. أنا متصل وجاهز لمساعدتك في أي وقت في تنظيم مهامك، كتابة الأفكار، أو الإجابة عن أي استفسار. كيف يمكنني خدمتك الآن؟`
-      : `Hello! I am **${agentName}**, your personal AI assistant. I am ready to help you with tasks, writing, organizing, or answering any questions. How can I assist you today?`;
+      ? `أهلاً بك! أنا **${agentName}**. كيف يمكنني مساعدتك؟ تفضل بسؤالك أو طلبك وسأجيبك فوراً.`
+      : `Hello! I'm **${agentName}**. How can I help you today? Feel free to ask a question or give me a task.`;
   }
 
   // 2. Identity & capabilities
@@ -35,35 +35,22 @@ export function generateLocalFallbackResponse({
 
   if (isIdentity) {
     return language === 'ar'
-      ? `أنا **${agentName}** — نظام ذكاء اصطناعي ومساعد شخصي متكامل. أمتلك:
-- 🧠 **ذاكرة مستمرة**: أحفظ تفضيلاتك وتوجيهاتك تلقائياً عبر الجلسات.
-- 📋 **إدارة المهام الذكية**: جدولة وتنظيم مهامك وأولوياتك.
-- 🎨 **استوديو الصور والفيديو**: تصميم وتوليد صور سينمائية عالية الدقة.
-- 🌐 **البحث والمعرفة**: تزويدك بأدق المعلومات والتحليلات.
-
-ما الذي ترغب بالبدء به اليوم؟`
-      : `I am **${agentName}** — your comprehensive personal AI intelligence workspace.
-Features include:
-- 🧠 **Infinite Memory**: Retains your preferences across sessions.
-- 📋 **Smart Task Management**: Organizes schedules and priorities.
-- 🎨 **Media Studio**: Generates 8K cinematic visuals and videos.
-- 🌐 **Deep Knowledge**: Instant search and structured answers.
-
-What would you like to explore?`;
+      ? `أنا **${agentName}**، مساعدك الذكي للمساعدة في كتابة وتشغيل الأكواد، تنظيم المهام، وحل المسائل التقنية بكفاءة. كيف تحب أن نبدأ؟`
+      : `I am **${agentName}**, your AI assistant for coding, task management, and fast technical solutions. How can I assist you today?`;
   }
 
   // 3. Thanks & appreciation
   const isThanks = /(?:شكرا|شكراً|يعطيك العافية|تسلم|مشكور|thanks|thank you|thx)\b/i.test(clean);
   if (isThanks) {
     return language === 'ar'
-      ? `على الرحب والسعة دائماً! أنا هنا لمساعدتك متى احتجتني. يسعدني تقديم يد العون في أي مهمة أو سؤال.`
-      : `You're very welcome! I'm always here to assist you whenever you need.`;
+      ? `على الرحب والسعة! أنا دائماً في خدمتك كلما احتجتني.`
+      : `You're very welcome! I'm always here whenever you need help.`;
   }
 
   // 4. General fallback with graceful local mode
   return language === 'ar'
-    ? `تم استلام رسالتك: **"${clean.slice(0, 80)}"**.
-يعمل ${agentName} الآن بوضع المعالجة السريعة. يمكنك استخدام أقسام التطبيق المختلفة (المهام، الذاكرة، استوديو الوسائط) من الشريط السفلي، أو إعادة إرسال السؤال وسأجيبك بأفضل ما لدي.`
-    : `Received: **"${clean.slice(0, 80)}"**.
-${agentName} is currently operating in fast responsive mode. You can manage tasks, explore memories, or use the Media Studio from the bottom navigation.`;
+    ? `تم استلام طلبك: **"${clean.slice(0, 70)}"**.
+أنا متصل وجاهز لمساعدتك؛ تفضل بما تريد وسأقدم لك الحل مباشرة وبكل بساطة.`
+    : `Received: **"${clean.slice(0, 70)}"**.
+I am ready to help—share what you need and I will assist you directly.`;
 }

@@ -21,8 +21,13 @@ export function routePrompt(text: string): AgentRoute {
   const value = text.trim().toLowerCase();
   if (!value) return route('chat', 'Empty input falls back to the conversational route.', 0.5);
 
+  const isCodeOrGame = /(?:لعبة|العاب|ألعاب|تطبيق|تطبيقات|برمج|كود|ساندبوكس|game|games|app|apps|code|play|ue5|unreal)/i.test(value);
+
   const ranked = (Object.entries(signals) as Array<[Exclude<AgentIntent, 'chat'>, typeof signals[Exclude<AgentIntent, 'chat'>]]>)
     .map(([intent, signal]) => {
+      if (intent === 'creative' && isCodeOrGame) {
+        return { intent, score: 0, englishHits: 0, arabicHits: 0, reason: signal.reason };
+      }
       const englishHits = signal.en.filter(term => hasEnglishToken(value, [term])).length;
       const arabicHits = signal.ar.filter(term => hasArabicPhrase(value, [term])).length;
       const actionMultiplier = intent === 'creative' ? 2.5 : intent === 'task' || intent === 'memory' ? 1.5 : 1.0;

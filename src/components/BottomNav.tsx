@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
+  Brain,
   CalendarCheck,
   Film,
   Gamepad2,
-  LayoutGrid,
+  Lock,
   MessageCircle,
   Settings2,
+  Sparkles,
+  Unlock,
   X,
   type LucideIcon,
+  ChevronUp,
 } from 'lucide-react';
 import type { Language, ViewId } from '../core/domain';
 
@@ -19,11 +23,13 @@ interface NavItemDef {
   labelEn: string;
 }
 
-const mobileNavItems: NavItemDef[] = [
+const navItemsList: NavItemDef[] = [
   { id: 'chat', icon: MessageCircle, labelAr: 'المحادثة', labelEn: 'Chat' },
-  { id: 'apps', icon: Gamepad2, labelAr: 'الألعاب والتطبيقات', labelEn: 'Apps & Games' },
   { id: 'tasks', icon: CalendarCheck, labelAr: 'المهام', labelEn: 'Tasks' },
+  { id: 'workspace', icon: Sparkles, labelAr: 'مساحة العمل', labelEn: 'Workspace' },
+  { id: 'apps', icon: Gamepad2, labelAr: 'التطبيقات والألعاب', labelEn: 'Apps & Games' },
   { id: 'media', icon: Film, labelAr: 'الوسائط', labelEn: 'Media' },
+  { id: 'memory', icon: Brain, labelAr: 'الذاكرة', labelEn: 'Memory' },
   { id: 'settings', icon: Settings2, labelAr: 'الإعدادات', labelEn: 'Settings' },
 ];
 
@@ -36,9 +42,10 @@ export function BottomNav({
   language: Language;
   onChange: (view: ViewId) => void;
 }) {
+  const isAr = language === 'ar';
   const [isOpen, setIsOpen] = useState(false);
 
-  // Close when clicking outside or pressing Escape
+  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -54,105 +61,120 @@ export function BottomNav({
     setIsOpen(false);
   };
 
+  const currentNav = navItemsList.find((i) => i.id === active) || navItemsList[0];
+
   return (
     <>
-      {/* 1. Floating Side Navigation Button */}
-      <div className="mobile-side-lock-container">
+      {/* ========================================================================= */}
+      {/* 1. ELEVATED & ENLARGED CORNER LOCK TRIGGER */}
+      {/* ========================================================================= */}
+      <div className="mini-lock-corner-wrapper fixed bottom-28 inset-inline-start-3.5 z-40 select-none md:hidden pointer-events-auto">
         <button
           type="button"
-          className={`mobile-side-lock-btn ${isOpen ? 'mobile-side-lock-btn--active' : ''}`}
           onClick={() => setIsOpen((prev) => !prev)}
-          title={
+          className={`group flex items-center gap-2 h-9 px-3.5 rounded-full border shadow-lg backdrop-blur-2xl transition-all duration-200 cursor-pointer active:scale-95 ${
             isOpen
-              ? (language === 'ar' ? 'إغلاق القائمة' : 'Close Menu')
-              : (language === 'ar' ? 'فتح القائمة' : 'Open Menu')
-          }
-          aria-label={isOpen ? 'Close Menu' : 'Open Menu'}
-          aria-expanded={isOpen}
+              ? 'bg-emerald-950/95 border-emerald-400 text-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.4)]'
+              : 'bg-slate-950/90 border-slate-700/80 text-slate-200 hover:text-emerald-300 hover:border-emerald-500/60 shadow-black/50 hover:shadow-[0_0_14px_rgba(16,185,129,0.25)]'
+          }`}
+          title={isAr ? 'فتح قائمة التنقل السريع' : 'Open Navigation Dock'}
+          aria-label={isAr ? 'شريط التنقل' : 'Navigation Dock'}
         >
-          <div className="mobile-side-lock-icon-wrap">
+          <div className="relative flex items-center justify-center">
             {isOpen ? (
-              <X size={15} className="text-slate-200" />
+              <Unlock size={15} className="text-emerald-400" />
             ) : (
-              <LayoutGrid size={15} className="text-emerald-400" />
+              <Lock size={15} className="text-emerald-400 group-hover:scale-110 transition-transform" />
             )}
-            <span className="mobile-side-lock-dot" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
           </div>
-          <span className="mobile-side-lock-label">
-            {isOpen ? (language === 'ar' ? 'إغلاق' : 'Close') : (language === 'ar' ? 'القائمة' : 'Menu')}
+
+          <span className="text-xs font-bold tracking-tight text-white max-w-[85px] truncate">
+            {isAr ? currentNav.labelAr : currentNav.labelEn}
           </span>
+
+          <ChevronUp
+            size={13}
+            className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-emerald-400' : 'group-hover:text-emerald-400'}`}
+          />
         </button>
       </div>
 
-      {/* 2. Backdrop Overlay when Navigation is Open */}
-      {isOpen && (
-        <div
-          className="mobile-nav-backdrop animate-fadeIn"
-          onClick={() => setIsOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      {/* ========================================================================= */}
+      {/* 2. BACKDROP OVERLAY */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 md:hidden"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
 
-      {/* 3. Pop-out Floating Navigation Dock */}
-      <div
-        className={`mobile-nav-popout ${isOpen ? 'mobile-nav-popout--open' : 'mobile-nav-popout--closed'}`}
-        aria-hidden={!isOpen}
-        {...(!isOpen ? { inert: true } : {})}
-      >
-        <div className="mobile-nav-popout-inner glass-panel">
-          {/* Top Bar inside the Popout */}
-          <div className="mobile-nav-popout-header">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <span className="text-[12px] font-bold text-slate-300">
-                {language === 'ar' ? 'شريط التنقل السريع' : 'Quick Navigation'}
-              </span>
+      {/* ========================================================================= */}
+      {/* 3. PREMIUM SLIDE-UP NAVIGATION DOCK */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0.6 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 border-t border-emerald-500/30 rounded-t-[28px] p-4 shadow-2xl backdrop-blur-2xl md:hidden max-w-lg mx-auto"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                <span className="text-xs font-bold text-white tracking-tight">
+                  {isAr ? 'لوحة تحكم وتطبيقات ADEM' : 'ADEM Control & Apps'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                aria-label={isAr ? 'إغلاق' : 'Close'}
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <button
-              type="button"
-              className="mobile-nav-lock-close-btn"
-              onClick={() => setIsOpen(false)}
-              title={language === 'ar' ? 'إغلاق' : 'Close'}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <X size={13} className="text-slate-400" />
-              <span>{language === 'ar' ? 'إغلاق' : 'Close'}</span>
-            </button>
-          </div>
+            {/* Clean Grid of destinations */}
+            <div className="grid grid-cols-4 gap-2">
+              {navItemsList.map(({ id, icon: Icon, labelAr, labelEn }) => {
+                const isActive = active === id;
 
-          {/* Navigation Items */}
-          <nav className="mobile-nav-popout-grid" aria-label="Mobile Navigation Destinations">
-            {mobileNavItems.map(({ id, icon: Icon, labelAr, labelEn }) => {
-              const isActive = active === id;
-              const label = language === 'ar' ? labelAr : labelEn;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`mobile-nav-popout-item ${isActive ? 'mobile-nav-popout-item--active' : ''}`}
-                  onClick={() => handleSelect(id)}
-                  aria-current={isActive ? 'page' : undefined}
-                  tabIndex={isOpen ? 0 : -1}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="mobile-nav-active-pill"
-                      className="mobile-nav-popout-active-bg"
-                      transition={{ type: 'spring', stiffness: 440, damping: 34 }}
-                    />
-                  )}
-                  <div className="mobile-nav-popout-icon-box relative z-10">
-                    <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
-                    {isActive && <span className="mobile-nav-popout-glow-dot" />}
-                  </div>
-                  <span className="mobile-nav-popout-item-label relative z-10">{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => handleSelect(id)}
+                    className={`flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all cursor-pointer border active:scale-95 ${
+                      isActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold'
+                        : 'bg-slate-900/60 text-slate-300 hover:text-white border-slate-800/90 hover:bg-slate-800/80 hover:border-slate-700'
+                    }`}
+                  >
+                    <Icon size={19} className="mb-1" strokeWidth={isActive ? 2.4 : 1.8} />
+                    <span className="text-[10px] font-medium truncate max-w-full">
+                      {isAr ? labelAr : labelEn}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

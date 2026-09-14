@@ -1,9 +1,30 @@
 import type { Memory, Task } from '../domain';
 
+const memoryStore = new Map<string, string>();
+
 const read = <T,>(key: string, fallback: T): T => {
-  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : fallback;
+    }
+    const mem = memoryStore.get(key);
+    return mem ? (JSON.parse(mem) as T) : fallback;
+  } catch {
+    return fallback;
+  }
 };
-const write = <T,>(key: string, value: T) => localStorage.setItem(key, JSON.stringify(value));
+
+const write = <T,>(key: string, value: T) => {
+  try {
+    const serialized = JSON.stringify(value);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, serialized);
+    } else {
+      memoryStore.set(key, serialized);
+    }
+  } catch {}
+};
 
 export const loadTasks = () => read<Task[]>('adam:v2:tasks', []);
 export const saveTasks = (tasks: Task[]) => write('adam:v2:tasks', tasks);

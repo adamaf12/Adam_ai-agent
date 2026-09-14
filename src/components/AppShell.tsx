@@ -6,13 +6,15 @@ import {
   Globe,
   MessageCircle,
   Plus,
+  Radio,
   Settings2,
   Sparkles,
   Film,
-  Zap,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import type { Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
@@ -37,14 +39,15 @@ const navItems: Array<{
   id: ViewId;
   icon: LucideIcon;
   key: keyof ReturnType<typeof copy>['nav'];
+  shortcut: string;
 }> = [
-  { id: 'chat', icon: MessageCircle, key: 'chat' },
-  { id: 'tasks', icon: CalendarCheck, key: 'tasks' },
-  { id: 'apps', icon: Gamepad2, key: 'apps' },
-  { id: 'workspace', icon: Sparkles, key: 'workspace' },
-  { id: 'media', icon: Film, key: 'media' },
-  { id: 'memory', icon: Brain, key: 'memory' },
-  { id: 'settings', icon: Settings2, key: 'settings' },
+  { id: 'chat', icon: MessageCircle, key: 'chat', shortcut: '1' },
+  { id: 'tasks', icon: CalendarCheck, key: 'tasks', shortcut: '2' },
+  { id: 'apps', icon: Gamepad2, key: 'apps', shortcut: '3' },
+  { id: 'workspace', icon: Sparkles, key: 'workspace', shortcut: '4' },
+  { id: 'media', icon: Film, key: 'media', shortcut: '5' },
+  { id: 'memory', icon: Brain, key: 'memory', shortcut: '6' },
+  { id: 'settings', icon: Settings2, key: 'settings', shortcut: '7' },
 ];
 
 export function AppShell({
@@ -61,6 +64,61 @@ export function AppShell({
 }: AppShellProps) {
   const t = copy(language);
   const currentNavItem = navItems.find((item) => item.id === activeView) || navItems[0];
+  const navContainerRef = useRef<HTMLElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    const el = navContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = navContainerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, []);
+
+  // Keyboard shortcut listener: Alt+1..9 or Cmd/Ctrl+Alt+1..9 for fast desktop navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in input/textarea/contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.altKey && !e.shiftKey) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= navItems.length) {
+          e.preventDefault();
+          onViewChange(navItems[num - 1].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onViewChange]);
+
+  const scrollNav = (direction: 'left' | 'right') => {
+    if (!navContainerRef.current) return;
+    const amount = direction === 'left' ? -180 : 180;
+    navContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
 
   const currentDisplayTitle =
     activeView === 'chat'
@@ -98,33 +156,67 @@ export function AppShell({
           </div>
         </div>
 
-        {/* Center: Navigation Tabs for Desktop/Tablet (Floating capsule) */}
-        <nav className="navbar-center desktop-only" aria-label="Main navigation">
-          {navItems.map(({ id, icon: Icon, key }) => {
-            const isActive = activeView === id;
-            return (
-              <button
-                type="button"
-                key={id}
-                className={isActive ? 'nav-pill nav-pill--active' : 'nav-pill'}
-                onClick={() => onViewChange(id)}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {isActive && (
-                  <motion.span
-                    layoutId="active-nav-pill-highlight"
-                    className="nav-pill-highlight"
-                    transition={{ type: 'spring', stiffness: 480, damping: 36 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Icon size={15} strokeWidth={isActive ? 2.4 : 1.8} />
-                  <span>{t.nav[key]}</span>
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+        {/* Center: Navigation Tabs for Desktop/Tablet (Floating capsule with scroll affordance) */}
+        <div className="navbar-center-wrapper desktop-only">
+          {canScrollLeft && (
+            <button
+              type="button"
+              className="navbar-scroll-btn navbar-scroll-btn--left"
+              onClick={() => scrollNav('left')}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+
+          <nav
+            ref={navContainerRef}
+            className="navbar-center"
+            aria-label="Main navigation"
+            onWheel={(e) => {
+              if (navContainerRef.current && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+                navContainerRef.current.scrollLeft += e.deltaY;
+              }
+            }}
+          >
+            {navItems.map(({ id, icon: Icon, key, shortcut }) => {
+              const isActive = activeView === id;
+              return (
+                <button
+                  type="button"
+                  key={id}
+                  className={isActive ? 'nav-pill nav-pill--active' : 'nav-pill'}
+                  onClick={() => onViewChange(id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  title={`${t.nav[key]} (Alt+${shortcut})`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="active-nav-pill-highlight"
+                      className="nav-pill-highlight"
+                      transition={{ type: 'spring', stiffness: 480, damping: 36 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Icon size={14} strokeWidth={isActive ? 2.4 : 1.8} />
+                    <span className="nav-pill-label">{t.nav[key]}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {canScrollRight && (
+            <button
+              type="button"
+              className="navbar-scroll-btn navbar-scroll-btn--right"
+              onClick={() => scrollNav('right')}
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
 
         {/* End: Quick Actions (Session Drawer + Language + New Chat) */}
         <div className="navbar-end">

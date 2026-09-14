@@ -1,5 +1,6 @@
 import { Calendar, Cloud, Code, FileText, Gamepad2, Globe, Mail, Sparkles } from 'lucide-react';
 import type { Language, ViewId } from '../../core/domain';
+import { GoogleWorkspaceIntegration } from './GoogleWorkspaceIntegration';
 
 interface WorkspaceProps {
   language: Language;
@@ -147,6 +148,8 @@ export function Workspace({ language, onSelectAction, onNavigate }: WorkspacePro
           );
         })}
       </div>
+
+      <GoogleWorkspaceIntegration language={language} />
     </section>
   );
 }

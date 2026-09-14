@@ -4,8 +4,14 @@ import { normalizeMessage } from '../../core/domain';
 
 export interface ChatEvent { type: 'delta' | 'done' | 'error'; text?: string; message?: string; code?: string; }
 
-export function createUserMessage(content: string): Message {
-  return normalizeMessage({ id: createId('msg'), role: 'user', content, createdAt: Date.now() });
+export function createUserMessage(content: string, images?: string[]): Message {
+  return normalizeMessage({
+    id: createId('msg'),
+    role: 'user',
+    content,
+    createdAt: Date.now(),
+    images: images && images.length > 0 ? images : undefined,
+  });
 }
 
 export function createAssistantMessage(content = ''): Message {

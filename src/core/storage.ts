@@ -6,7 +6,31 @@ const PREFS_KEY = 'adam.preferences.v2';
 const CONVERSATION_KEY = 'adam.conversation.v2';
 const SESSIONS_LIST_KEY = 'adam.conversations.list.v1';
 const ACTIVE_SESSION_KEY = 'adam.conversation.active_id.v1';
-const THEMES: Theme[] = ['system', 'light', 'dark', 'glass', 'glass-dark', 'aurora'];
+const THEMES: Theme[] = [
+  'system',
+  'light',
+  'dark',
+  'glass',
+  'glass-dark',
+  'aurora',
+  'midnight',
+  'cyberpunk',
+  'coffee',
+  'royal',
+  'ocean',
+  'crimson',
+  'matrix',
+  'dracula',
+  'nord',
+  'synthwave',
+  'forest',
+  'gold',
+  'solar',
+  'rose',
+  'stranger-things',
+  'outer-banks',
+  'game-of-thrones',
+];
 const STORAGE_VERSION = 1;
 const MAX_MESSAGES = 100;
 const MAX_SAVED_SESSIONS = 50;

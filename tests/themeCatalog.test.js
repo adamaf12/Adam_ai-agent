@@ -5,7 +5,7 @@ import { THEME_CATALOG } from '../src/core/themeCatalog.ts';
 test('theme catalog exposes the complete premium theme set in a stable order', () => {
   assert.deepEqual(
     THEME_CATALOG.map((theme) => theme.id),
-    ['system', 'light', 'dark', 'glass', 'glass-dark', 'aurora'],
+    ['system', 'dark', 'midnight', 'light', 'glass', 'glass-dark', 'aurora', 'ocean', 'cyberpunk', 'coffee', 'royal'],
   );
   for (const theme of THEME_CATALOG) {
     assert.ok(theme.label.ar);

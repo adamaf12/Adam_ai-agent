@@ -52,13 +52,49 @@ export default function App() {
     root.setAttribute('dir', preferences.language === 'ar' ? 'rtl' : 'ltr');
     root.setAttribute('lang', preferences.language);
 
-    if (preferences.theme === 'dark' || preferences.theme === 'glass-dark') {
-      root.classList.add('dark');
-    } else if (preferences.theme === 'light' || preferences.theme === 'glass') {
-      root.classList.remove('dark');
-    } else if (preferences.theme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.toggle('dark', prefersDark);
+    const darkThemes = [
+      'dark',
+      'midnight',
+      'glass-dark',
+      'aurora',
+      'ocean',
+      'cyberpunk',
+      'coffee',
+      'royal',
+      'crimson',
+      'matrix',
+      'dracula',
+      'nord',
+      'synthwave',
+      'forest',
+      'gold',
+      'solar',
+      'stranger-things',
+      'outer-banks',
+      'game-of-thrones',
+    ];
+
+    const applyThemeClasses = () => {
+      if (preferences.theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.toggle('dark', prefersDark);
+        root.setAttribute('data-resolved-theme', prefersDark ? 'dark' : 'light');
+      } else if (darkThemes.includes(preferences.theme)) {
+        root.classList.add('dark');
+        root.setAttribute('data-resolved-theme', preferences.theme);
+      } else {
+        root.classList.remove('dark');
+        root.setAttribute('data-resolved-theme', preferences.theme);
+      }
+    };
+
+    applyThemeClasses();
+
+    if (preferences.theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyThemeClasses();
+      media.addEventListener('change', listener);
+      return () => media.removeEventListener('change', listener);
     }
   }, [preferences.theme, preferences.language]);
 
@@ -87,6 +123,29 @@ export default function App() {
           subtitle: 'Ask anything, organize your day, or spark a new idea.',
         };
   }, [preferences.language]);
+
+  useEffect(() => {
+    const handleAppOpenEvent = (e: CustomEvent<{ view?: ViewId; sandboxAppId?: string; url?: string }>) => {
+      const { view, sandboxAppId, url } = e.detail || {};
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (sandboxAppId) {
+        setSelectedSandboxAppId(sandboxAppId);
+        setActiveView('apps');
+        return;
+      }
+      if (view) {
+        setActiveView(view);
+      }
+    };
+
+    window.addEventListener('adam_open_app' as any, handleAppOpenEvent);
+    return () => {
+      window.removeEventListener('adam_open_app' as any, handleAppOpenEvent);
+    };
+  }, []);
 
   if (!preferences.onboardingComplete) {
     return <Onboarding initial={preferences} onComplete={handleOnboardingComplete} />;
@@ -130,8 +189,15 @@ export default function App() {
                 setActiveView('apps');
               }}
               onSessionMetaChange={handleSessionMetaChange}
+              onNavigateView={(view, extraParam) => {
+                if (extraParam) {
+                  setSelectedSandboxAppId(extraParam);
+                }
+                setActiveView(view);
+              }}
             />
           )}
+
           {activeView === 'tasks' && <Tasks language={preferences.language} />}
           {activeView === 'apps' && (
             <AppSandboxStudio

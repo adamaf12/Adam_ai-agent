@@ -1,23 +1,34 @@
 import {
   Bell,
   Bot,
+  Camera,
+  CheckCircle2,
   Clock,
+  Code,
+  Download,
+  FileSearch,
   Languages,
   Plus,
   RotateCcw,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Terminal,
   Trash2,
+  Wrench,
   X,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import type { ChatConversation, Language, Message } from '../../core/domain';
+import type { ChatConversation, Language, Message, ViewId } from '../../core/domain';
 import { httpAgentClient, httpChatClient } from '../../core/ai/client';
 import { routePrompt } from '../../core/agent/agentTypes';
 import { toCapabilityRequest, requiresDedicatedCapability } from '../../core/agent/capabilities';
 import { parseLocalIntent } from '../../core/agent/localIntent';
 import { executeAgentTool } from '../../core/agent/toolExecutor';
+import { createAppLauncherPayload, openAppTarget } from '../../core/agent/appLauncher';
+import { checkAndExecuteDirectAutonomousCommand } from '../../core/agent/ademDuoAutonomousAgent';
 import { createResponseState, reduceResponseEvent, type ResponseState } from '../../core/agent/responseModel';
 import { createAssistantMessage, createUserMessage } from './chatModel';
 import { MessageBubble } from './MessageBubble';
@@ -54,11 +65,20 @@ import { InfiniteMemoryModal } from './InfiniteMemoryModal';
 import { ChatSessionDrawer } from './ChatSessionDrawer';
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
+  if (intent.type === 'app.open') {
+    const cardPayload = createAppLauncherPayload(intent.target, language);
+    const appTitle = language === 'ar' ? intent.target.titleAr : intent.target.titleEn;
+    return `${cardPayload}\n\n${
+      language === 'ar'
+        ? `جاري فتح **${appTitle}** فوراً... 🚀`
+        : `Opening **${appTitle}** now... 🚀`
+    }`;
+  }
   if (intent.type === 'task.create') {
     const title = typeof (data as { title?: unknown })?.title === 'string' ? (data as { title: string }).title : intent.title;
-    return language === 'ar' ? `تمت إضافة المهمة: **${title}**` : `Task added: **${title}**`;
+    return language === 'ar' ? `✅ تمت إضافة المهمة: **${title}**` : `✅ Task added: **${title}**`;
   }
-  return language === 'ar' ? 'تم حفظ هذه المعلومة في ذاكرة Adam المحلية.' : 'Saved to Adam’s local memory.';
+  return language === 'ar' ? '✅ تم حفظ المعلومة في الذاكرة بنجاح.' : '✅ Saved to memory successfully.';
 }
 
 function deriveTitleFromMessages(messages: Message[], fallback: string): string {
@@ -75,6 +95,7 @@ export function Chat({
   onNewChat,
   onOpenSandbox,
   onSessionMetaChange,
+  onNavigateView,
 }: {
   language: Language;
   agentName: string;
@@ -82,6 +103,7 @@ export function Chat({
   onNewChat?: () => void;
   onOpenSandbox?: (appId: string) => void;
   onSessionMetaChange?: (meta: { title: string; count: number }) => void;
+  onNavigateView?: (view: ViewId, extraParam?: string) => void;
 }) {
   const [currentConversation, setCurrentConversation] = useState<ChatConversation>(() => loadConversation());
   const [conversations, setConversations] = useState<ChatConversation[]>(() => loadAllConversations());
@@ -250,10 +272,10 @@ export function Chat({
     setConversations(loadAllConversations());
   };
 
-  const send = async (text: string) => {
+  const send = async (text: string, images?: string[]) => {
     const clean = text.trim();
-    if (!clean || busy) return;
-    const user = createUserMessage(clean);
+    if ((!clean && (!images || images.length === 0)) || busy) return;
+    const user = createUserMessage(clean, images);
     const assistant = createAssistantMessage();
     const next = [...messages, user];
 
@@ -311,13 +333,77 @@ export function Chat({
     const abort = new AbortController();
     controller.current = abort;
     try {
+      // Check for direct ADEM Autonomous Agent commands (Run code, terminal command, create file, task)
+      const autonomousAction = checkAndExecuteDirectAutonomousCommand(clean, language);
+      if (autonomousAction) {
+        const isAr = language === 'ar';
+        let summary = '';
+        if (autonomousAction.actionType === 'code_exec') {
+          summary = isAr
+            ? `⚡ **تم تنفيذ الكود البرمجي بنجاح**`
+            : `⚡ **Code executed successfully**`;
+        } else if (autonomousAction.actionType === 'terminal_command') {
+          summary = isAr
+            ? `🖥️ **تم تنفيذ أمر الطرفية بنجاح**`
+            : `🖥️ **Terminal command executed successfully**`;
+        } else if (autonomousAction.actionType === 'task_created') {
+          summary = isAr
+            ? `📋 **تم تسجيل المهمة بنجاح**`
+            : `📋 **Task registered successfully**`;
+        } else if (autonomousAction.actionType === 'file_created') {
+          summary = isAr
+            ? `💾 **تم إنشاء الملف بنجاح**`
+            : `💾 **File generated successfully**`;
+        } else if (autonomousAction.actionType === 'sandbox_app') {
+          summary = isAr
+            ? `🎮 **تم بناء وتشغيل التطبيق بنجاح**`
+            : `🎮 **App built and ready in sandbox**`;
+        }
+
+        const payloadString = `:::agent-action\n${JSON.stringify(autonomousAction, null, 2)}\n:::`;
+        const fullContent = `${summary}\n\n${payloadString}`;
+
+        setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: fullContent } : m));
+        setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: fullContent }) : current);
+        setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current);
+        recordInteractionEpisode(clean, fullContent);
+
+        const localSavedConv: ChatConversation = {
+          ...initialConv,
+          messages: [...next, { ...assistant, content: fullContent }],
+          updatedAt: Date.now(),
+        };
+        saveConversation(localSavedConv);
+        setCurrentConversation(localSavedConv);
+        setConversations(loadAllConversations());
+
+        consolidateConversationToInfiniteMemory({
+          ...currentConversation,
+          messages: [...next, { ...assistant, content: fullContent }],
+        });
+        setMemoryStats(getInfiniteMemoryStats());
+        return;
+      }
+
       if (localIntent) {
-        const input = localIntent.type === 'task.create'
-          ? { title: localIntent.title }
-          : { content: localIntent.content, category: localIntent.category };
-        const result = await executeAgentTool({ name: localIntent.type, input }, abort.signal);
-        if (!result.ok) throw new Error(result.error ?? 'The local action could not be completed.');
-        const confirmation = localConfirmation(language, localIntent, result.data);
+        let confirmation = '';
+        if (localIntent.type === 'app.open') {
+          confirmation = localConfirmation(language, localIntent, null);
+          // Trigger instant / automatic app launch
+          openAppTarget(localIntent.target, {
+            onNavigateView,
+            onOpenSandbox,
+            onOpenExternal: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
+          });
+        } else {
+          const input = localIntent.type === 'task.create'
+            ? { title: localIntent.title }
+            : { content: localIntent.content, category: localIntent.category };
+          const result = await executeAgentTool({ name: localIntent.type, input }, abort.signal);
+          if (!result.ok) throw new Error(result.error ?? 'The local action could not be completed.');
+          confirmation = localConfirmation(language, localIntent, result.data);
+        }
+
         setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: confirmation } : m));
         setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: confirmation }) : current);
         setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current);
@@ -389,6 +475,14 @@ export function Chat({
 
   const stop = () => controller.current?.abort();
 
+  const triggerVisionUpload = (promptPrefix?: string) => {
+    window.dispatchEvent(
+      new CustomEvent('adam_trigger_image_upload', {
+        detail: { promptPrefix: promptPrefix || '' },
+      })
+    );
+  };
+
   return (
     <section className={busy ? "chat-page chat-page--busy" : "chat-page"}>
       {/* Sleek Minimalist Session Bar (Desktop only, as mobile has unified this into the single ultra-thin top navbar) */}
@@ -402,26 +496,39 @@ export function Chat({
           </span>
         </div>
 
-        {/* Side Panel Trigger Button (زر أنيق للتحكم بالجلسة والسجل والذاكرة) */}
-        <button
-          type="button"
-          onClick={() => {
-            setMemoryStats(getInfiniteMemoryStats());
-            setIsSessionDrawerOpen(true);
-          }}
-          className="chat-session-btn"
-          title={language === 'ar' ? 'فتح لوحة التحكم بالجلسة والذاكرة والسجل' : 'Open Session Controls & Memory'}
-          aria-label="Session Controls"
-        >
-          <SlidersHorizontal size={13} className="text-emerald-400" />
-          <span className="chat-session-btn-text desktop-only">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
-          <div className="chat-session-badges">
-            <span className="session-mini-badge" title={language === 'ar' ? 'عدد المحادثات' : 'Chats'}>
-              <Clock size={10} />
-              {conversations.length}
-            </span>
-          </div>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick Photo & Vision Trigger Button */}
+          <button
+            type="button"
+            onClick={() => triggerVisionUpload()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer"
+            title={language === 'ar' ? 'إرفاق صورة لحل المسائل والأكواد فورياً' : 'Attach photo/image for instant solving'}
+          >
+            <Camera size={13} className="text-emerald-400" />
+            <span>{language === 'ar' ? '📷 حل صورة' : '📷 Solve Photo'}</span>
+          </button>
+
+          {/* Side Panel Trigger Button (زر أنيق للتحكم بالجلسة والسجل والذاكرة) */}
+          <button
+            type="button"
+            onClick={() => {
+              setMemoryStats(getInfiniteMemoryStats());
+              setIsSessionDrawerOpen(true);
+            }}
+            className="chat-session-btn"
+            title={language === 'ar' ? 'فتح لوحة التحكم بالجلسة والذاكرة والسجل' : 'Open Session Controls & Memory'}
+            aria-label="Session Controls"
+          >
+            <SlidersHorizontal size={13} className="text-emerald-400" />
+            <span className="chat-session-btn-text desktop-only">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
+            <div className="chat-session-badges">
+              <span className="session-mini-badge" title={language === 'ar' ? 'عدد المحادثات' : 'Chats'}>
+                <Clock size={10} />
+                {conversations.length}
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
 
       <div className="chat-scroll">
@@ -444,10 +551,64 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="welcome">
-            <div className="welcome-orb"><Bot size={28} /></div>
-            <h2>{language === 'ar' ? `أهلاً، أنا ${agentName}` : `Hi, I'm ${agentName}`}</h2>
-            <p>{language === 'ar' ? 'اكتب رسالتك بالأسفل للبدء مباشرة.' : 'Type your message below to get started.'}</p>
+          <div className="welcome max-w-lg mx-auto px-4 py-8 text-center flex flex-col items-center gap-3 animate-fadeIn">
+            <div className="welcome-orb"><Bot size={26} /></div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-100">
+              {language === 'ar' ? `أهلاً بك! كيف يمكنني مساعدتك؟` : `Welcome! How can I help you?`}
+            </h2>
+            <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+              {language === 'ar'
+                ? `أنا ${agentName}، مساعدك الذكي. اسألني عن أي شيء، اطلب كتابة أو فحص كود، أو إدارة مهامك فوراً.`
+                : `I'm ${agentName}, your personal assistant. Ask a question, write or debug code, or organize your tasks.`}
+            </p>
+
+            {/* Clean & Useful Starter Chips */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-md">
+              <button
+                type="button"
+                onClick={() => send(language === 'ar' ? 'اكتب لي كود بايثون بسيط ومفيد' : 'Write a clean, useful Python script')}
+                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Code size={14} className="text-emerald-400" />
+                <span>{language === 'ar' ? 'كتابة كود' : 'Write Code'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => send(language === 'ar' ? 'لخص لي أهم النصائح لتنظيم الوقت والإنتاجية' : 'Give me the best tips for time management and productivity')}
+                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Clock size={14} className="text-emerald-400" />
+                <span>{language === 'ar' ? 'تنظيم الوقت' : 'Organize Time'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => send(language === 'ar' ? 'ما هي أهم أوامر لينكس التي يحتاجها كل مطور؟' : 'What are the essential Linux commands every developer needs?')}
+                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Terminal size={14} className="text-emerald-400" />
+                <span>{language === 'ar' ? 'أوامر لينكس' : 'Linux Commands'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => triggerVisionUpload()}
+                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Camera size={14} className="text-emerald-400" />
+                <span>{language === 'ar' ? 'فحص صورة' : 'Analyze Image'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => send(language === 'ar' ? 'أنشئ خطة عمل واضحة لتنفيذ مشروع جديد' : 'Create a clear action plan for a new project')}
+                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Download size={14} className="text-emerald-400" />
+                <span>{language === 'ar' ? 'خطة عمل' : 'Action Plan'}</span>
+              </button>
+            </div>
           </div>
         ) : (
           <AnimatePresence initial={false}>
@@ -464,6 +625,7 @@ export function Chat({
                   language={language}
                   userPrompt={userPrompt}
                   onOpenSandbox={onOpenSandbox}
+                  onNavigateView={onNavigateView}
                 />
               );
             })}

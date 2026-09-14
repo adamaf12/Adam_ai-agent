@@ -1,12 +1,21 @@
+import { matchAppTarget, type AppTarget } from './appLauncher';
+
 export type LocalIntent =
   | { type: 'task.create'; title: string }
-  | { type: 'memory.remember'; content: string; category: 'preference' | 'fact' };
+  | { type: 'memory.remember'; content: string; category: 'preference' | 'fact' }
+  | { type: 'app.open'; target: AppTarget };
 
 const clean = (value: string) => value.replace(/^[\s:：،,.-]+|[\s.!؟?]+$/g, '').trim();
 
 export function parseLocalIntent(text: string): LocalIntent | null {
   const value = text.trim();
   if (!value) return null;
+
+  // 1. App Launch Intent (e.g. "افتح الخريطة", "ادخل المهام", "شغل لعبة الثعبان", "open youtube", "open maps")
+  const appTarget = matchAppTarget(value);
+  if (appTarget) {
+    return { type: 'app.open', target: appTarget };
+  }
 
   const taskMatch = value.match(/^(?:remind me to|remind me|ذكرني(?: أن| ان)?)\s+(.+)$/i);
   if (taskMatch) {
@@ -24,3 +33,4 @@ export function parseLocalIntent(text: string): LocalIntent | null {
 
   return null;
 }
+

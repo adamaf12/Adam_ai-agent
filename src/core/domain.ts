@@ -1,5 +1,28 @@
 export type Language = 'ar' | 'en';
-export type Theme = 'system' | 'light' | 'dark' | 'glass' | 'glass-dark' | 'aurora';
+export type Theme =
+  | 'system'
+  | 'light'
+  | 'dark'
+  | 'glass'
+  | 'glass-dark'
+  | 'aurora'
+  | 'midnight'
+  | 'cyberpunk'
+  | 'coffee'
+  | 'royal'
+  | 'ocean'
+  | 'crimson'
+  | 'matrix'
+  | 'dracula'
+  | 'nord'
+  | 'synthwave'
+  | 'forest'
+  | 'gold'
+  | 'solar'
+  | 'rose'
+  | 'stranger-things'
+  | 'outer-banks'
+  | 'game-of-thrones';
 export type ViewId = 'chat' | 'tasks' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
@@ -10,6 +33,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   createdAt: number;
+  images?: string[];
   metadata?: Record<string, unknown>;
 }
 
@@ -43,6 +67,9 @@ export function normalizeMessage(input: Partial<Message>): Message {
   const createdAt = typeof input.createdAt === 'number' && Number.isFinite(input.createdAt) ? input.createdAt : Date.now();
   const id = typeof input.id === 'string' && input.id.trim() ? input.id.trim() : messageId();
   const message: Message = { id, role, content, createdAt };
+  if (Array.isArray(input.images) && input.images.length > 0) {
+    message.images = input.images.filter((img): img is string => typeof img === 'string');
+  }
   if (input.metadata && typeof input.metadata === 'object') message.metadata = { ...input.metadata };
   return message;
 }
