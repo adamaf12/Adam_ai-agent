@@ -23,7 +23,7 @@ const builtInModels: ModelDescriptor[] = [
   { id: 'gemini-3.8-flash', provider: 'gemini', displayName: 'Gemini 3.8 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.8, cost: 1, enabled: true },
   { id: 'gemini-3.7-flash', provider: 'gemini', displayName: 'Gemini 3.7 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.7, speed: 9.7, cost: 1, enabled: true },
   { id: 'gemini-3.1-flash-lite', provider: 'gemini', displayName: 'Gemini 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.5, speed: 9.8, cost: 1, enabled: true },
-  { id: 'gemini-3.1-pro-preview', provider: 'gemini', displayName: 'Gemini 3.1 Pro Preview', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.2, cost: 2, enabled: true },
+  { id: 'gemini-3.1-pro-preview', provider: 'gemini', displayName: 'Gemini 3.1 Pro Preview', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.2, cost: 2, enabled: false },
 ];
 export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);

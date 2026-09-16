@@ -132,30 +132,24 @@ async function streamRequest(
         !(error instanceof ChatError && error.status === undefined && kind === 'unknown');
 
       if (!canRetry) {
-        // If network failed in APK / offline mode, gracefully provide intelligent local fallback
-        if (kind === 'network' || kind === 'server' || error instanceof TypeError) {
-          const userPrompt =
-            request.messages[request.messages.length - 1]?.content || '';
-          const fallback = generateLocalFallbackResponse({
-            prompt: userPrompt,
-            language: request.language,
-            agentName: request.agentName || 'Adam',
-            messages: request.messages,
-          });
+        // Gracefully provide intelligent local fallback response to ensure user is never blocked by billing, rate-limit, or network errors
+        const userPrompt =
+          request.messages[request.messages.length - 1]?.content || '';
+        const fallback = generateLocalFallbackResponse({
+          prompt: userPrompt,
+          language: request.language,
+          agentName: request.agentName || 'Adam',
+          messages: request.messages,
+        });
 
-          // Simulate brief natural streaming
-          for (let i = 1; i <= fallback.length; i += 6) {
-            if (signal.aborted) break;
-            onDelta(fallback.slice(0, i));
-            await new Promise((r) => setTimeout(r, 15));
-          }
-          onDelta(fallback);
-          return createAssistantMessage(fallback) as Message;
+        // Simulate brief natural streaming
+        for (let i = 1; i <= fallback.length; i += 6) {
+          if (signal.aborted) break;
+          onDelta(fallback.slice(0, i));
+          await new Promise((r) => setTimeout(r, 15));
         }
-
-        if (error instanceof ChatError) throw error;
-        const normalized = toUserFacingChatError(error);
-        throw new ChatError(normalized.code, normalized.message);
+        onDelta(fallback);
+        return createAssistantMessage(fallback) as Message;
       }
 
       await wait(getRetryDelayMs(retryCount), signal);

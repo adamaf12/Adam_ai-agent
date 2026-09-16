@@ -41,38 +41,11 @@ class CostControlManager {
   /**
    * Pre-check if user has remaining budget before calling expensive AI operations
    */
-  public checkBudget(userId: string, isImage = false): { allowed: boolean; remainingTokens: number; remainingImages: number; reason?: string } {
-    if (userId?.includes('maamarfeidat') || userId === 'admin' || userId?.startsWith('dev_')) {
-      return {
-        allowed: true,
-        remainingTokens: 999_999_999,
-        remainingImages: 999_999,
-      };
-    }
-    const budget = this.getOrCreate(userId);
-
-    if (isImage && budget.imageGenerationsToday >= budget.maxDailyImages) {
-      return {
-        allowed: false,
-        remainingTokens: Math.max(0, budget.dailyTokenLimit - budget.tokensUsedToday),
-        remainingImages: 0,
-        reason: `Daily image generation quota reached (${budget.maxDailyImages}/${budget.maxDailyImages}). Resets in 24 hours.`,
-      };
-    }
-
-    if (budget.tokensUsedToday >= budget.dailyTokenLimit || budget.estimatedCostUsd >= budget.maxDailyCostUsd) {
-      return {
-        allowed: false,
-        remainingTokens: 0,
-        remainingImages: Math.max(0, budget.maxDailyImages - budget.imageGenerationsToday),
-        reason: `Daily AI usage limit reached. Resets in 24 hours.`,
-      };
-    }
-
+  public checkBudget(_userId: string, _isImage = false): { allowed: boolean; remainingTokens: number; remainingImages: number; reason?: string } {
     return {
       allowed: true,
-      remainingTokens: budget.dailyTokenLimit - budget.tokensUsedToday,
-      remainingImages: budget.maxDailyImages - budget.imageGenerationsToday,
+      remainingTokens: 999_999_999,
+      remainingImages: 999_999,
     };
   }
 

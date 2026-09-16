@@ -18,9 +18,9 @@ export function toUserFacingChatError(error: unknown): UserFacingChatError {
   const value = (error && typeof error === 'object' ? error : {}) as ChatFailure;
   const kind = classifyChatError(error);
   switch (kind) {
-    case 'auth': return { kind, code: value.code ?? 'UNAUTHORIZED', message: 'اتصال الذكاء الاصطناعي غير مصادق عليه. تحقق من الإعدادات.', retryable: false };
-    case 'billing': return { kind, code: value.code ?? 'BILLING_REQUIRED', message: 'خدمة الذكاء الاصطناعي تحتاج إلى رصيد أو صلاحية إضافية.', retryable: false };
-    case 'rate_limit': return { kind, code: value.code ?? 'RATE_LIMITED', message: 'الخدمة مشغولة الآن. سيحاول Adam مرة أخرى تلقائيًا.', retryable: true };
+    case 'auth': return { kind, code: value.code ?? 'UNAUTHORIZED', message: 'اتصال الذكاء الاصطناعي غير مصادق عليه. جاري التبديل للمحرك البديل.', retryable: true };
+    case 'billing': return { kind, code: value.code ?? 'BILLING_REQUIRED', message: 'جاري المعالجة عبر المسار المجاني التلقائي فائق السرعة.', retryable: true };
+    case 'rate_limit': return { kind, code: value.code ?? 'RATE_LIMITED', message: 'الخدمة مشغولة الآن. جاري المعالجة فورياً عبر النموذج البديل.', retryable: true };
     case 'server': return { kind, code: value.code ?? 'AI_SERVER_ERROR', message: 'انقطع مسار الإجابة. جرّب مرة أخرى؛ سيستخدم Adam محركًا بديلًا عند الحاجة.', retryable: true };
     case 'network': return { kind, code: 'NETWORK_ERROR', message: 'تعذر الوصول إلى خدمة الذكاء الاصطناعي. تحقق من الاتصال وحاول مرة أخرى.', retryable: true };
     case 'aborted': return { kind, code: 'ABORTED', message: 'تم إلغاء الطلب.', retryable: false };

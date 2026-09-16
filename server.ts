@@ -833,7 +833,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       'gemini-3.5-flash',
       'gemini-3.8-flash',
       model,
-    ].filter(Boolean)));
+    ].filter(m => Boolean(m) && !m.includes('-pro'))));
     let output = '';
     let lastError: any = null;
     let accumulatedGrounding: GroundingData = isToday
