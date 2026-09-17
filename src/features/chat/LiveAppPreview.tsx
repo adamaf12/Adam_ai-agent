@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Play, Code, Copy, Check, RefreshCw, ExternalLink, Sparkles, Smartphone, Monitor } from 'lucide-react';
 import type { Language } from '../../core/domain';
+import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
 
 interface LiveAppPreviewProps {
   content: string;
@@ -131,7 +132,7 @@ export function LiveAppPreview({ content, language }: LiveAppPreviewProps) {
   const handleOpenWindow = () => {
     const blob = new Blob([bundledHtml], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    openSafeExternalUrl(url, { title: 'Live App Preview' });
   };
 
   return (

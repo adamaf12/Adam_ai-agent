@@ -23,7 +23,7 @@ export type Theme =
   | 'stranger-things'
   | 'outer-banks'
   | 'game-of-thrones';
-export type ViewId = 'chat' | 'tasks' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings';
+export type ViewId = 'chat' | 'tasks' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings' | 'iq';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type MemoryCategory = 'preference' | 'fact' | 'goal' | 'instruction';

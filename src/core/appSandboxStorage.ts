@@ -1615,6 +1615,404 @@ const DEFAULT_SANDBOX_APPS: SandboxApp[] = [
   </script>
 </body>
 </html>`
+  },
+  {
+    id: 'pomodoro_executive',
+    title: 'مؤقت التركيز والإنتاجية التنفيذي (Executive Pomodoro 2026)',
+    prompt: 'برمج لي مؤقت تركيز بومودورو تنفيذي راقي مع تحكم بالأصوات وإحصائيات جلسات العمل والراحة',
+    category: 'app',
+    createdAt: Date.now() - 900000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Focus Timer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #060b0e;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #0c1419;
+      border: 1px solid #10b98133;
+      border-radius: 28px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(16,185,129,0.06);
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 9999px;
+      margin-bottom: 16px;
+    }
+    .modes {
+      display: flex;
+      gap: 6px;
+      background: #060b0e;
+      padding: 4px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+      border: 1px solid #1e293b;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px;
+      border: 0;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: #10b981;
+      color: #04110b;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    .timer-ring {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: radial-gradient(circle, #0e1a20 60%, #060b0e 100%);
+      border: 3px solid #10b98144;
+      box-shadow: 0 0 30px rgba(16,185,129,0.15);
+    }
+    .time {
+      font-size: 48px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #f8fafc;
+      letter-spacing: -2px;
+    }
+    .status-text {
+      font-size: 11px;
+      color: #10b981;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 12px 28px;
+      border: 0;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-start {
+      background: #10b981;
+      color: #04110b;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+    }
+    .btn-start:hover { background: #34d399; }
+    .btn-reset {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+    .btn-reset:hover { background: #334155; }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #1e293b;
+      padding-top: 16px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .stat-val { font-size: 18px; font-weight: 800; color: #f8fafc; display: block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">⚡ ADAM EXECUTIVE POMODORO</div>
+    <div class="modes">
+      <button class="mode-btn active" onclick="setMode('work')">تركيز عمل (25m)</button>
+      <button class="mode-btn" onclick="setMode('short')">استراحة قصيرة (5m)</button>
+      <button class="mode-btn" onclick="setMode('long')">استراحة مطولة (15m)</button>
+    </div>
+    <div class="timer-ring">
+      <div class="time" id="display">25:00</div>
+      <div class="status-text" id="status">جاهز للبدء</div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-start" id="startBtn" onclick="toggleTimer()">بدء الجلسة</button>
+      <button class="btn btn-reset" onclick="resetTimer()">إعادة ضبط</button>
+    </div>
+    <div class="stats">
+      <div><span class="stat-val" id="completedCount">0</span>جلسات مكتملة</div>
+      <div><span class="stat-val" id="focusMinutes">0</span>دقيقة تركيز</div>
+    </div>
+  </div>
+  <script>
+    let durations = { work: 25 * 60, short: 5 * 60, long: 15 * 60 };
+    let currentMode = 'work';
+    let timeLeft = durations.work;
+    let timer = null;
+    let completed = 0;
+    let totalMinutes = 0;
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } catch(e) {}
+    }
+
+    function updateDisplay() {
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+      document.getElementById('display').innerText = m + ':' + s;
+    }
+
+    function setMode(mode) {
+      if (timer) clearInterval(timer);
+      timer = null;
+      currentMode = mode;
+      timeLeft = durations[mode];
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('startBtn').innerText = 'بدء الجلسة';
+      document.getElementById('status').innerText = mode === 'work' ? 'جلسة تركيز' : 'فترة استراحة';
+      updateDisplay();
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('startBtn');
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        btn.innerText = 'استئناف';
+        document.getElementById('status').innerText = 'مؤقت متوقف';
+      } else {
+        btn.innerText = 'إيقاف مؤقت';
+        document.getElementById('status').innerText = currentMode === 'work' ? 'جارٍ التركيز...' : 'استراحة نشطة...';
+        timer = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+          } else {
+            clearInterval(timer);
+            timer = null;
+            playBeep();
+            if (currentMode === 'work') {
+              completed++;
+              totalMinutes += 25;
+              document.getElementById('completedCount').innerText = completed;
+              document.getElementById('focusMinutes').innerText = totalMinutes;
+              alert('ممتاز! أنهيت جلسة التركيز بنجاح.');
+              setMode('short');
+            } else {
+              alert('انتهت الاستراحة، حان وقت استئناف العمل!');
+              setMode('work');
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      timeLeft = durations[currentMode];
+      document.getElementById('startBtn').innerText = 'بدء الجلسة';
+      document.getElementById('status').innerText = 'جاهز للبدء';
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>`
+  },
+  {
+    id: 'markdown_pro_editor',
+    title: 'محرر ومصمم ماركداون الاحترافي (Markdown Live Pro)',
+    prompt: 'برمج لي محرر نصوص Markdown احترافي وسريع مع معاينة حية وتصدير وحساب الكلمات',
+    category: 'tool',
+    createdAt: Date.now() - 400000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Live Pro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #030712;
+      color: #f3f4f6;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      padding: 12px 20px;
+      background: #0b0f19;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo { font-size: 14px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 8px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { background: #1f2937; color: #10b981; }
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+    @media(max-width: 680px) { .main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
+    textarea {
+      width: 100%;
+      height: 100%;
+      background: #080d1a;
+      color: #93c5fd;
+      border: 0;
+      border-left: 1px solid #1f2937;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    }
+    .preview {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      overflow-y: auto;
+      background: #030712;
+      line-height: 1.7;
+    }
+    .preview h1 { font-size: 22px; color: #10b981; margin-bottom: 12px; border-bottom: 1px solid #1f2937; padding-bottom: 6px; }
+    .preview h2 { font-size: 18px; color: #38bdf8; margin: 16px 0 8px; }
+    .preview p { margin-bottom: 12px; color: #d1d5db; font-size: 13px; }
+    .preview ul { margin-right: 20px; margin-bottom: 12px; }
+    .preview code { background: #1f2937; color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .footer {
+      padding: 8px 20px;
+      background: #0b0f19;
+      border-top: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">📝 MARKDOWN LIVE PRO</div>
+    <div class="toolbar">
+      <button class="btn" onclick="copyMd()">نسخ النص</button>
+      <button class="btn" onclick="downloadMd()">تصدير .md</button>
+    </div>
+  </header>
+  <div class="main">
+    <textarea id="editor" oninput="render()"># مرحباً بك في محرر Markdown لـ Adam
+
+هذا المحرر السريع يمكنك من صياغة ملاحظاتك ومقالاتك وتقاريرك بلمح البصر.
+
+## الميزات الرئيسية:
+- كتابة سلسة ومباشرة مع معاينة حية.
+- دعم العناوين والقوائم والأكواد البرمجية.
+- حساب فوري لعدد الكلمات والحروف.
+
+\`\`\`javascript
+const agent = "Adam AI";
+console.log(\`Running on \${agent}\`);
+\`\`\`
+
+ابدأ بالكتابة هنا مباشرة وسينعكس التنسيق فوراً على اليمين!</textarea>
+    <div class="preview" id="preview"></div>
+  </div>
+  <div class="footer">
+    <span id="wordCount">0 كلمة • 0 حرف</span>
+    <span>Adam AI Sandbox Engine</span>
+  </div>
+  <script>
+    function render() {
+      const raw = document.getElementById('editor').value;
+      document.getElementById('wordCount').innerText = raw.trim().split(/\\s+/).filter(Boolean).length + ' كلمة • ' + raw.length + ' حرف';
+      
+      let html = raw
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/\\*\\*(.*?)\\*\\*/gim, '<strong>$1</strong>')
+        .replace(/\\*(.*?)\\*/gim, '<em>$1</em>')
+        .replace(/^\\- (.*$)/gim, '<ul><li>$1</li></ul>')
+        .replace(/\\n/gim, '<br>');
+      document.getElementById('preview').innerHTML = html;
+    }
+    function copyMd() {
+      navigator.clipboard.writeText(document.getElementById('editor').value);
+      alert('تم نسخ نص Markdown إلى الحافظة');
+    }
+    function downloadMd() {
+      const blob = new Blob([document.getElementById('editor').value], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'document.md';
+      a.click();
+    }
+    render();
+  </script>
+</body>
+</html>`
   }
 ];
 

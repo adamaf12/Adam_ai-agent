@@ -154,7 +154,7 @@ export function MessageBubble({
       </div>
       <div className="message-body">
         <div className="message-meta">
-          {assistant ? 'Adam' : language === 'ar' ? 'أنت' : 'You'}
+          {assistant ? 'ADEM' : language === 'ar' ? 'أنت' : 'You'}
           <span>
             {new Date(message.createdAt).toLocaleTimeString(language === 'ar' ? 'ar-DZ' : 'en-US', {
               hour: '2-digit',

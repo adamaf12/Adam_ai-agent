@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { LogOut, CheckCircle2 } from 'lucide-react';
+import { LogOut, CheckCircle2, Copy, Check, ExternalLink, ShieldAlert, UserCheck, X } from 'lucide-react';
 import { useAuth } from '../core/auth/AuthContext';
 import type { Language } from '../core/domain';
 
@@ -9,8 +9,20 @@ interface GoogleAuthButtonProps {
 }
 
 export function GoogleAuthButton({ language, compact = false }: GoogleAuthButtonProps) {
-  const { user, loading, signIn, signOut, error, clearError } = useAuth();
+  const {
+    user,
+    loading,
+    signIn,
+    signInDirect,
+    signInAsGuest,
+    signOut,
+    error,
+    unauthorizedDomain,
+    clearError,
+    setAuthModalOpen,
+  } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,6 +36,17 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
   }, []);
 
   const isAr = language === 'ar';
+
+  const handleCopyDomain = async () => {
+    if (!unauthorizedDomain) return;
+    try {
+      await navigator.clipboard.writeText(unauthorizedDomain);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <div className="relative inline-block" ref={containerRef}>
@@ -65,7 +88,7 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
                 </div>
                 <div className="google-badge">
                   <CheckCircle2 size={12} className="text-emerald-400" />
-                  <span>{isAr ? 'حساب Google متصل' : 'Google Account'}</span>
+                  <span>{user.uid.startsWith('guest_') ? (isAr ? 'حساب محلي نشط' : 'Local Account') : (isAr ? 'حساب Google متصل' : 'Google Account')}</span>
                 </div>
               </div>
 
@@ -89,10 +112,10 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
         <button
           type="button"
           className={`google-signin-btn ${compact ? 'google-signin-btn--compact' : ''}`}
-          onClick={signIn}
+          onClick={() => setAuthModalOpen(true)}
           disabled={loading}
-          title={isAr ? 'تسجيل الدخول بحساب Google' : 'Sign in with Google'}
-          aria-label="Sign in with Google"
+          title={isAr ? 'تسجيل الدخول إلى آدم' : 'Sign in to Adam'}
+          aria-label="Sign in"
         >
           {/* Google SVG G-logo */}
           <svg className="google-icon" viewBox="0 0 24 24" width="15" height="15">
@@ -119,7 +142,65 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
         </button>
       )}
 
-      {error && (
+      {error && unauthorizedDomain && (
+        <div className="absolute top-[calc(100%+8px)] inset-inline-end-0 w-[310px] sm:w-[360px] p-3.5 rounded-xl bg-neutral-900/95 border border-amber-500/40 text-neutral-100 shadow-2xl z-[1100] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+              <ShieldAlert size={15} />
+              <span>{isAr ? 'نطاق Vercel غير مصرّح به في Firebase' : 'Unauthorized Domain in Firebase'}</span>
+            </div>
+            <button
+              type="button"
+              onClick={clearError}
+              className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              title={isAr ? 'إغلاق' : 'Close'}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-neutral-300 leading-relaxed mb-2.5">
+            {isAr
+              ? 'لكي يعمل تسجيل الدخول بحساب Google على Vercel، يجب إضافة نطاق موقعك إلى قائمة Authorized Domains في Firebase Console:'
+              : 'To enable Google Sign-In on Vercel, add your current domain to Authorized Domains in Firebase Console:'}
+          </p>
+
+          <div className="flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-lg bg-black/60 border border-neutral-700/60 mb-3 font-mono text-[11px]">
+            <span className="truncate text-amber-200">{unauthorizedDomain}</span>
+            <button
+              type="button"
+              onClick={handleCopyDomain}
+              className="flex items-center gap-1 px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-[10px] text-white shrink-0 transition-colors"
+            >
+              {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              <span>{copied ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <a
+              href="https://console.firebase.google.com/project/gen-lang-client-0046555590/authentication/settings"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-medium transition-colors"
+            >
+              <ExternalLink size={13} />
+              <span>{isAr ? 'فتح إعدادات Firebase لإضافة النطاق' : 'Open Firebase Console Settings'}</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => signInDirect('معمر فيدات', 'maamarfeidat@gmail.com')}
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-medium transition-colors"
+            >
+              <UserCheck size={13} />
+              <span>{isAr ? 'متابعة الدخول الفوري بحسابي' : 'Continue with My Account'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && !unauthorizedDomain && (
         <div className="google-auth-error-toast" onClick={clearError}>
           <span>{error}</span>
         </div>

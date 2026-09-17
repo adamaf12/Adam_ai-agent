@@ -11,6 +11,10 @@ import {
   HardDrive,
   Trash2,
   Lock,
+  Smartphone,
+  Download,
+  ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 import type { AppPreferences, Language } from '../../core/domain';
 import { THEME_CATALOG } from '../../core/themeCatalog';
@@ -86,19 +90,19 @@ export function Settings({
   return (
     <section className="feature-page max-w-5xl mx-auto pb-28 animate-fadeIn" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <div className="feature-heading mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+      <div className="feature-heading mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-6">
         <div>
-          <span className="eyebrow flex items-center gap-1.5 text-emerald-400 font-mono text-[11px] tracking-wider uppercase">
+          <span className="eyebrow flex items-center gap-1.5 text-[var(--accent)] font-mono text-[11px] tracking-wider uppercase">
             <Sliders size={13} />
             <span>ADEM OS / PREFERENCES</span>
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mt-1">{t.title}</h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">{t.sub}</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-[var(--text)] mt-1">{t.title}</h1>
+          <p className="text-xs sm:text-sm text-[var(--muted)] mt-1">{t.sub}</p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
-            <Sparkles size={14} className="text-emerald-400" />
+          <span className="px-3 py-1.5 rounded-xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+            <Sparkles size={14} />
             <span>{t.themeCount}</span>
           </span>
         </div>
@@ -106,7 +110,7 @@ export function Settings({
 
       <div className="space-y-6">
         {/* Appearance & Themes Section */}
-        <div className="settings-card settings-card--glass p-5 sm:p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl shadow-2xl">
+        <div className="settings-card settings-card--glass p-5 sm:p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl shadow-xl">
           <div className="flex items-start justify-between gap-3 mb-6 pb-4 border-b border-[var(--border)]">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--border-strong)]">
@@ -150,7 +154,7 @@ export function Settings({
                         </span>
                       )}
                     </div>
-                    <small className="text-[10px] text-[var(--text-secondary)] mt-0.5 line-clamp-2 leading-relaxed">
+                    <small className="text-[10px] text-[var(--muted)] mt-0.5 line-clamp-2 leading-relaxed">
                       {theme.description[language]}
                     </small>
                   </div>
@@ -167,14 +171,14 @@ export function Settings({
         </div>
 
         {/* Language Selection */}
-        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl shadow-xl">
+        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl shadow-xl">
           <div className="flex items-center gap-3 mb-5">
-            <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-400 border border-teal-500/30">
+            <div className="p-2.5 rounded-2xl bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--border-strong)]">
               <Globe2 size={22} />
             </div>
             <div>
-              <strong className="text-base text-slate-100 font-bold block">{t.language}</strong>
-              <p className="text-xs text-slate-400 mt-0.5">{t.languageSub}</p>
+              <strong className="text-base text-[var(--text)] font-bold block">{t.language}</strong>
+              <p className="text-xs text-[var(--muted)] mt-0.5">{t.languageSub}</p>
             </div>
           </div>
 
@@ -183,65 +187,145 @@ export function Settings({
               type="button"
               className={`flex items-center justify-between p-4 rounded-2xl border font-bold text-xs transition-all cursor-pointer ${
                 language === 'ar'
-                  ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-300 shadow-md'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--text)] shadow-md'
+                  : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
               }`}
               onClick={() => onChange({ language: 'ar' })}
             >
               <span>{t.arabic}</span>
-              {language === 'ar' && <Check size={16} className="text-emerald-400" />}
+              {language === 'ar' && <Check size={16} className="text-[var(--accent)]" />}
             </button>
 
             <button
               type="button"
               className={`flex items-center justify-between p-4 rounded-2xl border font-bold text-xs transition-all cursor-pointer ${
                 language === 'en'
-                  ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-300 shadow-md'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--text)] shadow-md'
+                  : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
               }`}
               onClick={() => onChange({ language: 'en' })}
             >
               <span>{t.english}</span>
-              {language === 'en' && <Check size={16} className="text-emerald-400" />}
+              {language === 'en' && <Check size={16} className="text-[var(--accent)]" />}
             </button>
           </div>
         </div>
 
         {/* System & Storage Management */}
-        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl shadow-xl">
+        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl shadow-xl">
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <div className="p-2.5 rounded-2xl bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--border-strong)]">
                 <HardDrive size={22} />
               </div>
               <div>
-                <strong className="text-base text-slate-100 font-bold block">{t.system}</strong>
-                <p className="text-xs text-slate-400 mt-0.5">{t.systemSub}</p>
+                <strong className="text-base text-[var(--text)] font-bold block">{t.system}</strong>
+                <p className="text-xs text-[var(--muted)] mt-0.5">{t.systemSub}</p>
               </div>
             </div>
 
-            <span className="text-xs font-mono text-slate-400 px-3 py-1 rounded-xl bg-slate-950 border border-slate-800">
+            <span className="text-xs font-mono text-[var(--muted)] px-3 py-1 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
               {t.storageUsed}: {storageCount} keys
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
             <div className="flex items-center gap-3">
-              <ShieldCheck size={20} className="text-emerald-400 flex-shrink-0" />
+              <ShieldCheck size={20} className="text-[var(--accent)] flex-shrink-0" />
               <div>
-                <strong className="text-xs text-slate-200 block">{t.privacy}</strong>
-                <p className="text-[11px] text-slate-400 mt-0.5">{t.privacySub}</p>
+                <strong className="text-xs text-[var(--text)] block">{t.privacy}</strong>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5">{t.privacySub}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 text-red-300 text-xs font-bold transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-400 text-xs font-bold transition-all cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
             >
               <Trash2 size={15} />
               <span>{resetSuccess ? '✓ تم المسح' : t.reset}</span>
             </button>
+          </div>
+        </div>
+
+        {/* Mobile & APK Readiness Foundation */}
+        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-[var(--border-strong)] bg-[var(--surface)] backdrop-blur-xl shadow-xl">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--border-strong)]">
+                <Smartphone size={22} />
+              </div>
+              <div>
+                <strong className="text-base text-[var(--text)] font-bold block">
+                  {language === 'ar' ? 'جاهزية تطبيق الهاتف ونسخة APK' : 'Mobile & Android APK Foundation'}
+                </strong>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  {language === 'ar'
+                    ? 'قاعدة برمجية مدعمة لنظام أندرويد (Capacitor / PWA / WebView) مع تصفح آمن للمواقع دون أعطال.'
+                    : 'Hardened foundation for Android APK (Capacitor/WebView) with safe external web handling.'}
+                </p>
+              </div>
+            </div>
+
+            <span className="text-xs font-mono text-[var(--accent)] px-3 py-1 rounded-xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] flex items-center gap-1.5 shadow-sm">
+              <CheckCircle2 size={13} />
+              <span>{language === 'ar' ? 'جاهز لـ APK' : 'APK Ready'}</span>
+            </span>
+          </div>
+
+          {/* Feature Badges */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+              <span className="text-[11px] text-[var(--accent)] font-medium block">
+                {language === 'ar' ? '🛡️ تصفح آمن مدمج' : '🛡️ Safe In-App Browser'}
+              </span>
+              <small className="text-[10px] text-[var(--muted)]">
+                {language === 'ar' ? 'حماية من الشاشة البيضاء' : 'Prevents WebView freeze'}
+              </small>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+              <span className="text-[11px] text-[var(--accent)] font-medium block">
+                {language === 'ar' ? '⚡ زر الرجوع لأندرويد' : '⚡ Android Back Guard'}
+              </span>
+              <small className="text-[10px] text-[var(--muted)]">
+                {language === 'ar' ? 'يمنع الخروج العرضي' : 'Graceful back navigation'}
+              </small>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+              <span className="text-[11px] text-[var(--accent)] font-medium block">
+                {language === 'ar' ? '📦 كاش Offline PWA' : '📦 Offline PWA Cache'}
+              </span>
+              <small className="text-[10px] text-[var(--muted)]">
+                {language === 'ar' ? 'Service Worker نشط' : 'Service Worker active'}
+              </small>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center">
+              <span className="text-[11px] text-[var(--accent)] font-medium block">
+                {language === 'ar' ? '📱 مانع التكبير المشوه' : '📱 No-Zoom Distortion'}
+              </span>
+              <small className="text-[10px] text-[var(--muted)]">
+                {language === 'ar' ? 'قياسات شاشة دقيقة' : 'Viewport locked cover'}
+              </small>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+            <p className="text-xs text-[var(--text-secondary)]">
+              {language === 'ar'
+                ? 'يمكنك تحميل حزمة APK الجاهزة مباشرة أو مزامنة الكود مع Android Studio باستخدام Capacitor:'
+                : 'Download the compiled APK directly or sync with Android Studio using Capacitor:'}
+            </p>
+            <div className="flex items-center gap-2">
+              <a
+                href="/Adam-AI-Agent.apk"
+                download="Adam-AI-Agent.apk"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--accent)] text-slate-950 text-xs font-bold transition-all shadow-md active:scale-95 hover:opacity-90"
+              >
+                <Download size={14} />
+                <span>{language === 'ar' ? 'تحميل تطبيق APK' : 'Download APK'}</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

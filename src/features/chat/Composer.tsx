@@ -1,21 +1,16 @@
 import {
+  Camera,
   Code2,
   Gamepad2,
-  Image as ImageIcon,
   Loader2,
   Mic,
   MicOff,
-  Paperclip,
   Send,
   Sparkles,
   Square,
+  UploadCloud,
   Wrench,
   X,
-  Calculator,
-  FileSearch,
-  Camera,
-  ImagePlus,
-  UploadCloud,
 } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import { copy } from '../../core/i18n';
@@ -44,7 +39,7 @@ export function Composer({
   const t = copy(language);
   const isAr = language === 'ar';
 
-  // Listen for external image trigger events (from Welcome cards, Studio, or header buttons)
+  // Listen for external image trigger events
   useEffect(() => {
     const handleTrigger = (e: CustomEvent<{ promptPrefix?: string; imageUrls?: string[]; skipFileInput?: boolean }>) => {
       if (e.detail?.promptPrefix) {
@@ -91,7 +86,7 @@ export function Composer({
       const processed = await Promise.all(
         validImageFiles.map((file) => processImageFile(file))
       );
-      setImages((prev) => [...prev, ...processed].slice(0, 8)); // max 8 images per prompt
+      setImages((prev) => [...prev, ...processed].slice(0, 8));
     } catch (err) {
       console.error('Failed to process image attachment:', err);
     } finally {
@@ -146,10 +141,9 @@ export function Composer({
     const text = draft.trim();
     if ((!text && images.length === 0) || busy) return;
 
-    // If user sent image without prompt, generate an ultra-smart vision instruction
     const defaultPrompt = isAr
-      ? 'قم فوراً بفحص كافة مكونات هذه الصورة وإدراك محتواها بدقة، واستنتج المسألة أو الكود أو الخطأ الموجود فيها، وتأكد ذاتياً من صحة الحل وقدّم الإجابة الكاملة والدقيقة 100% فوراً.'
-      : 'Immediately scan and perceive all components of this image, infer the problem, code, or error, self-verify the solution, and provide the complete 100% accurate answer directly.';
+      ? 'قم بفحص وتحليل الصورة المرفقة واستنتج المطلوب وقدم الحل الدقيق والشامل فوراً.'
+      : 'Analyze this image and provide the complete, accurate solution directly.';
 
     const finalPrompt = text || defaultPrompt;
     const imageUrls = images.map((img) => img.dataUrl);
@@ -215,7 +209,7 @@ export function Composer({
   return (
     <div
       className={`composer-wrap relative transition-all duration-200 ${
-        isDragging ? 'ring-2 ring-emerald-500/80 bg-emerald-950/30 rounded-2xl' : ''
+        isDragging ? 'ring-2 ring-[var(--accent)] bg-[var(--accent-subtle)] rounded-3xl' : ''
       }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -223,14 +217,11 @@ export function Composer({
     >
       {/* Visual Drag & Drop Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-slate-950/90 border-2 border-dashed border-emerald-400/80 backdrop-blur-sm pointer-events-none animate-fadeIn">
-          <div className="flex flex-col items-center gap-2 text-center text-emerald-300 font-medium">
-            <UploadCloud size={32} className="text-emerald-400 animate-bounce" />
-            <span className="text-sm font-semibold">
-              {isAr ? 'أفلت الصورة هنا للفحص وحل المسائل فورياً ⚡' : 'Drop image here for instant vision & solving ⚡'}
-            </span>
-            <span className="text-xs text-slate-400">
-              {isAr ? 'يدعم PNG, JPG, WebP, لقطات الشاشة' : 'Supports PNG, JPG, WebP, Screenshots'}
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-3xl bg-[var(--surface)]/95 border-2 border-dashed border-[var(--accent)] backdrop-blur-md pointer-events-none animate-fadeIn">
+          <div className="flex flex-col items-center gap-2 text-center text-[var(--accent)] font-medium">
+            <UploadCloud size={32} className="animate-bounce" />
+            <span className="text-sm font-bold">
+              {isAr ? 'أفلت الصورة هنا للفحص الذكي ⚡' : 'Drop image here for analysis ⚡'}
             </span>
           </div>
         </div>
@@ -250,64 +241,20 @@ export function Composer({
         }}
       />
 
-      {/* Instant Vision & Image Accessibility Quick Bar (When no image is attached yet) */}
-      {images.length === 0 && (
-        <div className="flex items-center gap-1.5 mb-2 px-1 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="group flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 text-[11px] font-semibold transition-all shadow-sm active:scale-95"
-            title={isAr ? 'إرفاق صورة لحلها فورياً' : 'Attach image for instant solution'}
-          >
-            <Camera size={13} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-            <span>{isAr ? '📷 حل صورة / مسألة' : '📷 Solve Photo/Image'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              insertPromptChip(isAr ? 'قم بتشخيص الخطأ البرمجي الظاهر في لقطة الشاشة، واشرح سببه وقدّم الكود المصحح كاملاً: ' : 'Debug the code error in this screenshot, explain root cause and give the full fix: ');
-              fileInputRef.current?.click();
-            }}
-            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-[11px] font-medium transition-colors"
-          >
-            <Wrench size={12} className="text-amber-400" />
-            <span>{isAr ? '🛠️ فحص لقطة شاشة' : '🛠️ Screen Error'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              insertPromptChip(isAr ? 'استخرج واقرأ جميع النصوص والجداول الموجودة في هذه الصورة بدقة (OCR): ' : 'Extract all text and tables from this image accurately (OCR): ');
-              fileInputRef.current?.click();
-            }}
-            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-[11px] font-medium transition-colors"
-          >
-            <FileSearch size={12} className="text-cyan-400" />
-            <span>{isAr ? '📝 استخراج نصوص (OCR)' : '📝 Extract Text'}</span>
-          </button>
-        </div>
-      )}
-
       {/* Image Attachments Preview Tray */}
       {images.length > 0 && (
-        <div className="mb-2 px-1 flex flex-col gap-2 animate-fadeIn">
-          {/* Smart Instant Vision Status Banner */}
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300 font-medium shadow-sm">
-            <span className="flex items-center gap-1.5">
-              <Sparkles size={13} className="text-emerald-400 animate-pulse" />
-              <span>
-                {isAr
-                  ? '⚡ الإدراك البصري الفوري نشط: فحص المكونات والتحقق الذاتي من الحل تلقائياً'
-                  : '⚡ Instant Vision Active: Auto-detecting components & self-verifying solutions'}
-              </span>
+        <div className="mb-2.5 p-2 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex flex-col gap-2 animate-fadeIn shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[var(--text)] font-semibold px-1">
+            <span className="flex items-center gap-1.5 text-[var(--accent)]">
+              <Sparkles size={13} className="animate-pulse" />
+              <span>{isAr ? 'صور مرفقة جاهزة للإدراك البصري' : 'Attached images ready for Vision analysis'}</span>
             </span>
             <button
               type="button"
               onClick={() => setImages([])}
-              className="text-slate-400 hover:text-rose-400 transition ml-2"
+              className="text-[var(--muted)] hover:text-rose-400 text-[11px] transition cursor-pointer"
             >
-              {isAr ? 'حذف الكل' : 'Clear all'}
+              {isAr ? 'حذف الكل' : 'Clear'}
             </button>
           </div>
 
@@ -315,136 +262,107 @@ export function Composer({
             {images.map((img) => (
               <div
                 key={img.id}
-                className="group relative flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 shadow-md max-w-xs"
+                className="group relative flex items-center gap-2 p-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm max-w-xs"
               >
                 <img
                   src={img.dataUrl}
                   alt={img.name}
-                  className="w-12 h-12 object-cover rounded-lg border border-slate-800"
+                  className="w-10 h-10 object-cover rounded-lg border border-[var(--border)]"
                 />
                 <div className="flex flex-col min-w-0 pr-1 text-[11px]">
-                  <span className="truncate max-w-[120px] text-slate-200 font-medium">{img.name}</span>
-                  <span className="text-[10px] text-slate-400">{formatFileSize(img.sizeBytes)}</span>
+                  <span className="truncate max-w-[110px] text-[var(--text)] font-medium">{img.name}</span>
+                  <span className="text-[10px] text-[var(--muted)]">{formatFileSize(img.sizeBytes)}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeImage(img.id)}
-                  className="p-1 rounded-full bg-slate-800 text-slate-300 hover:bg-rose-500 hover:text-white transition"
-                  title={isAr ? 'إزالة الصورة' : 'Remove'}
+                  className="p-1 rounded-full bg-[var(--surface-2)] text-[var(--muted)] hover:text-rose-400 transition cursor-pointer"
+                  title={isAr ? 'إزالة' : 'Remove'}
                 >
                   <X size={12} />
                 </button>
               </div>
             ))}
           </div>
-
-          {/* Quick Problem Solving Chips for Images */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/60">
-            <button
-              type="button"
-              onClick={() => insertPromptChip(isAr ? 'افحص الصورة واكتشف المشكلة/الخطأ وقدم الحل المصحح والنهائي فوراً: ' : 'Inspect image, detect problem/error and provide verified fix immediately: ')}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-900/60 transition-colors flex items-center gap-1"
-            >
-              <Sparkles size={12} />
-              <span>{isAr ? '⚡ فحص وحل فوري' : '⚡ Instant Solve'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => insertPromptChip(isAr ? 'قم بتشخيص الخطأ البرمجي الظاهر في لقطة الشاشة، واشرح سببه وقدّم الكود المصحح كاملاً: ' : 'Debug the code error in this screenshot, explain root cause and give the full fix: ')}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-950/60 text-amber-300 border border-amber-500/40 hover:bg-amber-900/60 transition-colors flex items-center gap-1"
-            >
-              <Wrench size={12} />
-              <span>{isAr ? '🛠️ حل الخطأ البرمجي' : '🛠️ Fix Code Error'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => insertPromptChip(isAr ? 'حل المسألة الرياضية/العلمية الموجودة في الصورة بالتفصيل مع توضيح خطوات القوانين والحل النهائي: ' : 'Solve the math/science problem in this image step by step with formulas: ')}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-950/60 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-900/60 transition-colors flex items-center gap-1"
-            >
-              <Calculator size={12} />
-              <span>{isAr ? '📐 حل المسألة الرياضية' : '📐 Solve Math Problem'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => insertPromptChip(isAr ? 'استخرج واقرأ جميع النصوص والجداول الموجودة في هذه الصورة بدقة (OCR): ' : 'Extract all text and tables from this image accurately (OCR): ')}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60 transition-colors flex items-center gap-1"
-            >
-              <FileSearch size={12} />
-              <span>{isAr ? '📝 استخراج النصوص (OCR)' : '📝 Extract Text'}</span>
-            </button>
-          </div>
         </div>
       )}
 
-      {/* Quick Astra Developer & Creator Tool Chips */}
+      {/* Quick Developer & Creator Chips Drawer */}
       {showQuickModes && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-2 px-1 animate-fadeIn">
+        <div className="flex flex-wrap items-center gap-2 mb-3 px-1 animate-fadeIn">
           <button
             type="button"
-            onClick={() => insertPromptChip(isAr ? 'أريد كود كامل بنسبة 100% بدون أي نقصان لـ: ' : 'Write 100% complete production code for: ')}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/90 text-emerald-400 border border-emerald-500/30 hover:bg-slate-700 transition-colors flex items-center gap-1"
+            onClick={() => insertPromptChip(isAr ? 'برمج لي كود كامل بنسبة 100% لـ: ' : 'Write 100% complete production code for: ')}
+            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
           >
-            <Code2 size={12} />
-            <span>{isAr ? '💻 كود كامل 100%' : '💻 Full Code'}</span>
+            <Code2 size={14} className="text-[var(--accent)]" />
+            <span>{isAr ? 'برمجة كود' : 'Write Code'}</span>
           </button>
           <button
             type="button"
-            onClick={() => insertPromptChip(isAr ? 'اصنع لي لعبة Canvas كاملة مع تحكم وأصوات لـ: ' : 'Build a playable HTML5 Canvas game with sound for: ')}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/90 text-cyan-400 border border-cyan-500/30 hover:bg-slate-700 transition-colors flex items-center gap-1"
+            onClick={() => insertPromptChip(isAr ? 'اصنع لعبة تفاعلية HTML5 Canvas لـ: ' : 'Build a playable HTML5 Canvas game for: ')}
+            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
           >
-            <Gamepad2 size={12} />
-            <span>{isAr ? '🎮 لعبة تفاعلية' : '🎮 Canvas Game'}</span>
+            <Gamepad2 size={14} className="text-cyan-400" />
+            <span>{isAr ? 'لعبة تفاعلية' : 'Interactive Game'}</span>
           </button>
           <button
             type="button"
-            onClick={() => insertPromptChip(isAr ? 'لدي خطأ برمجي/استثناء، قم بتحليله وإصلاحه جذرياً: ' : 'Fix this bug and analyze the root cause: ')}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/90 text-amber-400 border border-amber-500/30 hover:bg-slate-700 transition-colors flex items-center gap-1"
+            onClick={() => insertPromptChip(isAr ? 'افحص هذا الخطأ واشرح سببه وقدم الحل الجذري: ' : 'Analyze this error and provide the root cause fix: ')}
+            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
           >
-            <Wrench size={12} />
-            <span>{isAr ? '🛠️ تصحيح أخطاء' : '🛠️ Debug Error'}</span>
+            <Wrench size={14} className="text-amber-400" />
+            <span>{isAr ? 'تصحيح أخطاء' : 'Debug Fix'}</span>
           </button>
           <button
             type="button"
-            onClick={() => insertPromptChip(isAr ? 'أنشئ لي صورة سينمائية 8K واقعية لـ: ' : 'Generate an 8K photorealistic image of: ')}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800/90 text-purple-400 border border-purple-500/30 hover:bg-slate-700 transition-colors flex items-center gap-1"
+            onClick={() => insertPromptChip(isAr ? 'أنشئ صورة سينمائية فائقة الدقة 8K لـ: ' : 'Generate an 8K photorealistic visual of: ')}
+            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
           >
-            <Sparkles size={12} />
-            <span>{isAr ? '🎨 صورة 8K' : '🎨 8K Visual'}</span>
+            <Sparkles size={14} className="text-purple-400" />
+            <span>{isAr ? 'توليد 8K' : '8K Visual'}</span>
           </button>
         </div>
       )}
 
-      <div className="composer">
+      {/* Main Luxury Composer Box */}
+      <div className="composer flex items-end gap-2 p-2 sm:p-2.5 rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)]">
+        {/* Quick Power Tools Toggle */}
         <button
           type="button"
-          className="composer-icon"
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+            showQuickModes
+              ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
+          }`}
           onClick={() => setShowQuickModes((prev) => !prev)}
           aria-label="Toggle prompt tools"
-          title={isAr ? 'أدوات ومساعدات Astra البرمجية' : 'Astra Dev Tools'}
+          title={isAr ? 'أدوات مساعدة سريعة' : 'Quick Prompt Tools'}
         >
-          <Sparkles size={17} className={showQuickModes ? 'text-emerald-400' : ''} />
+          <Sparkles size={18} />
         </button>
 
-        {/* Attach Image & Files Button - Prominently Styled */}
+        {/* Attach Image Button */}
         <button
           type="button"
-          className={`composer-icon relative transition-all ${
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
             images.length > 0
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-              : 'hover:text-emerald-400 hover:bg-emerald-500/10'
+              ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => fileInputRef.current?.click()}
           aria-label={isAr ? 'إرفاق صورة أو مستند' : 'Attach Image'}
-          title={isAr ? 'إرفاق صورة لحل المسائل والأخطاء وفحص النصوص فورياً' : 'Attach image to solve problems, code errors, or analyze'}
+          title={isAr ? 'إرفاق صورة' : 'Attach image'}
           disabled={processingImages}
         >
           {processingImages ? (
-            <Loader2 size={17} className="animate-spin text-emerald-400" />
+            <Loader2 size={18} className="animate-spin text-[var(--accent)]" />
           ) : (
-            <Camera size={17} className={images.length > 0 ? 'text-emerald-400' : 'text-emerald-400/90'} />
+            <Camera size={18} />
           )}
         </button>
 
+        {/* Text Input Area */}
         <textarea
           ref={textareaRef}
           dir={isAr ? 'rtl' : 'ltr'}
@@ -460,44 +378,60 @@ export function Composer({
           placeholder={
             listening
               ? isAr
-                ? 'جاري الاستماع إليك...'
+                ? 'جاري الاستماع بدقة...'
                 : 'Listening...'
               : images.length > 0
               ? isAr
-                ? 'اكتب طلبك أو المسألة لحلها من الصورة المرفقة...'
-                : 'Ask a question or request a solution for the attached image...'
-              : (isAr ? 'اكتب رسالتك، الصق كود أو ارفع صورة لحلها...' : 'Type a prompt, paste code, or drop an image...')
+                ? 'اكتب رسالتك حول الصورة...'
+                : 'Ask about the attached image...'
+              : isAr
+              ? 'اكتب رسالتك هنا...'
+              : 'Type your message here...'
           }
           rows={1}
           disabled={busy}
+          className="flex-1 bg-transparent border-0 outline-none text-sm text-[var(--text)] placeholder-[var(--muted)] resize-none py-2 px-1 min-h-[26px] max-h-[160px] font-normal leading-relaxed"
         />
 
+        {/* Voice Input Microphone */}
         <button
           type="button"
-          className={listening ? 'composer-icon composer-icon--recording' : 'composer-icon'}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+            listening
+              ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
+          }`}
           onClick={toggleListening}
           aria-label={isAr ? 'تسجيل صوتي' : 'Voice input'}
-          title={listening ? (isAr ? 'إيقاف التسجيل' : 'Stop voice') : (isAr ? 'تحدث مع Adam' : 'Speak to Adam')}
+          title={listening ? (isAr ? 'إيقاف التسجيل' : 'Stop voice') : (isAr ? 'إملاء صوتي' : 'Voice dictation')}
         >
-          {listening ? <MicOff size={17} color="#ef4444" /> : <Mic size={17} />}
+          {listening ? <MicOff size={18} className="text-rose-400" /> : <Mic size={18} />}
         </button>
 
+        {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={busy ? 'send-button send-button--stop' : 'send-button'}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-lg ${
+            busy
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
+              : draft.trim() || images.length > 0
+              ? 'bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] active:scale-95'
+              : 'bg-[var(--surface-2)] text-[var(--muted)] opacity-50 cursor-not-allowed'
+          }`}
           onClick={busy ? onStop : submit}
           aria-label={busy ? t.stop : t.send}
           disabled={!busy && !draft.trim() && images.length === 0}
         >
-          {busy ? <Square size={14} fill="currentColor" /> : <Send size={15} />}
+          {busy ? <Square size={14} fill="currentColor" /> : <Send size={16} />}
         </button>
       </div>
 
-      <div className="composer-footer-credits flex items-center justify-between mt-1 px-2 text-[11px]">
-        <span className="composer-creator-credit text-emerald-400/95 font-medium tracking-normal select-none">
-          {isAr ? 'تم تطويره من قبل : أدم فيدات' : 'Developed by : Adem Feidat'}
+      {/* Clean & Minimalist Creator Signature */}
+      <div className="flex items-center justify-between mt-1.5 px-3 text-[11px] text-[var(--muted)] select-none">
+        <span className="font-semibold text-[var(--text-secondary)]">
+          {isAr ? 'ADEM • تم تطويره من قبل : أدم فيدات' : 'ADEM • Developed by : Adem Feidat'}
         </span>
-        <span className="font-mono text-[10px] text-slate-400/75 select-none">Astra 4.5 Ultra • Vision Enabled</span>
+        <span className="font-mono text-[10px]">v2.5 Ultra</span>
       </div>
     </div>
   );

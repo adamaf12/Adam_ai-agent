@@ -28,6 +28,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import type { ViewId } from '../../core/domain';
+import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
 
 export interface AppLauncherData {
   id: string;
@@ -101,7 +102,7 @@ export function AppLauncherCard({
     }
 
     if (data.type === 'external' && data.externalUrl) {
-      window.open(data.externalUrl, '_blank', 'noopener,noreferrer');
+      openSafeExternalUrl(data.externalUrl, { title: data.title });
       return;
     }
 

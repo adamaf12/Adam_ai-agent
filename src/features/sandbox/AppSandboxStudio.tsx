@@ -11,46 +11,25 @@ import {
   Monitor,
   Trash2,
   Sparkles,
-  PlusCircle,
-  FileCode,
   Search,
   Maximize2,
   Minimize2,
-  Terminal,
-  Volume2,
-  Flame,
-  ShieldCheck,
   Download,
-  Share2,
-  Cpu,
-  AlertCircle,
-  Layers,
-  Sliders,
-  Box,
-  Radio,
-  FileText,
-  Zap,
-  Sun,
-  Eye,
   Send,
-  HelpCircle
+  Zap,
+  SlidersHorizontal,
+  Flame,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
+import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
 import {
   loadSandboxApps,
   saveSandboxApp,
   deleteSandboxApp,
   type SandboxApp
 } from '../../core/appSandboxStorage';
-import {
-  DEFAULT_UE5_CONFIG,
-  type UE5ConnectionConfig,
-  generateUnrealCppHeader,
-  generateUnrealCppSource,
-  generateUnrealPythonScript,
-  generateUnrealRemoteControlPreset,
-  sendCommandToUnreal
-} from '../../core/unrealEngineBridge';
 
 interface AppSandboxStudioProps {
   language: Language;
@@ -58,1885 +37,1289 @@ interface AppSandboxStudioProps {
   onNavigateToChat?: (prompt: string) => void;
 }
 
-const copyLabels = {
-  ar: {
-    title: 'استوديو تطوير ومشغل الألعاب والتطبيقات 2026',
-    subtitle: 'بيئة متقدمة لتشغيل، فحص، وتطوير ألعاب وتطبيقات الويب التفاعلية مع دعم التحقق المباشر من الطرفية والفيزياء والمؤثرات الصوتية.',
-    userRequest: 'طلب المستخدم الأصلي:',
-    previewTab: 'المعاينة والتشغيل المباشر',
-    codeTab: 'محرر ومختبر الكود',
-    deviceMode: 'نمط العرض',
-    responsive: 'شاشة كاملة',
-    mobile: 'هاتف ذكي',
-    reload: 'إعادة تشغيل',
-    openNewTab: 'فتح في نافذة مستقلة',
-    copyCode: 'نسخ الكود',
-    copied: 'تم النسخ!',
-    savedApps: 'مكتبة الألعاب والتطبيقات',
-    newGamePrompt: 'اطلب من ADAM برمجة لعبة أو تطبيق ثلاثي الأبعاد...',
-    generateBtn: 'توليد وتشغيل',
-    emptyList: 'لا توجد ألعاب أو تطبيقات محفوظة بعد.',
-    deleteConfirm: 'حذف من السجل',
-    all: 'الكل',
-    games: 'ألعاب',
-    apps: 'تطبيقات',
-    searchPlaceholder: 'بحث في الألعاب والتطبيقات...',
-    saveAndRun: 'حفظ وتشغيل مباشر',
-    downloadHtml: 'تصدير HTML',
-    codeSaved: 'تم حفظ الكود بنجاح!',
-    terminalCheck: 'فحص الطرفية والسينتاكس',
-    checking: 'جارٍ الفحص...',
-    terminalSuccess: 'تم التحقق من سلامة الكود والسينتاكس بنجاح ⚡',
-    terminalError: 'يوجد خطأ في سينتاكس الكود:',
-    snippetsTitle: 'إضافات ومؤثرات سريعة للألعاب:',
-    addAudio: 'مؤثرات صوتية (Web Audio)',
-    addParticles: 'محرك انفجار الجسيمات (Particles)',
-    addControls: 'أزرار تحكم لمسية (D-Pad)',
-    addHighScore: 'حفظ أعلى نتيجة (Storage)',
-    fullscreen: 'وضع المسرح / شاشة كاملة',
-    exitFullscreen: 'إغلاق ملء الشاشة',
-    unrealTab: 'جسر Unreal Engine 5',
-    unrealSubtitle: 'ربط محرك الألعاب بمحرك Unreal Engine 5 عبر Web Remote Control و Pixel Streaming ومولد C++ و Python',
-    ueController: 'التحكم الحي في العالم (Remote Control)',
-    ueCpp: 'تصدير كود C++ (Actor / Pawn)',
-    uePython: 'بناء المستوى بالبايثون (Python Lib)',
-    uePreset: 'إعدادات Remote Preset (JSON)',
-    ueStreaming: 'البث المباشر (Pixel Streaming)',
-    ueGuide: 'دليل التوصيل والتشغيل',
-    ueStatus: 'حالة الاتصال بمحرك Unreal Engine',
-    ueTestConnect: 'اختبار الاتصال',
-    ueConnected: 'متصل بمحرك Unreal Engine 5 🚀',
-    ueDisconnected: 'غير متصل (يعمل بنمط المحاكاة المباشرة)',
-    spawnActor: 'توليد ممثل/مجسم ثلاثي الأبعاد في Unreal',
-    adjustLight: 'ضبط إضاءة وبيئة العالم',
-    triggerAction: 'إطلاق ليزر / حركة باللعبة',
-    execPython: 'تشغيل سكريبت بايثون في محرر Unreal',
-    copyHeader: 'نسخ C++ Header (.h)',
-    copySource: 'نسخ C++ Source (.cpp)',
-    copyPy: 'نسخ سكريبت بايثون (.py)',
-    templatePong: '🏓 قالب لعبة Pong',
-    templateSnake: '🐍 قالب لعبة الثعبان',
-    gameConsole: 'طرفية تشغيل اللعبة وأخطاء الـ Runtime',
-    clearConsole: 'مسح السجلات',
-    downloadCppZip: 'تحميل حزمة C++ / Python',
+// 4 Curated Luxury Built-in Templates
+const CURATED_MODELS: SandboxApp[] = [
+  {
+    id: 'cyber_space_odyssey',
+    title: 'مغامرة الفضاء السايبر (Cyber Space Odyssey)',
+    prompt: 'برمج لي لعبة حرب فضاء سايبر متطورة بالكانفاس مع ليزر ومؤثرات صوتية ونجوم 3D وأزرار تحكم باللمس',
+    category: 'game',
+    createdAt: Date.now() - 3600000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Space Odyssey</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090d16;
+      color: #38bdf8;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .game-card {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      max-height: 720px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.15);
+    }
+    .hud {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid #1e293b;
+      backdrop-blur: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 10;
+    }
+    .score-badge {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      color: #38bdf8;
+    }
+    .health-bar-wrap {
+      width: 100px;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .health-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #10b981);
+      transition: width 0.2s ease;
+    }
+    canvas {
+      flex: 1;
+      width: 100%;
+      display: block;
+      background: radial-gradient(circle at center, #0d1527 0%, #030712 100%);
+      touch-action: none;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid #1e293b;
+    }
+    .btn-ctrl {
+      background: #1e293b;
+      border: 1px solid #38bdf844;
+      color: #38bdf8;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      active:scale-95;
+    }
+    .btn-fire {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: none;
+      box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-card">
+    <div class="hud">
+      <div class="score-badge">النقاط: <span id="score">0</span></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>الطاقة:</span>
+        <div class="health-bar-wrap">
+          <div id="health" class="health-bar"></div>
+        </div>
+      </div>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+      <button id="leftBtn" class="btn-ctrl">◀ يسار</button>
+      <button id="fireBtn" class="btn-ctrl btn-fire">⚡ إطلاق</button>
+      <button id="rightBtn" class="btn-ctrl">يمين ▶</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const healthEl = document.getElementById('health');
+
+    let width, height;
+    function resize() {
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight - 120;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Audio synth
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function playBeep(freq, type='sine', dur=0.1) {
+      try {
+        if(!audioCtx) audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch(e){}
+    }
+
+    let player = { x: width/2, y: height - 60, size: 24, speed: 6, vx: 0, health: 100 };
+    let score = 0;
+    let lasers = [];
+    let enemies = [];
+    let stars = Array.from({length: 45}, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      speed: 0.5 + Math.random() * 2,
+      size: Math.random() * 2
+    }));
+
+    let keys = { left: false, right: false };
+
+    window.addEventListener('keydown', e => {
+      if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+      if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+      if(e.key === ' ' || e.key === 'ArrowUp') shoot();
+    });
+    window.addEventListener('keyup', e => {
+      if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+      if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    });
+
+    const setupBtn = (id, onDown, onUp) => {
+      const el = document.getElementById(id);
+      el.addEventListener('touchstart', e => { e.preventDefault(); onDown(); });
+      el.addEventListener('touchend', e => { e.preventDefault(); onUp && onUp(); });
+      el.addEventListener('mousedown', onDown);
+      el.addEventListener('mouseup', () => onUp && onUp());
+    };
+    setupBtn('leftBtn', () => keys.left = true, () => keys.left = false);
+    setupBtn('rightBtn', () => keys.right = true, () => keys.right = false);
+    setupBtn('fireBtn', shoot);
+
+    function shoot() {
+      lasers.push({ x: player.x, y: player.y - 20, speed: 10 });
+      playBeep(880, 'triangle', 0.08);
+    }
+
+    setInterval(() => {
+      if(player.health > 0) {
+        enemies.push({
+          x: 20 + Math.random() * (width - 40),
+          y: -20,
+          speed: 2 + Math.random() * 2.5,
+          size: 18
+        });
+      }
+    }, 1200);
+
+    function update() {
+      if(keys.left && player.x > 30) player.x -= player.speed;
+      if(keys.right && player.x < width - 30) player.x += player.speed;
+
+      // Stars
+      stars.forEach(s => {
+        s.y += s.speed;
+        if(s.y > height) s.y = 0;
+      });
+
+      // Lasers
+      lasers.forEach((l, i) => {
+        l.y -= l.speed;
+        if(l.y < 0) lasers.splice(i, 1);
+      });
+
+      // Enemies
+      enemies.forEach((e, ei) => {
+        e.y += e.speed;
+        if(e.y > height) enemies.splice(ei, 1);
+
+        // Hit player
+        if(Math.hypot(e.x - player.x, e.y - player.y) < player.size + e.size) {
+          player.health = Math.max(0, player.health - 20);
+          healthEl.style.width = player.health + '%';
+          playBeep(160, 'sawtooth', 0.2);
+          enemies.splice(ei, 1);
+        }
+
+        // Hit laser
+        lasers.forEach((l, li) => {
+          if(Math.hypot(e.x - l.x, e.y - l.y) < e.size + 8) {
+            enemies.splice(ei, 1);
+            lasers.splice(li, 1);
+            score += 100;
+            scoreEl.innerText = score;
+            playBeep(440 + Math.random()*200, 'sine', 0.1);
+          }
+        });
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Stars
+      ctx.fillStyle = '#94a3b8';
+      stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Player Ship
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#0284c7';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.moveTo(0, -22);
+      ctx.lineTo(16, 16);
+      ctx.lineTo(0, 8);
+      ctx.lineTo(-16, 16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Lasers
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10;
+      lasers.forEach(l => {
+        ctx.fillRect(l.x - 2.5, l.y - 10, 5, 14);
+      });
+
+      // Enemies
+      ctx.fillStyle = '#f43f5e';
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 12;
+      enemies.forEach(e => {
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      if(player.health <= 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 24px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('انتهت اللعبة!', width/2, height/2 - 10);
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px system-ui';
+        ctx.fillText('النقاط النهائية: ' + score, width/2, height/2 + 25);
+      } else {
+        update();
+      }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>`
   },
-  en: {
-    templatePong: '🏓 Pong Template',
-    templateSnake: '🐍 Snake Template',
-    gameConsole: 'Live Game Runtime Console & Logs',
-    clearConsole: 'Clear Logs',
-    title: 'Game & App Sandbox Studio 2026',
-    subtitle: 'Advanced development & execution environment for interactive Web games and apps with Terminal sandbox syntax validation, Web Audio, and particle physics.',
-    userRequest: 'User Request:',
-    previewTab: 'Live Interactive Runner',
-    codeTab: 'Source Code & Lab',
-    deviceMode: 'Display Mode',
-    responsive: 'Desktop / Fluid',
-    mobile: 'Mobile Device',
-    reload: 'Restart Game',
-    openNewTab: 'Open in New Tab',
-    copyCode: 'Copy Code',
-    copied: 'Copied!',
-    savedApps: 'Games & Apps Library',
-    newGamePrompt: 'Ask ADAM to build a new 3D/2D game or application...',
-    generateBtn: 'Generate & Run',
-    emptyList: 'No saved games or apps yet.',
-    deleteConfirm: 'Delete',
-    all: 'All',
-    games: 'Games',
-    apps: 'Apps',
-    searchPlaceholder: 'Search games & apps...',
-    saveAndRun: 'Save & Run Live',
-    downloadHtml: 'Export HTML',
-    codeSaved: 'Code Saved Successfully!',
-    terminalCheck: 'Terminal Sandbox Check',
-    checking: 'Checking...',
-    terminalSuccess: 'Syntax & Code verified clean by Node Sandbox ⚡',
-    terminalError: 'Syntax error detected:',
-    snippetsTitle: 'Game Engine Quick Boosters:',
-    addAudio: 'Audio Synthesizer (Web Audio)',
-    addParticles: 'Particle Physics Engine',
-    addControls: 'Virtual Touch Controls',
-    addHighScore: 'High Score System',
-    fullscreen: 'Theater / Fullscreen Mode',
-    exitFullscreen: 'Exit Fullscreen',
-    unrealTab: 'Unreal Engine 5 Bridge',
-    unrealSubtitle: 'Integrate Game Sandbox with Unreal Engine 5 via Web Remote Control, Pixel Streaming, and C++/Python Generators',
-    ueController: 'Live World Actuator (Remote Control)',
-    ueCpp: 'Export C++ Actor (.h / .cpp)',
-    uePython: 'Python Level Generator',
-    uePreset: 'Remote Preset (JSON)',
-    ueStreaming: 'Pixel Streaming (WebRTC)',
-    ueGuide: 'Step-by-Step Setup Guide',
-    ueStatus: 'Unreal Engine Connection Status',
-    ueTestConnect: 'Test Connection',
-    ueConnected: 'Connected to Unreal Engine 5 🚀',
-    ueDisconnected: 'Simulated Bridge (Offline / Standby)',
-    spawnActor: 'Spawn 3D Actor in UE5 World',
-    adjustLight: 'Adjust World Lighting & Atmosphere',
-    triggerAction: 'Trigger Game Action / Laser',
-    execPython: 'Execute Python Script in UE Editor',
-    copyHeader: 'Copy C++ Header (.h)',
-    copySource: 'Copy C++ Source (.cpp)',
-    copyPy: 'Copy Python Script (.py)',
-    downloadCppZip: 'Export C++ / Python Package',
+  {
+    id: 'cyber_pong_neon',
+    title: 'سايبر بونغ النيون (Cyber Pong Neon)',
+    prompt: 'اصنع لعبة بونغ تفاعلية سريعة ومضيئة بتأثيرات النيون مع ذكاء اصطناعي منافس',
+    category: 'game',
+    createdAt: Date.now() - 7200000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Pong Neon</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #020617;
+      color: #10b981;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .game-card {
+      width: 100%;
+      max-width: 480px;
+      background: #0b1120;
+      border: 1px solid #10b98144;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.15);
+      display: flex;
+      flex-direction: column;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #1e293b;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 480px;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+      touch-action: none;
+      cursor: ew-resize;
+    }
+    .footer-tip {
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      background: #090e1a;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-card">
+    <div class="hud">
+      <div>أنت: <span id="pScore" style="color:#10b981;">0</span></div>
+      <div style="color:#38bdf8;">CYBER PONG</div>
+      <div>الخصم: <span id="aiScore" style="color:#f43f5e;">0</span></div>
+    </div>
+    <canvas id="c"></canvas>
+    <div class="footer-tip">حرّك إصبعك أو الفأرة يميناً ويساراً لتحريك المضرب</div>
+  </div>
+
+  <script>
+    const c = document.getElementById('c');
+    const ctx = c.getContext('2d');
+    const pScoreEl = document.getElementById('pScore');
+    const aiScoreEl = document.getElementById('aiScore');
+
+    let w = c.width = 440;
+    let h = c.height = 480;
+
+    let pScore = 0, aiScore = 0;
+    const paddleW = 80, paddleH = 12;
+    let player = { x: w/2 - paddleW/2, y: h - 30 };
+    let ai = { x: w/2 - paddleW/2, y: 18, speed: 4 };
+    let ball = { x: w/2, y: h/2, vx: 4, vy: 4, r: 7 };
+
+    function move(clientX) {
+      const rect = c.getBoundingClientRect();
+      const scaleX = w / rect.width;
+      player.x = (clientX - rect.left) * scaleX - paddleW / 2;
+      player.x = Math.max(0, Math.min(w - paddleW, player.x));
+    }
+
+    c.addEventListener('mousemove', e => move(e.clientX));
+    c.addEventListener('touchmove', e => {
+      if(e.touches.length > 0) move(e.touches[0].clientX);
+    });
+
+    function resetBall(dir) {
+      ball.x = w/2;
+      ball.y = h/2;
+      ball.vx = (Math.random() > 0.5 ? 4 : -4);
+      ball.vy = dir * 4;
+    }
+
+    function loop() {
+      // AI Tracking
+      const aiCenter = ai.x + paddleW/2;
+      if(aiCenter < ball.x - 8) ai.x += ai.speed;
+      else if(aiCenter > ball.x + 8) ai.x -= ai.speed;
+      ai.x = Math.max(0, Math.min(w - paddleW, ai.x));
+
+      // Ball Movement
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      // Wall Bounce
+      if(ball.x - ball.r <= 0 || ball.x + ball.r >= w) ball.vx *= -1;
+
+      // Player Paddle Hit
+      if(ball.y + ball.r >= player.y && ball.x >= player.x && ball.x <= player.x + paddleW) {
+        ball.vy = -Math.abs(ball.vy) * 1.05;
+        ball.vx += (ball.x - (player.x + paddleW/2)) * 0.1;
+      }
+
+      // AI Paddle Hit
+      if(ball.y - ball.r <= ai.y + paddleH && ball.x >= ai.x && ball.x <= ai.x + paddleW) {
+        ball.vy = Math.abs(ball.vy) * 1.05;
+      }
+
+      // Score
+      if(ball.y < 0) {
+        pScore++;
+        pScoreEl.innerText = pScore;
+        resetBall(1);
+      } else if(ball.y > h) {
+        aiScore++;
+        aiScoreEl.innerText = aiScore;
+        resetBall(-1);
+      }
+
+      // Render
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, w, h);
+
+      // Center Line
+      ctx.strokeStyle = '#1e293b';
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, h/2);
+      ctx.lineTo(w, h/2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Player Paddle
+      ctx.fillStyle = '#10b981';
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 15;
+      ctx.fillRect(player.x, player.y, paddleW, paddleH);
+
+      // AI Paddle
+      ctx.fillStyle = '#f43f5e';
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 15;
+      ctx.fillRect(ai.x, ai.y, paddleW, paddleH);
+
+      // Ball
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>`
+  },
+  {
+    id: 'quantum_snake',
+    title: 'ثعبان الكوانتوم المضيء (Quantum Snake)',
+    prompt: 'برمج لعبة ثعبان كلاسيكية بتصميم مستقبلي نيون أنيق مع لوحة تحكم لمسية D-Pad ونقاط عالية',
+    category: 'game',
+    createdAt: Date.now() - 10800000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quantum Snake</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #020617;
+      color: #a855f7;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .game-card {
+      width: 100%;
+      max-width: 440px;
+      background: #0b0f19;
+      border: 1px solid #a855f733;
+      border-radius: 20px;
+      box-shadow: 0 0 35px rgba(168, 85, 247, 0.15);
+      overflow: hidden;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid #1e293b;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #030712;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 14px;
+      background: #090e1a;
+      border-top: 1px solid #1e293b;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+    .btn {
+      background: #1e293b;
+      color: #a855f7;
+      border: 1px solid #a855f744;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-card">
+    <div class="hud">
+      <div>النقاط: <span id="score" style="color:#a855f7;">0</span></div>
+      <div style="color:#f43f5e;">QUANTUM SNAKE</div>
+      <div>الأعلى: <span id="high">0</span></div>
+    </div>
+    <canvas id="gc" width="400" height="360"></canvas>
+    <div class="dpad">
+      <div></div>
+      <button class="btn" onclick="setDir(0,-1)">▲</button>
+      <div></div>
+      <button class="btn" onclick="setDir(-1,0)">◀</button>
+      <button class="btn" onclick="setDir(0,1)">▼</button>
+      <button class="btn" onclick="setDir(1,0)">▶</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gc');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const highEl = document.getElementById('high');
+
+    const grid = 20;
+    let count = 0;
+    let score = 0, high = 0;
+    let snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}];
+    let dx = grid, dy = 0;
+    let food = { x: 280, y: 280 };
+
+    function setDir(x, y) {
+      if(x !== 0 && dx === 0) { dx = x * grid; dy = 0; }
+      if(y !== 0 && dy === 0) { dy = y * grid; dx = 0; }
+    }
+
+    window.addEventListener('keydown', e => {
+      if(e.key === 'ArrowUp' && dy === 0) { dy = -grid; dx = 0; }
+      else if(e.key === 'ArrowDown' && dy === 0) { dy = grid; dx = 0; }
+      else if(e.key === 'ArrowLeft' && dx === 0) { dx = -grid; dy = 0; }
+      else if(e.key === 'ArrowRight' && dx === 0) { dx = grid; dy = 0; }
+    });
+
+    function loop() {
+      requestAnimationFrame(loop);
+      if(++count < 6) return;
+      count = 0;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Move snake
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+      // Wrap around walls
+      if(head.x < 0) head.x = canvas.width - grid;
+      else if(head.x >= canvas.width) head.x = 0;
+      if(head.y < 0) head.y = canvas.height - grid;
+      else if(head.y >= canvas.height) head.y = 0;
+
+      // Self collision
+      for(let i=0; i<snake.length; i++) {
+        if(head.x === snake[i].x && head.y === snake[i].y) {
+          score = 0;
+          scoreEl.innerText = score;
+          snake = [{x: 160, y: 160}, {x: 140, y: 160}];
+          dx = grid; dy = 0;
+          return;
+        }
+      }
+
+      snake.unshift(head);
+
+      // Eat Food
+      if(head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreEl.innerText = score;
+        if(score > high) { high = score; highEl.innerText = high; }
+        food.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+        food.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
+      } else {
+        snake.pop();
+      }
+
+      // Draw Food
+      ctx.fillStyle = '#f43f5e';
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 12;
+      ctx.fillRect(food.x+2, food.y+2, grid-4, grid-4);
+
+      // Draw Snake
+      ctx.fillStyle = '#a855f7';
+      ctx.shadowColor = '#a855f7';
+      ctx.shadowBlur = 10;
+      snake.forEach((s, idx) => {
+        ctx.fillStyle = idx === 0 ? '#c084fc' : '#a855f7';
+        ctx.fillRect(s.x+1, s.y+1, grid-2, grid-2);
+      });
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>`
+  },
+  {
+    id: 'zen_focus_matrix',
+    title: 'مصفوفة التركيز ومولد الترددات (Zen Focus Matrix)',
+    prompt: 'أنشئ تطبيق مؤقت تركيز بومودورو فاخر مع مولد أصوات وترددات بيئية مهدئة',
+    category: 'app',
+    createdAt: Date.now() - 14400000,
+    code: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen Focus Matrix</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .timer-circle {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1e293b 0%, #0b1120 100%);
+      border: 3px solid #38bdf844;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
+      margin-bottom: 24px;
+    }
+    .time-display {
+      font-size: 38px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #fff;
+    }
+    .status-text {
+      font-size: 12px;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .btn-main {
+      flex: 1;
+      padding: 14px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .btn-sec {
+      padding: 14px 20px;
+      border-radius: 16px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .sound-matrix {
+      width: 100%;
+      border-top: 1px solid #1e293b;
+      padding-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .sound-btn {
+      padding: 10px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .sound-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">ZEN FOCUS MATRIX</div>
+    <div class="timer-circle">
+      <div id="time" class="time-display">25:00</div>
+      <div id="status" class="status-text">جلسة تركيز</div>
+    </div>
+    <div class="controls">
+      <button id="toggleBtn" class="btn-main" onclick="toggleTimer()">بدء الجلسة</button>
+      <button class="btn-sec" onclick="resetTimer()">إعادة</button>
+    </div>
+    <div class="sound-matrix">
+      <button id="binaural" class="sound-btn" onclick="toggleAmbient(432, 'binaural')">🌊 أمواج ألفا (432Hz)</button>
+      <button id="zen" class="sound-btn" onclick="toggleAmbient(528, 'zen')">✨ تردد الصفاء (528Hz)</button>
+    </div>
+  </div>
+
+  <script>
+    let timeLeft = 25 * 60;
+    let timerId = null;
+    const timeEl = document.getElementById('time');
+    const toggleBtn = document.getElementById('toggleBtn');
+    let audioCtx = null, activeOsc = null, activeGain = null;
+
+    function renderTime() {
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+      timeEl.innerText = m + ':' + s;
+    }
+
+    function toggleTimer() {
+      if(timerId) {
+        clearInterval(timerId);
+        timerId = null;
+        toggleBtn.innerText = 'استئناف';
+      } else {
+        timerId = setInterval(() => {
+          if(timeLeft > 0) {
+            timeLeft--;
+            renderTime();
+          } else {
+            clearInterval(timerId);
+            timerId = null;
+            toggleBtn.innerText = 'ابدأ من جديد';
+          }
+        }, 1000);
+        toggleBtn.innerText = 'إيقاف مؤقت';
+      }
+    }
+
+    function resetTimer() {
+      if(timerId) clearInterval(timerId);
+      timerId = null;
+      timeLeft = 25 * 60;
+      renderTime();
+      toggleBtn.innerText = 'بدء الجلسة';
+    }
+
+    function toggleAmbient(freq, btnId) {
+      const btn = document.getElementById(btnId);
+      if(activeOsc) {
+        activeOsc.stop();
+        activeOsc.disconnect();
+        activeOsc = null;
+        document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+        return;
+      }
+      try {
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        activeOsc = audioCtx.createOscillator();
+        activeGain = audioCtx.createGain();
+        activeOsc.type = 'sine';
+        activeOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        activeGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        activeOsc.connect(activeGain);
+        activeGain.connect(audioCtx.destination);
+        activeOsc.start();
+        btn.classList.add('active');
+      } catch(e){}
+    }
+  </script>
+</body>
+</html>`
   }
-};
+];
 
 export function AppSandboxStudio({
   language,
   initialAppId,
   onNavigateToChat
 }: AppSandboxStudioProps) {
-  const t = copyLabels[language];
-  const [apps, setApps] = useState<SandboxApp[]>(() => loadSandboxApps());
-  const [selectedAppId, setSelectedAppId] = useState<string>(() => {
-    if (initialAppId && apps.some((a) => a.id === initialAppId)) {
-      return initialAppId;
-    }
-    return apps[0]?.id || '';
+  const isAr = language === 'ar';
+  const [apps, setApps] = useState<SandboxApp[]>(() => {
+    const saved = loadSandboxApps();
+    return saved.length > 0 ? saved : CURATED_MODELS;
   });
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'unreal'>('preview');
-  const [deviceMode, setDeviceMode] = useState<'responsive' | 'mobile'>('responsive');
-  const [copied, setCopied] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [filterCategory, setFilterCategory] = useState<'all' | 'game' | 'app'>('all');
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    return initialAppId || CURATED_MODELS[0].id;
+  });
+
+  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [deviceMode, setDeviceMode] = useState<'fluid' | 'mobile'>('fluid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [editedCode, setEditedCode] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'game' | 'app'>('all');
+  const [copied, setCopied] = useState(false);
+  const [promptInput, setPromptInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // Terminal Sandbox Validation state
-  const [isCheckingTerminal, setIsCheckingTerminal] = useState(false);
-  const [terminalResult, setTerminalResult] = useState<{
-    success: boolean;
-    message: string;
-    details?: string;
-  } | null>(null);
+  const activeApp = useMemo(() => {
+    return apps.find((a) => a.id === selectedId) || apps[0] || CURATED_MODELS[0];
+  }, [apps, selectedId]);
 
-  // Unreal Engine 5 Integration state
-  const [ueConfig, setUeConfig] = useState<UE5ConnectionConfig>(DEFAULT_UE5_CONFIG);
-  const [ueSubTab, setUeSubTab] = useState<'controller' | 'cpp' | 'python' | 'preset' | 'streaming' | 'guide'>('controller');
-  const [isTestingUE, setIsTestingUE] = useState(false);
-  const [ueTestFeedback, setUeTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
-  const [isSendingUECommand, setIsSendingUECommand] = useState(false);
-  const [ueLogs, setUeLogs] = useState<Array<{ id: string; time: string; action: string; status: 'ok' | 'err'; message: string }>>([
-    {
-      id: 'init-1',
-      time: new Date().toLocaleTimeString(),
-      action: 'INIT_BRIDGE',
-      status: 'ok',
-      message: 'Unreal Engine 5 Bridge ready. Web Remote Control & Pixel Streaming configured.'
-    }
-  ]);
-  const [spawnActorType, setSpawnActorType] = useState<'space_pawn' | 'drone' | 'asteroid' | 'light'>('space_pawn');
-  const [actorX, setActorX] = useState(0);
-  const [actorY, setActorY] = useState(0);
-  const [actorZ, setActorZ] = useState(150);
-  const [sunIntensity, setSunIntensity] = useState(10);
-  const [sunPitch, setSunPitch] = useState(-45);
-  const [copiedUeSnippet, setCopiedUeSnippet] = useState<string | null>(null);
-
-  // Live Game Runtime Console state
-  const [gameConsoleLogs, setGameConsoleLogs] = useState<Array<{ id: string; time: string; level: string; message: string }>>([]);
-  const [showConsole, setShowConsole] = useState(false);
+  const [editableCode, setEditableCode] = useState(activeApp?.code || '');
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'ADAM_GAME_CONSOLE') {
-        setGameConsoleLogs(prev => [
-          {
-            id: Math.random().toString(36).slice(2, 7),
-            time: new Date().toLocaleTimeString(),
-            level: event.data.level || 'log',
-            message: event.data.message || ''
-          },
-          ...prev.slice(0, 49)
-        ]);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Keep selected app and editedCode in sync
-  useEffect(() => {
-    if (initialAppId) {
-      setSelectedAppId(initialAppId);
+    if (activeApp) {
+      setEditableCode(activeApp.code);
     }
-  }, [initialAppId]);
-
-  const selectedApp = useMemo(() => {
-    return apps.find((a) => a.id === selectedAppId) || apps[0] || null;
-  }, [apps, selectedAppId]);
-
-  useEffect(() => {
-    if (selectedApp) {
-      setEditedCode(selectedApp.code);
-      setTerminalResult(null);
-    }
-  }, [selectedApp]);
+  }, [activeApp?.id]);
 
   const filteredApps = useMemo(() => {
     return apps.filter((app) => {
-      const matchesCategory =
-        filterCategory === 'all' ? true : app.category === filterCategory;
-      const matchesSearch =
-        !searchQuery.trim() ||
+      const matchSearch =
         app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.prompt.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      const matchCat = categoryFilter === 'all' || app.category === categoryFilter;
+      return matchSearch && matchCat;
     });
-  }, [apps, filterCategory, searchQuery]);
+  }, [apps, searchQuery, categoryFilter]);
 
-  // Build bundled HTML using editedCode so live changes reflect immediately
-  const bundledHtml = useMemo(() => {
-    if (!selectedApp) return '';
-    let raw = editedCode || selectedApp.code;
-
-    const consoleScript = `<script>
-  (function() {
-    const origLog = console.log;
-    const origError = console.error;
-    const origWarn = console.warn;
-    function sendMsg(type, args) {
-      try {
-        window.parent.postMessage({
-          type: 'ADAM_GAME_CONSOLE',
-          level: type,
-          message: Array.from(args).map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
-        }, '*');
-      } catch(e) {}
+  const handleCopyCode = async () => {
+    if (!editableCode) return;
+    try {
+      await navigator.clipboard.writeText(editableCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
     }
-    console.log = function() { sendMsg('log', arguments); origLog.apply(console, arguments); };
-    console.error = function() { sendMsg('error', arguments); origError.apply(console, arguments); };
-    console.warn = function() { sendMsg('warn', arguments); origWarn.apply(console, arguments); };
-    window.onerror = function(msg, url, line, col, error) {
-      sendMsg('error', 'Uncaught Error: ' + msg + ' (Line ' + (line || 0) + ')');
-      return false;
-    };
-  })();
-</script>`;
-
-    if (raw.includes('<!DOCTYPE html>') || raw.includes('<html')) {
-      if (!raw.includes('tailwindcss') && !raw.includes('<style')) {
-        raw = raw.replace(
-          '<head>',
-          '<head><script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>'
-        );
-      }
-      if (raw.includes('<head>')) {
-        raw = raw.replace('<head>', `<head>\n${consoleScript}`);
-      }
-      return raw;
-    }
-
-    return `<!DOCTYPE html>
-<html lang="${language}" dir="${language === 'ar' ? 'rtl' : 'ltr'}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${selectedApp.title}</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  ${consoleScript}
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 1rem;
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: #0b0f19;
-      color: #f1f5f9;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #app-root {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-  </style>
-</head>
-<body>
-  <div id="app-root">
-    ${raw}
-  </div>
-</body>
-</html>`;
-  }, [selectedApp, editedCode, language]);
-
-  const handleCopyCode = () => {
-    if (!selectedApp) return;
-    navigator.clipboard.writeText(editedCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSaveAndRun = () => {
-    if (!selectedApp) return;
-    const updatedApp: SandboxApp = {
-      ...selectedApp,
-      code: editedCode
-    };
-    saveSandboxApp(updatedApp);
-    setApps(loadSandboxApps());
-    setSaveSuccess(true);
-    setReloadKey((k) => k + 1);
-    setActiveTab('preview');
-    setTimeout(() => setSaveSuccess(false), 2500);
+  const handleReload = () => {
+    if (iframeRef.current) {
+      const currentSrcDoc = iframeRef.current.srcdoc;
+      iframeRef.current.srcdoc = '';
+      setTimeout(() => {
+        if (iframeRef.current) iframeRef.current.srcdoc = currentSrcDoc;
+      }, 50);
+    }
+  };
+
+  const handleOpenNewTab = () => {
+    if (!editableCode) return;
+    const blob = new Blob([editableCode], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    openSafeExternalUrl(url);
   };
 
   const handleDownloadHtml = () => {
-    if (!selectedApp) return;
-    const blob = new Blob([bundledHtml], { type: 'text/html;charset=utf-8' });
+    if (!editableCode) return;
+    const blob = new Blob([editableCode], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${selectedApp.id || 'game'}.html`;
+    a.download = `${activeApp.title.replace(/[\s\(\)]+/g, '_')}.html`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleOpenWindow = () => {
-    if (!bundledHtml) return;
-    const blob = new Blob([bundledHtml], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
   };
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = deleteSandboxApp(id);
-    setApps(updated);
-    if (selectedAppId === id) {
-      setSelectedAppId(updated[0]?.id || '');
+    deleteSandboxApp(id);
+    const updated = apps.filter((a) => a.id !== id);
+    setApps(updated.length > 0 ? updated : CURATED_MODELS);
+    if (selectedId === id) {
+      setSelectedId(updated[0]?.id || CURATED_MODELS[0].id);
     }
   };
 
-  const handleCreatePrompt = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customPrompt.trim()) return;
+  const handleSaveAndRun = () => {
+    if (!activeApp) return;
+    const updated: SandboxApp = {
+      ...activeApp,
+      code: editableCode
+    };
+    saveSandboxApp(updated);
+    setApps((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    setActiveTab('preview');
+  };
+
+  const handlePromptSubmit = () => {
+    const text = promptInput.trim();
+    if (!text) return;
     if (onNavigateToChat) {
-      onNavigateToChat(
-        `برمج لي تطبيق أو لعبة تفاعلية كاملة برمجياً كود HTML/JS: ${customPrompt.trim()}`
-      );
+      onNavigateToChat(isAr ? `برمج لي لعبة أو تطبيق تفاعلي بنسبة 100%: ${text}` : `Build a 100% playable interactive game/app: ${text}`);
     }
-  };
-
-  // Direct Terminal Sandbox Validator
-  const handleTerminalValidation = async () => {
-    if (!editedCode) return;
-    setIsCheckingTerminal(true);
-    setTerminalResult(null);
-
-    try {
-      // Extract script contents to validate with Node VM
-      const scriptMatches = editedCode.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/gi);
-      let jsCode = '';
-      if (scriptMatches) {
-        jsCode = scriptMatches
-          .map((s) => s.replace(/<script[\s\S]*?>/i, '').replace(/<\/script>/i, ''))
-          .join('\n;\n');
-      } else {
-        jsCode = editedCode;
-      }
-
-      const response = await fetch('/api/terminal-sandbox', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'validate_syntax',
-          language: 'javascript',
-          code: jsCode
-        })
-      });
-
-      const data = await response.json();
-      if (data.valid || data.success) {
-        setTerminalResult({
-          success: true,
-          message: t.terminalSuccess,
-          details: `Node Sandbox Syntax OK (Checked in ${data.executionTimeMs || 4}ms)`
-        });
-      } else {
-        setTerminalResult({
-          success: false,
-          message: `${t.terminalError} ${data.error || 'Syntax parsing error'}`,
-          details: data.details || data.output
-        });
-      }
-    } catch {
-      // Fallback local syntax evaluation
-      try {
-        const scriptMatches = editedCode.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/gi);
-        if (scriptMatches) {
-          scriptMatches.forEach((s) => {
-            const clean = s.replace(/<script[\s\S]*?>/i, '').replace(/<\/script>/i, '');
-            new Function(clean);
-          });
-        }
-        setTerminalResult({
-          success: true,
-          message: t.terminalSuccess,
-          details: 'Local JS Engine: No syntax errors detected.'
-        });
-      } catch (err: unknown) {
-        setTerminalResult({
-          success: false,
-          message: `${t.terminalError} ${(err as Error).message}`
-        });
-      }
-    } finally {
-      setIsCheckingTerminal(false);
-    }
-  };
-
-  // Game Engine snippet booster
-  const handleInjectSnippet = (type: 'audio' | 'particles' | 'dpad' | 'highscore') => {
-    let snippet = '';
-    if (type === 'audio') {
-      snippet = `
-// --- Web Audio SFX Engine ---
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let sfxAudioCtx = null;
-function playSound(type = 'laser') {
-  try {
-    if (!sfxAudioCtx) sfxAudioCtx = new AudioCtx();
-    const osc = sfxAudioCtx.createOscillator();
-    const gain = sfxAudioCtx.createGain();
-    const now = sfxAudioCtx.currentTime;
-    if (type === 'laser') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(850, now);
-      osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-      osc.stop(now + 0.15);
-    } else if (type === 'hit') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(120, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-      osc.stop(now + 0.2);
-    }
-    osc.connect(gain);
-    gain.connect(sfxAudioCtx.destination);
-    osc.start();
-  } catch(e) {}
-}
-`;
-    } else if (type === 'particles') {
-      snippet = `
-// --- Particle Explosions Engine ---
-let fxParticles = [];
-function createExplosion(x, y, color = '#38bdf8', count = 20) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 6 + 1.5;
-    fxParticles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 1.0,
-      decay: Math.random() * 0.03 + 0.02,
-      color,
-      size: Math.random() * 3 + 2
-    });
-  }
-}
-function updateParticles(ctx) {
-  fxParticles.forEach(p => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life -= p.decay;
-    if (ctx && p.life > 0) {
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = Math.max(0, p.life);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  });
-  if (ctx) ctx.globalAlpha = 1.0;
-  fxParticles = fxParticles.filter(p => p.life > 0);
-}
-`;
-    } else if (type === 'highscore') {
-      snippet = `
-// --- Local Storage High Score Manager ---
-const GAME_HIGH_SCORE_KEY = 'adam_game_highscore';
-function getHighScore() {
-  return parseInt(localStorage.getItem(GAME_HIGH_SCORE_KEY) || '0', 10);
-}
-function saveHighScore(score) {
-  const current = getHighScore();
-  if (score > current) {
-    localStorage.setItem(GAME_HIGH_SCORE_KEY, score.toString());
-    return true;
-  }
-  return false;
-}
-`;
-    }
-
-    if (snippet) {
-      if (editedCode.includes('</script>')) {
-        setEditedCode(editedCode.replace('</script>', `${snippet}\n</script>`));
-      } else {
-        setEditedCode(editedCode + `\n<script>${snippet}</script>`);
-      }
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    }
-  };
-
-  const handleLoadTemplate = (type: 'pong' | 'snake') => {
-    let templateCode = '';
-    if (type === 'pong') {
-      templateCode = `<div class="flex flex-col items-center justify-center gap-3 p-4">
-  <h2 class="text-xl font-bold text-emerald-400 font-mono">🏓 Retro Pong Arcade</h2>
-  <canvas id="pongCanvas" width="480" height="320" class="bg-black border-2 border-emerald-500/50 rounded-xl shadow-2xl cursor-crosshair"></canvas>
-  <div class="text-xs text-slate-400 flex gap-4">
-    <span>Controls: Move Mouse / W & S</span>
-    <span>Score: <strong id="scoreDisplay" class="text-emerald-300">0</strong></span>
-  </div>
-</div>
-<script>
-  const canvas = document.getElementById('pongCanvas');
-  const ctx = canvas.getContext('2d');
-  let playerY = 120, aiY = 120, ballX = 240, ballY = 160, ballVx = 4, ballVy = 3, score = 0;
-  
-  window.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    playerY = e.clientY - rect.top - 30;
-    if (playerY < 0) playerY = 0;
-    if (playerY > 260) playerY = 260;
-  });
-
-  function update() {
-    ballX += ballVx;
-    ballY += ballVy;
-    if (ballY <= 10 || ballY >= 310) ballVy *= -1;
-    
-    if (aiY + 30 < ballY) aiY += 3;
-    else if (aiY + 30 > ballY) aiY -= 3;
-    
-    if (ballX <= 25 && ballY >= playerY && ballY <= playerY + 60) {
-      ballVx *= -1.05;
-      score++;
-      document.getElementById('scoreDisplay').innerText = score;
-    }
-    if (ballX >= 455 && ballY >= aiY && ballY <= aiY + 60) {
-      ballVx *= -1.05;
-    }
-    if (ballX < 0 || ballX > 480) {
-      ballX = 240; ballY = 160; ballVx = 4; score = 0;
-      document.getElementById('scoreDisplay').innerText = score;
-    }
-  }
-
-  function draw() {
-    ctx.fillStyle = '#050811';
-    ctx.fillRect(0, 0, 480, 320);
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(15, playerY, 10, 60);
-    ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(455, aiY, 10, 60);
-    ctx.fillStyle = '#10b981';
-    ctx.beginPath();
-    ctx.arc(ballX, ballY, 8, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-  }
-  loop();
-</script>`;
-    } else if (type === 'snake') {
-      templateCode = `<div class="flex flex-col items-center justify-center gap-3 p-4">
-  <h2 class="text-xl font-bold text-emerald-400 font-mono">🐍 Retro Snake Game</h2>
-  <canvas id="snakeCanvas" width="360" height="360" class="bg-black border-2 border-emerald-500/50 rounded-xl shadow-2xl"></canvas>
-  <div class="text-xs text-slate-400 flex gap-4">
-    <span>Use Arrow Keys</span>
-    <span>Score: <strong id="snakeScore" class="text-emerald-300">0</strong></span>
-  </div>
-</div>
-<script>
-  const canvas = document.getElementById('snakeCanvas');
-  const ctx = canvas.getContext('2d');
-  const grid = 20;
-  let snake = [{x: 160, y: 160}, {x: 140, y: 160}];
-  let food = {x: 200, y: 200};
-  let dx = grid, dy = 0, score = 0;
-
-  window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft' && dx === 0) { dx = -grid; dy = 0; }
-    if (e.key === 'ArrowUp' && dy === 0) { dx = 0; dy = -grid; }
-    if (e.key === 'ArrowRight' && dx === 0) { dx = grid; dy = 0; }
-    if (e.key === 'ArrowDown' && dy === 0) { dx = 0; dy = grid; }
-  });
-
-  function gameLoop() {
-    const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-    if (head.x < 0 || head.x >= 360 || head.y < 0 || head.y >= 360 || snake.some(s => s.x === head.x && s.y === head.y)) {
-      snake = [{x: 160, y: 160}, {x: 140, y: 160}];
-      score = 0; dx = grid; dy = 0;
-      document.getElementById('snakeScore').innerText = score;
-    }
-    snake.unshift(head);
-    if (head.x === food.x && head.y === food.y) {
-      score += 10;
-      document.getElementById('snakeScore').innerText = score;
-      food = {x: Math.floor(Math.random()*18)*grid, y: Math.floor(Math.random()*18)*grid};
-    } else {
-      snake.pop();
-    }
-
-    ctx.fillStyle = '#050811';
-    ctx.fillRect(0, 0, 360, 360);
-    ctx.fillStyle = '#f43f5e';
-    ctx.fillRect(food.x, food.y, grid-2, grid-2);
-    ctx.fillStyle = '#10b981';
-    snake.forEach(s => ctx.fillRect(s.x, s.y, grid-2, grid-2));
-  }
-  setInterval(gameLoop, 100);
-</script>`;
-    }
-
-    if (templateCode) {
-      setEditedCode(templateCode);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    }
-  };
-
-  const handleTestUeConnection = async () => {
-    setIsTestingUE(true);
-    setUeTestFeedback(null);
-    try {
-      const res = await sendCommandToUnreal(ueConfig, 'test_connection');
-      setUeConfig(prev => ({ ...prev, connected: res.success, latencyMs: res.executionTimeMs }));
-      setUeTestFeedback({
-        success: res.success,
-        message: res.message
-      });
-      setUeLogs(prev => [
-        {
-          id: Math.random().toString(36).slice(2, 7),
-          time: new Date().toLocaleTimeString(),
-          action: 'TEST_CONNECTION',
-          status: res.success ? 'ok' : 'err',
-          message: res.message
-        },
-        ...prev.slice(0, 19)
-      ]);
-    } catch (err: any) {
-      setUeTestFeedback({
-        success: false,
-        message: err?.message || 'Connection test failed'
-      });
-    } finally {
-      setIsTestingUE(false);
-    }
-  };
-
-  const handleSendUeAction = async (action: 'spawn_actor' | 'execute_python' | 'adjust_lighting' | 'fire_action', payload?: any) => {
-    setIsSendingUECommand(true);
-    try {
-      const res = await sendCommandToUnreal(ueConfig, action, payload);
-      setUeLogs(prev => [
-        {
-          id: Math.random().toString(36).slice(2, 7),
-          time: new Date().toLocaleTimeString(),
-          action: action.toUpperCase(),
-          status: res.success ? 'ok' : 'err',
-          message: res.message
-        },
-        ...prev.slice(0, 19)
-      ]);
-    } catch (err: any) {
-      setUeLogs(prev => [
-        {
-          id: Math.random().toString(36).slice(2, 7),
-          time: new Date().toLocaleTimeString(),
-          action: action.toUpperCase(),
-          status: 'err',
-          message: err?.message || 'Error executing action'
-        },
-        ...prev.slice(0, 19)
-      ]);
-    } finally {
-      setIsSendingUECommand(false);
-    }
-  };
-
-  const handleCopyUeSnippet = (snippet: string, key: string) => {
-    navigator.clipboard.writeText(snippet);
-    setCopiedUeSnippet(key);
-    setTimeout(() => setCopiedUeSnippet(null), 2000);
-  };
-
-  const handleDownloadCppZip = () => {
-    const title = selectedApp?.title || 'AdamGame';
-    const headerCode = generateUnrealCppHeader(title);
-    const sourceCode = generateUnrealCppSource(title);
-    const pyCode = generateUnrealPythonScript(title, selectedApp?.category);
-    const presetCode = generateUnrealRemoteControlPreset(title);
-
-    const combined = `// ==============================================================================
-// 🎮 ADAM UNREAL ENGINE 5 INTEGRATION PACKAGE (2026)
-// Game: ${title}
-// Generated for: Unreal Engine 5.4+
-// ==============================================================================
-
-// ======================== [FILE 1: AAdamGameActor.h] ========================
-${headerCode}
-
-// ======================= [FILE 2: AAdamGameActor.cpp] =======================
-${sourceCode}
-
-// ====================== [FILE 3: build_adam_scene.py] ======================
-${pyCode}
-
-// ======================= [FILE 4: RemotePreset.json] =======================
-${presetCode}
-`;
-    const blob = new Blob([combined], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `UnrealEngine5_${title.replace(/\s+/g, '_')}_Bundle.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   return (
-    <section className="feature-page" style={{ maxWidth: '1400px' }} ref={containerRef}>
-      {/* Header */}
-      <div className="feature-heading">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span className="eyebrow flex items-center gap-1.5 text-emerald-400">
-              <Gamepad2 size={16} />
-              ADEM / HIGH-SPEED 3D GAME & APP RUNNER
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black">{t.title}</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">{t.subtitle}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700/80 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 font-bold transition-all shadow-md"
-            >
-              {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-              {isFullscreen ? t.exitFullscreen : t.fullscreen}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className={`grid grid-cols-1 ${isFullscreen ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-6 mt-4`}>
-        {/* Left Sidebar: List of Games & Apps (Hidden in Fullscreen) */}
-        {!isFullscreen && (
-          <div className="lg:col-span-4 flex flex-col gap-4">
-            {/* Quick Prompt Creation */}
-            <div className="settings-card bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
-              <form onSubmit={handleCreatePrompt} className="flex flex-col gap-2.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-emerald-400" />
-                  {t.newGamePrompt}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder={
-                      language === 'ar'
-                        ? 'مثال: لعبة حرب الفضاء 3D، لعبة سباق نيون...'
-                        : 'e.g. 3D Space flight shooter, neon arcade...'
-                    }
-                    className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!customPrompt.trim()}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition-colors flex items-center gap-1 disabled:opacity-50 shadow-md"
-                  >
-                    <PlusCircle size={14} />
-                    {t.generateBtn}
-                  </button>
-                </div>
-              </form>
+    <div className={`flex flex-col h-full bg-[var(--bg)] text-[var(--text)] overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 p-0 bg-black' : ''}`}>
+      {/* Top Header Bar */}
+      {!isFullscreen && (
+        <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[var(--surface)]/80 border-b border-[var(--border)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] text-[var(--accent-contrast)] flex items-center justify-center shadow-md shadow-[var(--accent-glow)]">
+              <Gamepad2 size={18} />
             </div>
-
-            {/* Library & Filter */}
-            <div className="settings-card bg-slate-900/90 border border-slate-800 p-4 rounded-2xl flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <FileCode size={14} className="text-indigo-400" />
-                  {t.savedApps} ({filteredApps.length})
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-bold text-[var(--text)] leading-tight">
+                  {isAr ? 'استوديو الألعاب والتطبيقات' : 'Apps & Games Studio'}
+                </h1>
+                <span className="px-1.5 py-0.5 rounded-full bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-bold font-mono">
+                  v2.5
                 </span>
-                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setFilterCategory('all')}
-                    className={`px-2 py-0.5 rounded-md ${filterCategory === 'all' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'}`}
-                  >
-                    {t.all}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilterCategory('game')}
-                    className={`px-2 py-0.5 rounded-md ${filterCategory === 'game' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'}`}
-                  >
-                    {t.games}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilterCategory('app')}
-                    className={`px-2 py-0.5 rounded-md ${filterCategory === 'app' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'}`}
-                  >
-                    {t.apps}
-                  </button>
-                </div>
               </div>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {isAr ? 'نماذج ألعاب وتطبيقات تفاعلية خفيفة وفائقة السرعة' : 'Curated luxury interactive games & apps'}
+              </p>
+            </div>
+          </div>
 
-              {/* Search */}
-              <div className="relative">
-                <Search
-                  size={13}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 rtl:left-auto rtl:right-3"
-                />
+          {/* Quick Filters */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center p-0.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              {(['all', 'game', 'app'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    categoryFilter === cat
+                      ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm'
+                      : 'text-[var(--muted)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {cat === 'all' ? (isAr ? 'الكل' : 'All') : cat === 'game' ? (isAr ? 'ألعاب' : 'Games') : (isAr ? 'تطبيقات' : 'Apps')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+      )}
+
+      {/* Main Studio Body (Split Layout: Showcase Cards Carousel / List + Main Stage) */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Sidebar: Curated Cards Showcase */}
+        {!isFullscreen && (
+          <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-[var(--border)] bg-[var(--surface)]/40 flex flex-col max-h-56 lg:max-h-full overflow-hidden">
+            {/* Search Input */}
+            <div className="p-3 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs">
+                <Search size={14} className="text-[var(--muted)] flex-shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t.searchPlaceholder}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-1.5 px-8 text-xs text-slate-300 outline-none focus:border-indigo-500"
+                  placeholder={isAr ? 'بحث في النماذج...' : 'Search models...'}
+                  className="bg-transparent border-0 outline-none w-full text-[var(--text)] placeholder-[var(--muted)]"
                 />
               </div>
+            </div>
 
-              {/* Apps List */}
-              <div className="flex flex-col gap-2 max-h-[460px] overflow-y-auto pr-1">
-                {filteredApps.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-slate-500">
-                    {t.emptyList}
-                  </div>
-                ) : (
-                  filteredApps.map((app) => {
-                    const isSelected = selectedApp?.id === app.id;
-                    return (
+            {/* List of Models */}
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+              {filteredApps.map((app) => {
+                const isSelected = app.id === activeApp.id;
+                return (
+                  <div
+                    key={app.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setSelectedId(app.id);
+                      setActiveTab('preview');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedId(app.id);
+                        setActiveTab('preview');
+                      }
+                    }}
+                    className={`w-full p-3 rounded-2xl border text-start transition-all cursor-pointer flex items-center justify-between group select-none ${
+                      isSelected
+                        ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] shadow-sm'
+                        : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text)]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        key={app.id}
-                        onClick={() => {
-                          setSelectedAppId(app.id);
-                          setActiveTab('preview');
-                          setReloadKey((k) => k + 1);
-                        }}
-                        className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                           isSelected
-                            ? 'bg-emerald-500/15 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/30'
-                            : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-800/50'
+                            ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-md'
+                            : 'bg-[var(--surface-2)] text-[var(--muted)] group-hover:text-[var(--accent)]'
                         }`}
                       >
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <div
-                            className={`p-2 rounded-xl shrink-0 mt-0.5 ${
-                              app.category === 'game'
-                                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            }`}
-                          >
-                            {app.category === 'game' ? (
-                              <Gamepad2 size={16} />
-                            ) : (
-                              <Code2 size={16} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <h4
-                              className={`font-semibold truncate ${
-                                isSelected ? 'text-emerald-400 font-bold' : 'text-slate-200'
-                              }`}
-                            >
-                              {app.title}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                              {app.prompt || app.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] text-slate-500">
-                                {new Date(app.createdAt).toLocaleDateString(
-                                  language === 'ar' ? 'ar-DZ' : 'en-US',
-                                  { month: 'short', day: 'numeric' }
-                                )}
-                              </span>
-                              {app.id === 'space_shooter_3d' && (
-                                <span className="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded border border-sky-500/30 font-bold">
-                                  3D Starfield
-                                </span>
-                              )}
-                              {app.id === 'cyber_breakout' && (
-                                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30 font-bold">
-                                  Cyberpunk FX
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        {app.category === 'game' ? <Gamepad2 size={16} /> : <Zap size={16} />}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold truncate block">
+                          {app.title}
+                        </span>
+                        <span className="text-[10px] text-[var(--muted)] truncate block mt-0.5">
+                          {app.category === 'game' ? (isAr ? 'لعبة تفاعلية 60fps' : '60fps Interactive Game') : (isAr ? 'أداة وتطبيق ذكي' : 'Smart Tool & Matrix')}
+                        </span>
+                      </div>
+                    </div>
 
+                    <div className="flex items-center gap-1">
+                      {apps.length > 1 && !CURATED_MODELS.some((c) => c.id === app.id) && (
                         <button
                           type="button"
                           onClick={(e) => handleDelete(app.id, e)}
-                          className="text-slate-500 hover:text-rose-400 p-1.5 rounded-md transition-colors"
-                          title={t.deleteConfirm}
+                          className="p-1 rounded-lg text-[var(--muted)] hover:text-rose-400 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                          title={isAr ? 'حذف' : 'Delete'}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
-                      </div>
-                    );
-                  })
-                )}
+                      )}
+                      <ChevronRight size={14} className={`text-[var(--muted)] transition-transform ${isSelected ? 'rotate-90 text-[var(--accent)]' : ''}`} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Prompt Direct Creator Bar */}
+            <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)]">
+              <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)]">
+                <Sparkles size={14} className="text-[var(--accent)] flex-shrink-0 mx-1" />
+                <input
+                  type="text"
+                  value={promptInput}
+                  onChange={(e) => setPromptInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePromptSubmit()}
+                  placeholder={isAr ? 'اطلب برمجة لعبة جديدة...' : 'Ask to build a new game...'}
+                  className="bg-transparent border-0 outline-none text-xs w-full text-[var(--text)] placeholder-[var(--muted)]"
+                />
+                <button
+                  type="button"
+                  onClick={handlePromptSubmit}
+                  disabled={!promptInput.trim()}
+                  className="p-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 disabled:opacity-40 transition cursor-pointer"
+                >
+                  <Send size={12} />
+                </button>
               </div>
             </div>
-          </div>
+          </aside>
         )}
 
-        {/* Right / Main Sandbox Runner & Code Inspector */}
-        <div className={`${isFullscreen ? 'col-span-1' : 'lg:col-span-8'} flex flex-col gap-4`}>
-          {selectedApp ? (
-            <div className="settings-card bg-slate-900/95 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-              {/* User Request Banner */}
-              <div className="bg-slate-950/90 border-b border-slate-800 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      {selectedApp.category === 'game' ? '🎮 لعبة تفاعلية 2026' : '📱 تطبيق مخصص'}
-                    </span>
-                    <h3 className="font-bold text-slate-100 text-sm truncate">
-                      {selectedApp.title}
-                    </h3>
-                  </div>
-                  {selectedApp.prompt && (
-                    <div className="mt-1.5 text-xs text-slate-300 flex items-start gap-1.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                      <strong className="text-emerald-400 shrink-0">{t.userRequest}</strong>
-                      <span className="italic text-slate-300 select-text">"{selectedApp.prompt}"</span>
-                    </div>
-                  )}
-                </div>
+        {/* Main Stage & Runner */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-[var(--bg)]">
+          {/* Stage Controls Toolbar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--surface)] border-b border-[var(--border)] gap-2">
+            {/* Tab Switcher (Live / Code) */}
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              <button
+                type="button"
+                onClick={() => setActiveTab('preview')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'preview'
+                    ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <Play size={12} fill={activeTab === 'preview' ? 'currentColor' : 'none'} />
+                <span>{isAr ? 'التشغيل الحي' : 'Live Runner'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('code')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'code'
+                    ? 'bg-[var(--accent)] text-[var(--accent-contrast)] shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <Code2 size={13} />
+                <span>{isAr ? 'محرر الكود' : 'Source Code'}</span>
+              </button>
+            </div>
 
-                {/* Main Action Tabs */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('preview')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'preview'
-                          ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <Play size={13} />
-                      {t.previewTab}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('code')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'code'
-                          ? 'bg-indigo-500 text-white shadow-md font-bold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <Code2 size={13} />
-                      {t.codeTab}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('unreal')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        activeTab === 'unreal'
-                          ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <Layers size={13} />
-                      <span>{t.unrealTab}</span>
-                      <span className="text-[9px] bg-slate-950/80 text-amber-300 px-1.5 py-0.2 rounded-full border border-amber-500/40">
-                        UE 5.4+
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sub-toolbar for Runner */}
+            {/* Stage Actions */}
+            <div className="flex items-center gap-1.5">
               {activeTab === 'preview' && (
-                <div className="flex flex-wrap items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800/80 text-xs gap-2">
-                  {/* Device mode */}
-                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setDeviceMode('responsive')}
-                      className={`p-1 rounded-md text-xs flex items-center gap-1 ${
-                        deviceMode === 'responsive'
-                          ? 'bg-slate-800 text-emerald-400 font-medium'
-                          : 'text-slate-400'
-                      }`}
-                      title={t.responsive}
-                    >
-                      <Monitor size={14} />
-                      <span className="hidden sm:inline">{t.responsive}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeviceMode('mobile')}
-                      className={`p-1 rounded-md text-xs flex items-center gap-1 ${
-                        deviceMode === 'mobile'
-                          ? 'bg-slate-800 text-emerald-400 font-medium'
-                          : 'text-slate-400'
-                      }`}
-                      title={t.mobile}
-                    >
-                      <Smartphone size={14} />
-                      <span className="hidden sm:inline">{t.mobile}</span>
-                    </button>
-                  </div>
+                <>
+                  {/* Viewport Switcher */}
+                  <button
+                    type="button"
+                    onClick={() => setDeviceMode((prev) => (prev === 'fluid' ? 'mobile' : 'fluid'))}
+                    className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                    title={deviceMode === 'fluid' ? (isAr ? 'محاكاة الهاتف' : 'Mobile Frame') : (isAr ? 'شاشة كاملة' : 'Fluid Frame')}
+                  >
+                    {deviceMode === 'fluid' ? <Smartphone size={14} /> : <Monitor size={14} />}
+                  </button>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowConsole(!showConsole)}
-                      className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 text-[11px] ${
-                        showConsole
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-                      }`}
-                      title={t.gameConsole}
-                    >
-                      <Terminal size={13} />
-                      <span className="hidden sm:inline">Console</span>
-                      {gameConsoleLogs.length > 0 && (
-                        <span className="bg-amber-500 text-slate-950 font-bold px-1.5 rounded-full text-[10px]">
-                          {gameConsoleLogs.length}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setReloadKey((k) => k + 1)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 transition-colors flex items-center gap-1 text-[11px]"
-                      title={t.reload}
-                    >
-                      <RotateCcw size={13} />
-                      <span className="hidden sm:inline">{t.reload}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadHtml}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-300 bg-slate-900 border border-slate-800 transition-colors flex items-center gap-1 text-[11px]"
-                      title={t.downloadHtml}
-                    >
-                      <Download size={13} />
-                      <span className="hidden sm:inline">{t.downloadHtml}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleOpenWindow}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 bg-slate-900 border border-slate-800 transition-colors flex items-center gap-1 text-[11px]"
-                      title={t.openNewTab}
-                    >
-                      <ExternalLink size={13} />
-                      <span className="hidden sm:inline">{t.openNewTab}</span>
-                    </button>
-                  </div>
-                </div>
+                  <button
+                    type="button"
+                    onClick={handleReload}
+                    className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                    title={isAr ? 'إعادة تشغيل' : 'Restart'}
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                </>
               )}
 
-              {/* Body: Live Sandbox, Source Code, or Unreal Engine 5 Bridge */}
-              <div className="p-4 bg-slate-950/40 min-h-[540px] flex items-center justify-center">
-                {activeTab === 'preview' ? (
-                  <div
-                    className={`w-full flex flex-col items-center transition-all duration-300 ${
-                      deviceMode === 'mobile' ? 'max-w-[420px]' : 'max-w-full'
-                    }`}
-                  >
-                    <div
-                      className={`w-full overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-2xl relative ${
-                        deviceMode === 'mobile'
-                          ? 'aspect-[9/16] max-h-[660px]'
-                          : isFullscreen
-                          ? 'h-[80vh]'
-                          : 'min-h-[540px]'
-                      }`}
-                    >
-                      <iframe
-                        key={`${selectedApp.id}-${reloadKey}`}
-                        srcDoc={bundledHtml}
-                        title={selectedApp.title}
-                        sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
-                        className="w-full h-full border-0 absolute inset-0 bg-[#090d16]"
-                      />
-                    </div>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition cursor-pointer"
+                title={isAr ? 'نسخ الكود' : 'Copy Code'}
+              >
+                {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                <span className="hidden sm:inline">{copied ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}</span>
+              </button>
 
-                    {/* Game Runtime Console & Error Inspector Drawer */}
-                    {showConsole && (
-                      <div className="w-full mt-3 bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-col gap-2 shadow-xl">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                          <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-mono">
-                            <Terminal size={14} />
-                            {t.gameConsole}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setGameConsoleLogs([])}
-                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-800"
-                            >
-                              {t.clearConsole}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowConsole(false)}
-                              className="text-[10px] text-slate-400 hover:text-slate-200"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                        <div className="max-h-40 overflow-y-auto font-mono text-[11px] flex flex-col gap-1 pr-1">
-                          {gameConsoleLogs.length === 0 ? (
-                            <div className="text-slate-500 py-3 text-center italic">No console logs or errors recorded yet. Play your game or inspect output here.</div>
-                          ) : (
-                            gameConsoleLogs.map((log) => (
-                              <div
-                                key={log.id}
-                                className={`p-1.5 rounded border flex items-start gap-2 ${
-                                  log.level === 'error'
-                                    ? 'bg-rose-950/30 border-rose-500/30 text-rose-300'
-                                    : log.level === 'warn'
-                                    ? 'bg-amber-950/30 border-amber-500/30 text-amber-300'
-                                    : 'bg-slate-900/60 border-slate-800 text-slate-300'
-                                }`}
-                              >
-                                <span className="text-[10px] opacity-60 shrink-0">{log.time}</span>
-                                <span className="uppercase text-[9px] px-1 rounded bg-black/40 shrink-0 font-bold">{log.level}</span>
-                                <span className="break-all">{log.message}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : activeTab === 'code' ? (
-                  <div className="w-full flex flex-col gap-3">
-                    {/* Code Editor Toolbar */}
-                    <div className="flex flex-wrap justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-emerald-400 font-mono font-semibold flex items-center gap-1.5">
-                          <Terminal size={14} />
-                          Live Sandbox Code Editor
-                        </span>
-                        {saveSuccess && (
-                          <span className="text-[11px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 animate-pulse">
-                            {t.codeSaved}
-                          </span>
-                        )}
-                      </div>
+              <button
+                type="button"
+                onClick={handleOpenNewTab}
+                className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                title={isAr ? 'فتح في نافذة جديدة' : 'Open in New Tab'}
+              >
+                <ExternalLink size={14} />
+              </button>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        {/* Terminal Syntax Validator */}
-                        <button
-                          type="button"
-                          onClick={handleTerminalValidation}
-                          disabled={isCheckingTerminal}
-                          className="bg-slate-900 hover:bg-slate-800 text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors disabled:opacity-50"
-                          title={t.terminalCheck}
-                        >
-                          <ShieldCheck size={13} className={isCheckingTerminal ? 'animate-spin' : ''} />
-                          {isCheckingTerminal ? t.checking : t.terminalCheck}
-                        </button>
+              <button
+                type="button"
+                onClick={handleDownloadHtml}
+                className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                title={isAr ? 'تصدير كملف HTML' : 'Export HTML'}
+              >
+                <Download size={14} />
+              </button>
 
-                        <button
-                          type="button"
-                          onClick={handleDownloadHtml}
-                          className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                          title={t.downloadHtml}
-                        >
-                          <Download size={13} className="text-indigo-400" />
-                          {t.downloadHtml}
-                        </button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                title={isFullscreen ? (isAr ? 'إنهاء وضع المسرح' : 'Exit Fullscreen') : (isAr ? 'وضع المسرح' : 'Theater Fullscreen')}
+              >
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+            </div>
+          </div>
 
-                        <button
-                          type="button"
-                          onClick={handleCopyCode}
-                          className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                        >
-                          {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                          {copied ? t.copied : t.copyCode}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleSaveAndRun}
-                          className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors shadow-lg"
-                        >
-                          <Play size={13} />
-                          {t.saveAndRun}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Game Booster Snippets Quick Bar */}
-                    <div className="flex flex-wrap items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800/80 text-xs">
-                      <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
-                        <Flame size={13} className="text-amber-400" />
-                        {t.snippetsTitle}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleLoadTemplate('pong')}
-                        className="bg-slate-950 hover:bg-slate-800 text-teal-300 border border-teal-500/30 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition-colors font-medium"
-                      >
-                        <Gamepad2 size={12} />
-                        {t.templatePong}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleLoadTemplate('snake')}
-                        className="bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition-colors font-medium"
-                      >
-                        <Gamepad2 size={12} />
-                        {t.templateSnake}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleInjectSnippet('audio')}
-                        className="bg-slate-950 hover:bg-slate-800 text-indigo-300 border border-indigo-500/20 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition-colors"
-                      >
-                        <Volume2 size={12} />
-                        {t.addAudio}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleInjectSnippet('particles')}
-                        className="bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition-colors"
-                      >
-                        <Flame size={12} />
-                        {t.addParticles}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleInjectSnippet('highscore')}
-                        className="bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 transition-colors"
-                      >
-                        <Cpu size={12} />
-                        {t.addHighScore}
-                      </button>
-                    </div>
-
-                    {/* Terminal Feedback Box */}
-                    {terminalResult && (
-                      <div
-                        className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
-                          terminalResult.success
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-                        }`}
-                      >
-                        {terminalResult.success ? (
-                          <ShieldCheck size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertCircle size={16} className="text-rose-400 shrink-0 mt-0.5" />
-                        )}
-                        <div className="flex-1">
-                          <p className="font-bold">{terminalResult.message}</p>
-                          {terminalResult.details && (
-                            <pre className="text-[11px] opacity-80 mt-1 font-mono whitespace-pre-wrap">
-                              {terminalResult.details}
-                            </pre>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <textarea
-                      value={editedCode}
-                      onChange={(e) => setEditedCode(e.target.value)}
-                      className="w-full h-[450px] bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs text-slate-200 font-mono outline-none focus:border-emerald-500 resize-y leading-relaxed"
-                      spellCheck={false}
-                    />
-                  </div>
-                ) : (
-                  /* Unreal Engine 5 Bridge Full Workspace */
-                  <div className="w-full flex flex-col gap-4">
-                    {/* UE5 Bridge Top Connection Bar */}
-                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
-                          <Layers size={18} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-slate-200">
-                              {t.unrealTab}
-                            </h4>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full border font-bold flex items-center gap-1 ${
-                                ueConfig.connected
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  ueConfig.connected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'
-                                }`}
-                              />
-                              {ueConfig.connected ? t.ueConnected : t.ueDisconnected}
-                            </span>
-                            {ueConfig.latencyMs !== undefined && (
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {ueConfig.latencyMs}ms
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{t.unrealSubtitle}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-1 text-xs text-slate-300 font-mono">
-                          <span className="text-slate-500 text-[10px] mr-1">REST:</span>
-                          <input
-                            type="text"
-                            value={ueConfig.httpHost}
-                            onChange={(e) => setUeConfig({ ...ueConfig, httpHost: e.target.value })}
-                            className="bg-transparent text-xs text-slate-200 outline-none w-24"
-                          />
-                          <span className="text-slate-500 text-[10px]">:{ueConfig.httpPort}</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleTestUeConnection}
-                          disabled={isTestingUE}
-                          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-md"
-                        >
-                          <Radio size={13} className={isTestingUE ? 'animate-spin' : ''} />
-                          {isTestingUE ? t.checking : t.ueTestConnect}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleDownloadCppZip}
-                          className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                        >
-                          <Download size={13} className="text-amber-400" />
-                          {t.downloadCppZip}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Feedback message banner if present */}
-                    {ueTestFeedback && (
-                      <div
-                        className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
-                          ueTestFeedback.success
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
-                        }`}
-                      >
-                        <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-semibold">{ueTestFeedback.message}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* UE5 Sub-Navigation */}
-                    <div className="flex flex-wrap gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('controller')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'controller'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Sliders size={13} />
-                        {t.ueController}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('cpp')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'cpp'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Code2 size={13} />
-                        {t.ueCpp}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('python')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'python'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <FileText size={13} />
-                        {t.uePython}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('preset')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'preset'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Box size={13} />
-                        {t.uePreset}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('streaming')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'streaming'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Eye size={13} />
-                        {t.ueStreaming}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUeSubTab('guide')}
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                          ueSubTab === 'guide'
-                            ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <HelpCircle size={13} />
-                        {t.ueGuide}
-                      </button>
-                    </div>
-
-                    {/* Sub-tab 1: Live Controller */}
-                    {ueSubTab === 'controller' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Spawner & Trigger Controls */}
-                        <div className="flex flex-col gap-3">
-                          {/* Actor Spawner */}
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
-                            <h5 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                              <Box size={14} />
-                              {t.spawnActor}
-                            </h5>
-
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <label className="text-[10px] text-slate-400 font-semibold block mb-1">Actor Class</label>
-                                <select
-                                  value={spawnActorType}
-                                  onChange={(e: any) => setSpawnActorType(e.target.value)}
-                                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-slate-200"
-                                >
-                                  <option value="space_pawn">🚀 Space Fighter Pawn</option>
-                                  <option value="drone">👾 Enemy Cyber Drone</option>
-                                  <option value="asteroid">🪨 Space Asteroid Mesh</option>
-                                  <option value="light">💡 Point Light Actor</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-[10px] text-slate-400 font-semibold block mb-1">Coordinates (X, Y, Z)</label>
-                                <div className="flex gap-1">
-                                  <input
-                                    type="number"
-                                    value={actorX}
-                                    onChange={(e) => setActorX(Number(e.target.value))}
-                                    className="w-1/3 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-slate-200"
-                                    title="X"
-                                  />
-                                  <input
-                                    type="number"
-                                    value={actorY}
-                                    onChange={(e) => setActorY(Number(e.target.value))}
-                                    className="w-1/3 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-slate-200"
-                                    title="Y"
-                                  />
-                                  <input
-                                    type="number"
-                                    value={actorZ}
-                                    onChange={(e) => setActorZ(Number(e.target.value))}
-                                    className="w-1/3 bg-slate-900 border border-slate-700 rounded p-1 text-center text-xs text-slate-200"
-                                    title="Z"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleSendUeAction('spawn_actor', {
-                                  actorClass: spawnActorType,
-                                  location: { x: actorX, y: actorY, z: actorZ },
-                                  rotation: { pitch: 0, yaw: 0, roll: 0 },
-                                  label: `Adam_${spawnActorType}_${Date.now()}`
-                                })
-                              }
-                              disabled={isSendingUECommand}
-                              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                            >
-                              <Zap size={14} />
-                              Spawn in Unreal Engine 5 World
-                            </button>
-                          </div>
-
-                          {/* Lighting & Environment Controls */}
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
-                            <h5 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                              <Sun size={14} />
-                              {t.adjustLight}
-                            </h5>
-
-                            <div className="flex flex-col gap-2 text-xs">
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-400">Sun Light Intensity ({sunIntensity} Lux)</span>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="30"
-                                  value={sunIntensity}
-                                  onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    setSunIntensity(val);
-                                    handleSendUeAction('adjust_lighting', { sunIntensity: val, sunPitch });
-                                  }}
-                                  className="w-40"
-                                />
-                              </div>
-
-                              <div className="flex items-center justify-between">
-                                <span className="text-slate-400">Sun Pitch Angle ({sunPitch}°)</span>
-                                <input
-                                  type="range"
-                                  min="-90"
-                                  max="0"
-                                  value={sunPitch}
-                                  onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    setSunPitch(val);
-                                    handleSendUeAction('adjust_lighting', { sunIntensity, sunPitch: val });
-                                  }}
-                                  className="w-40"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Game Action Triggers */}
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
-                            <h5 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                              <Flame size={14} />
-                              {t.triggerAction}
-                            </h5>
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleSendUeAction('fire_action', { action: 'RemoteFireLaser', power: 100 })}
-                                className="bg-slate-900 hover:bg-slate-800 text-sky-400 border border-sky-500/30 p-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
-                              >
-                                <Zap size={13} />
-                                Fire Laser Cannon
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSendUeAction('fire_action', { action: 'RemoteApplyDamage', damage: 25 })}
-                                className="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-500/30 p-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
-                              >
-                                <Flame size={13} />
-                                Apply Hit Damage (-25)
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Real-Time Live Execution Log */}
-                        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 font-mono">
-                              <Terminal size={14} className="text-emerald-400" />
-                              Unreal Remote Control Live Terminal
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {ueLogs.length} events
-                            </span>
-                          </div>
-
-                          <div className="bg-black/90 p-3 rounded-xl border border-slate-800/90 font-mono text-[11px] h-[340px] overflow-y-auto flex flex-col gap-1.5 text-slate-300">
-                            {ueLogs.map((log) => (
-                              <div key={log.id} className="flex items-start gap-2 border-b border-slate-900 pb-1">
-                                <span className="text-slate-600 shrink-0">[{log.time}]</span>
-                                <span
-                                  className={`px-1 rounded text-[9px] font-bold shrink-0 ${
-                                    log.status === 'ok'
-                                      ? 'bg-emerald-500/20 text-emerald-400'
-                                      : 'bg-rose-500/20 text-rose-400'
-                                  }`}
-                                >
-                                  {log.action}
-                                </span>
-                                <span className="text-slate-300 select-text leading-relaxed">
-                                  {log.message}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-tab 2: C++ Exporter */}
-                    {ueSubTab === 'cpp' && (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 gap-2">
-                          <span className="text-xs text-amber-400 font-mono font-semibold flex items-center gap-1.5">
-                            <Code2 size={14} />
-                            AAdamGameActor.h & AAdamGameActor.cpp (Unreal Engine 5.4+)
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyUeSnippet(generateUnrealCppHeader(selectedApp?.title || 'AdamGame'), 'cpp_h')}
-                              className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                            >
-                              {copiedUeSnippet === 'cpp_h' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                              {t.copyHeader}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyUeSnippet(generateUnrealCppSource(selectedApp?.title || 'AdamGame'), 'cpp_src')}
-                              className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                            >
-                              {copiedUeSnippet === 'cpp_src' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                              {t.copySource}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <span className="text-[10px] text-amber-400 font-bold block mb-1 font-mono">AAdamGameActor.h</span>
-                            <pre className="w-full h-[380px] bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-200 font-mono overflow-y-auto leading-relaxed">
-                              {generateUnrealCppHeader(selectedApp?.title || 'AdamGame')}
-                            </pre>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-sky-400 font-bold block mb-1 font-mono">AAdamGameActor.cpp</span>
-                            <pre className="w-full h-[380px] bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-200 font-mono overflow-y-auto leading-relaxed">
-                              {generateUnrealCppSource(selectedApp?.title || 'AdamGame')}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-tab 3: Python Generator */}
-                    {ueSubTab === 'python' && (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 gap-2">
-                          <span className="text-xs text-amber-400 font-mono font-semibold flex items-center gap-1.5">
-                            <FileText size={14} />
-                            build_adam_scene.py (Unreal Engine Editor Python Script)
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyUeSnippet(generateUnrealPythonScript(selectedApp?.title || 'AdamGame', selectedApp?.category), 'py')}
-                              className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                            >
-                              {copiedUeSnippet === 'py' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                              {t.copyPy}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleSendUeAction('execute_python', {
-                                  script: generateUnrealPythonScript(selectedApp?.title || 'AdamGame', selectedApp?.category)
-                                })
-                              }
-                              disabled={isSendingUECommand}
-                              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors shadow-md"
-                            >
-                              <Play size={13} />
-                              {t.execPython}
-                            </button>
-                          </div>
-                        </div>
-
-                        <pre className="w-full h-[400px] bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs text-slate-200 font-mono overflow-y-auto leading-relaxed">
-                          {generateUnrealPythonScript(selectedApp?.title || 'AdamGame', selectedApp?.category)}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Sub-tab 4: Remote Preset JSON */}
-                    {ueSubTab === 'preset' && (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                          <span className="text-xs text-amber-400 font-mono font-semibold flex items-center gap-1.5">
-                            <Box size={14} />
-                            Remote Control Preset Configuration (JSON)
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyUeSnippet(generateUnrealRemoteControlPreset(selectedApp?.title || 'AdamGame'), 'preset')}
-                            className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 font-semibold transition-colors"
-                          >
-                            {copiedUeSnippet === 'preset' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                            {t.copyCode}
-                          </button>
-                        </div>
-
-                        <pre className="w-full h-[380px] bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs text-amber-300/90 font-mono overflow-y-auto leading-relaxed">
-                          {generateUnrealRemoteControlPreset(selectedApp?.title || 'AdamGame')}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Sub-tab 5: Pixel Streaming WebRTC */}
-                    {ueSubTab === 'streaming' && (
-                      <div className="flex flex-col gap-3">
-                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="text-amber-400 font-bold">Signaling Server:</span>
-                            <input
-                              type="text"
-                              value={ueConfig.pixelStreamingUrl}
-                              onChange={(e) => setUeConfig({ ...ueConfig, pixelStreamingUrl: e.target.value })}
-                              className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono w-48 text-xs"
-                            />
-                          </div>
-                          <span className="text-[11px] text-slate-400">
-                            Default UE5 Pixel Streaming WebRTC Port: 8888
-                          </span>
-                        </div>
-
-                        <div className="w-full aspect-[16/9] max-h-[480px] bg-black rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-center p-6 relative overflow-hidden shadow-2xl">
-                          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col items-center gap-2.5 max-w-md z-10">
-                            <Radio size={28} className="text-amber-400 animate-pulse" />
-                            <h4 className="text-sm font-bold text-slate-200">
-                              Unreal Engine Pixel Streaming Viewport
-                            </h4>
-                            <p className="text-xs text-slate-400">
-                              {language === 'ar'
-                                ? 'لبدء البث المباشر للفيديو بدقة 4K ومعدل 60 إطاراً في الثانية من محرك Unreal Engine 5، شغّل المشروع باستخدام الراية: -PixelStreamingIP=localhost -PixelStreamingPort=8888'
-                                : 'To stream 4K 60FPS real-time viewport from Unreal Engine 5, launch your UE5 project with: -PixelStreamingIP=localhost -PixelStreamingPort=8888'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-tab 6: Step-by-Step Setup Guide */}
-                    {ueSubTab === 'guide' && (
-                      <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 flex flex-col gap-4 text-xs leading-relaxed text-slate-300">
-                        <h4 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-                          <HelpCircle size={16} />
-                          {language === 'ar'
-                            ? 'دليل ربط استوديو الألعاب بمحرك Unreal Engine 5 في 3 خطوات بسيطة'
-                            : '3-Step Setup Guide to Connect with Unreal Engine 5'}
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 w-fit">
-                              Step 1: Plugins
-                            </span>
-                            <h5 className="font-bold text-slate-100">
-                              {language === 'ar' ? 'تفعيل الإضافات في محرك Unreal' : 'Enable UE5 Plugins'}
-                            </h5>
-                            <p className="text-[11px] text-slate-400">
-                              {language === 'ar'
-                                ? 'افتح مشروعك في UE5 -> اذهب إلى Edit -> Plugins وفعل: "Web Remote Control" و "Remote Control WebSockets" و "Python Editor Script Plugin".'
-                                : 'In UE5 Editor -> Edit -> Plugins -> Enable "Web Remote Control", "Remote Control WebSockets", and "Python Editor Script Plugin".'}
-                            </p>
-                          </div>
-
-                          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 w-fit">
-                              Step 2: Config Settings
-                            </span>
-                            <h5 className="font-bold text-slate-100">
-                              {language === 'ar' ? 'إعدادات المنافذ في DefaultEngine.ini' : 'Port Configuration'}
-                            </h5>
-                            <pre className="bg-black/80 p-2 rounded text-[10px] text-emerald-300 font-mono">
-{`[/Script/RemoteControl.RemoteControlSettings]
-bEnableRemoteControl=True
-HttpPort=30010
-WebSocketsPort=30020`}
-                            </pre>
-                          </div>
-
-                          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 w-fit">
-                              Step 3: Connect & Spawn
-                            </span>
-                            <h5 className="font-bold text-slate-100">
-                              {language === 'ar' ? 'الاختبار والتحكم الحي' : 'Test & Real-Time Actuation'}
-                            </h5>
-                            <p className="text-[11px] text-slate-400">
-                              {language === 'ar'
-                                ? 'اضغط على "اختبار الاتصال"، ثم استخدم لوحة التحكم لتوليد الممثلين وتغيير الإضاءة وتشغيل سكريبتات البايثون في عالم اللعبة مباشرة!'
-                                : 'Click "Test Connection", then use the Live World Actuator to spawn actors, adjust sun lights, and run Python scripts in UE5 in real-time!'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {/* Interactive Screen Display */}
+          <div className="flex-1 overflow-hidden relative flex items-center justify-center p-2 sm:p-4 bg-[var(--bg)]">
+            {activeTab === 'preview' ? (
+              <div
+                className={`h-full transition-all duration-300 flex items-center justify-center ${
+                  deviceMode === 'mobile'
+                    ? 'w-full max-w-[390px] max-h-[720px] rounded-3xl border-4 border-[#1e293b] shadow-2xl overflow-hidden bg-black'
+                    : 'w-full rounded-2xl border border-[var(--border)] overflow-hidden shadow-lg bg-black'
+                }`}
+              >
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={editableCode}
+                  title={activeApp.title}
+                  className="w-full h-full border-0 bg-transparent"
+                  sandbox="allow-scripts allow-same-origin allow-modals allow-forms"
+                />
               </div>
-            </div>
-          ) : (
-            <div className="settings-card text-center py-16 text-slate-500">
-              {t.emptyList}
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="w-full h-full flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface-2)] border-b border-[var(--border)] text-xs">
+                  <span className="font-mono text-[var(--muted)]">{activeApp.title} (HTML5 Canvas)</span>
+                  <button
+                    type="button"
+                    onClick={handleSaveAndRun}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] font-bold shadow-sm hover:opacity-90 transition cursor-pointer"
+                  >
+                    <Play size={12} fill="currentColor" />
+                    <span>{isAr ? 'حفظ وتشغيل الكود' : 'Save & Run Live'}</span>
+                  </button>
+                </div>
+                <textarea
+                  value={editableCode}
+                  onChange={(e) => setEditableCode(e.target.value)}
+                  className="flex-1 w-full p-4 bg-[var(--bg)] text-[var(--text)] font-mono text-xs leading-relaxed outline-none border-0 resize-none"
+                  spellCheck={false}
+                />
+              </div>
+            )}
+          </div>
+        </main>
       </div>
-    </section>
+    </div>
   );
 }
-

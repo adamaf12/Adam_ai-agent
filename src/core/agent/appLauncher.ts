@@ -1,4 +1,5 @@
 import type { ViewId } from '../domain';
+import { openSafeExternalUrl } from '../utils/mobileWebHandler';
 
 export type AppTargetType = 'view' | 'sandbox' | 'external';
 
@@ -575,7 +576,7 @@ export function openAppTarget(
     if (callbacks?.onOpenExternal) {
       callbacks.onOpenExternal(target.externalUrl);
     } else {
-      window.open(target.externalUrl, '_blank', 'noopener,noreferrer');
+      openSafeExternalUrl(target.externalUrl, { title: target.titleAr || target.titleEn });
     }
     return;
   }

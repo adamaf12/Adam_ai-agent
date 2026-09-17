@@ -10,6 +10,7 @@ import {
   Settings2,
   Sparkles,
   Film,
+  Award,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
@@ -47,7 +48,8 @@ const navItems: Array<{
   { id: 'workspace', icon: Sparkles, key: 'workspace', shortcut: '4' },
   { id: 'media', icon: Film, key: 'media', shortcut: '5' },
   { id: 'memory', icon: Brain, key: 'memory', shortcut: '6' },
-  { id: 'settings', icon: Settings2, key: 'settings', shortcut: '7' },
+  { id: 'iq', icon: Award, key: 'iq', shortcut: '7' },
+  { id: 'settings', icon: Settings2, key: 'settings', shortcut: '8' },
 ];
 
 export function AppShell({

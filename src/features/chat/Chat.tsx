@@ -28,6 +28,7 @@ import { toCapabilityRequest, requiresDedicatedCapability } from '../../core/age
 import { parseLocalIntent } from '../../core/agent/localIntent';
 import { executeAgentTool } from '../../core/agent/toolExecutor';
 import { createAppLauncherPayload, openAppTarget } from '../../core/agent/appLauncher';
+import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
 import { checkAndExecuteDirectAutonomousCommand } from '../../core/agent/ademDuoAutonomousAgent';
 import { createResponseState, reduceResponseEvent, type ResponseState } from '../../core/agent/responseModel';
 import { createAssistantMessage, createUserMessage } from './chatModel';
@@ -393,7 +394,7 @@ export function Chat({
           openAppTarget(localIntent.target, {
             onNavigateView,
             onOpenSandbox,
-            onOpenExternal: (url) => window.open(url, '_blank', 'noopener,noreferrer'),
+            onOpenExternal: (url) => openSafeExternalUrl(url),
           });
         } else {
           const input = localIntent.type === 'task.create'
@@ -485,48 +486,33 @@ export function Chat({
 
   return (
     <section className={busy ? "chat-page chat-page--busy" : "chat-page"}>
-      {/* Sleek Minimalist Session Bar (Desktop only, as mobile has unified this into the single ultra-thin top navbar) */}
-      <div className="chat-subnav-bar desktop-only">
-        <div className="chat-subnav-info">
-          <span className="agent-status-dot" title={language === 'ar' ? 'متصل وجاهز' : 'Connected'} />
-          <span className="chat-subnav-title" title={currentConversation.title}>
+      {/* Modern Minimalist Session Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)] transition-colors">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] flex-shrink-0" />
+          <span className="text-xs font-bold text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
             {messages.length
-              ? currentConversation.title || (language === 'ar' ? 'المحادثة' : 'Conversation')
-              : (language === 'ar' ? 'جلسة جديدة' : 'New Session')}
+              ? currentConversation.title || (language === 'ar' ? 'المحادثة الحالية' : 'Current Chat')
+              : (language === 'ar' ? 'جلسة ذكاء اصطناعي جديدة' : 'New AI Session')}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick Photo & Vision Trigger Button */}
-          <button
-            type="button"
-            onClick={() => triggerVisionUpload()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition-all shadow-sm active:scale-95 cursor-pointer"
-            title={language === 'ar' ? 'إرفاق صورة لحل المسائل والأكواد فورياً' : 'Attach photo/image for instant solving'}
-          >
-            <Camera size={13} className="text-emerald-400" />
-            <span>{language === 'ar' ? '📷 حل صورة' : '📷 Solve Photo'}</span>
-          </button>
-
-          {/* Side Panel Trigger Button (زر أنيق للتحكم بالجلسة والسجل والذاكرة) */}
+          {/* Side Panel Trigger Button (الجلسة والذاكرة) */}
           <button
             type="button"
             onClick={() => {
               setMemoryStats(getInfiniteMemoryStats());
               setIsSessionDrawerOpen(true);
             }}
-            className="chat-session-btn"
-            title={language === 'ar' ? 'فتح لوحة التحكم بالجلسة والذاكرة والسجل' : 'Open Session Controls & Memory'}
-            aria-label="Session Controls"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition cursor-pointer active:scale-95"
+            title={language === 'ar' ? 'إدارة الجلسات والذاكرة والسجل' : 'Manage Sessions & Memory'}
           >
-            <SlidersHorizontal size={13} className="text-emerald-400" />
-            <span className="chat-session-btn-text desktop-only">{language === 'ar' ? 'إدارة الجلسة' : 'Session Menu'}</span>
-            <div className="chat-session-badges">
-              <span className="session-mini-badge" title={language === 'ar' ? 'عدد المحادثات' : 'Chats'}>
-                <Clock size={10} />
-                {conversations.length}
-              </span>
-            </div>
+            <SlidersHorizontal size={13} className="text-[var(--accent)]" />
+            <span className="hidden sm:inline">{language === 'ar' ? 'الجلسات والذاكرة' : 'Sessions & Memory'}</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-mono">
+              {conversations.length}
+            </span>
           </button>
         </div>
       </div>
@@ -551,63 +537,106 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="welcome max-w-lg mx-auto px-4 py-8 text-center flex flex-col items-center gap-3 animate-fadeIn">
-            <div className="welcome-orb"><Bot size={26} /></div>
-            <h2 className="text-lg font-bold tracking-tight text-slate-100">
-              {language === 'ar' ? `أهلاً بك! كيف يمكنني مساعدتك؟` : `Welcome! How can I help you?`}
-            </h2>
-            <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-              {language === 'ar'
-                ? `أنا ${agentName}، مساعدك الذكي. اسألني عن أي شيء، اطلب كتابة أو فحص كود، أو إدارة مهامك فوراً.`
-                : `I'm ${agentName}, your personal assistant. Ask a question, write or debug code, or organize your tasks.`}
-            </p>
+          <div className="max-w-3xl mx-auto px-4 py-8 sm:py-14 text-center flex flex-col items-center gap-5 animate-fadeIn select-none">
+            {/* Ambient Multi-layer Glowing Brand Emblem */}
+            <div className="relative group mb-1">
+              <div className="absolute -inset-2 bg-gradient-to-r from-[var(--accent)] via-teal-400 to-[var(--accent-hover)] rounded-3xl opacity-30 blur-xl group-hover:opacity-60 transition duration-700 animate-pulse" />
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-[var(--surface)] via-[var(--surface-2)] to-[var(--surface)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-2xl backdrop-blur-xl">
+                <Sparkles size={34} className="animate-spin-slow drop-shadow-[0_0_12px_var(--accent)]" />
+              </div>
+            </div>
 
-            {/* Clean & Useful Starter Chips */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-md">
-              <button
-                type="button"
-                onClick={() => send(language === 'ar' ? 'اكتب لي كود بايثون بسيط ومفيد' : 'Write a clean, useful Python script')}
-                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Code size={14} className="text-emerald-400" />
-                <span>{language === 'ar' ? 'كتابة كود' : 'Write Code'}</span>
-              </button>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--surface)]/80 border border-[var(--border)] text-[var(--accent)] text-xs font-bold font-mono shadow-sm backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] animate-ping" />
+                <span>ADEM • EXECUTIVE AUTONOMOUS CORE v2.5</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text)] tracking-tight leading-tight">
+                {language === 'ar' ? `كيف يمكنني إنجاز وتسريع أعمالك اليوم؟` : `How can I accelerate your mission today?`}
+              </h1>
+              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-lg mx-auto leading-relaxed font-normal">
+                {language === 'ar'
+                  ? `منظومة آدم التنفيذية جاهزة للبرمجة المتقدمة، إدارة السيرفرات، الإدراك البصري، وهندسة النظم الفائقة.`
+                  : `Executive autonomous AI engineered for full-stack software, Linux systems, multimodal vision, and deep analytics.`}
+              </p>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => send(language === 'ar' ? 'لخص لي أهم النصائح لتنظيم الوقت والإنتاجية' : 'Give me the best tips for time management and productivity')}
-                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Clock size={14} className="text-emerald-400" />
-                <span>{language === 'ar' ? 'تنظيم الوقت' : 'Organize Time'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => send(language === 'ar' ? 'ما هي أهم أوامر لينكس التي يحتاجها كل مطور؟' : 'What are the essential Linux commands every developer needs?')}
-                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Terminal size={14} className="text-emerald-400" />
-                <span>{language === 'ar' ? 'أوامر لينكس' : 'Linux Commands'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => triggerVisionUpload()}
-                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Camera size={14} className="text-emerald-400" />
-                <span>{language === 'ar' ? 'فحص صورة' : 'Analyze Image'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => send(language === 'ar' ? 'أنشئ خطة عمل واضحة لتنفيذ مشروع جديد' : 'Create a clear action plan for a new project')}
-                className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Download size={14} className="text-emerald-400" />
-                <span>{language === 'ar' ? 'خطة عمل' : 'Action Plan'}</span>
-              </button>
+            {/* 4 Luxury Architectural Showcase Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full max-w-xl mt-3 text-start">
+              {[
+                {
+                  icon: Code,
+                  titleAr: 'كتابة وتصحيح الأكواد الفائقة',
+                  titleEn: 'Full-Stack Code Engineering',
+                  descAr: 'بناء تطبيقات متكاملة، حل مشاكل وأخطاء الـ Backend والـ Frontend',
+                  descEn: 'Architect full applications & eliminate complex bugs',
+                  promptAr: 'برمج لي تطبيق ويب متجاوب وحديث بالكامل بنسبة 100% مع واجهة فاخرة',
+                  promptEn: 'Write a complete responsive production-ready web application',
+                  tagAr: 'برمجة 100%',
+                  tagEn: '100% Code',
+                },
+                {
+                  icon: Terminal,
+                  titleAr: 'أوامر وهندسة لينكس والسيرفرات',
+                  titleEn: 'Linux, Termux & Cloud Ops',
+                  descAr: 'أتمتة Bash، إدارة الحاويات Docker، وتوجيه الأنظمة السحابية',
+                  descEn: 'Bash scripting, Docker containers & system diagnostics',
+                  promptAr: 'ما هي أفضل سكربتات وأوامر فحص وإدارة سيرفرات لينكس بأمان؟',
+                  promptEn: 'Provide advanced Linux server audit & automation scripts',
+                  tagAr: 'أنظمة وأوامر',
+                  tagEn: 'Terminal',
+                },
+                {
+                  icon: Sparkles,
+                  titleAr: 'استوديو الإدراك والتوليد 8K',
+                  titleEn: 'Multimodal 8K Vision Studio',
+                  descAr: 'تحليل الصور والمستندات بدقة متناهية وتوليد صور سينمائية',
+                  descEn: 'Precise visual OCR auditing & cinematic 8K rendering',
+                  promptAr: 'أنشئ لي فكرة وتفاصيل برومبت سينمائي فائق الدقة 8K مع توزيع إضاءة هوليوودي',
+                  promptEn: 'Generate an 8K cinematic visual concept with studio lighting',
+                  tagAr: 'إدراك بصري',
+                  tagEn: 'Vision & 8K',
+                },
+                {
+                  icon: Clock,
+                  titleAr: 'إدارة الإنتاجية والخطط التنفيذية',
+                  titleEn: 'Strategic Executive Planning',
+                  descAr: 'هيكلة أهداف العمل، تلخيص الدراسات والأبحاث التقنية المعقدة',
+                  descEn: 'Autonomous workflow planning & research synthesis',
+                  promptAr: 'أنشئ لي خطة عمل استراتيجية محكمة لتطوير وإطلاق مشروعي التقني',
+                  promptEn: 'Build a rigorous executive execution plan for my tech project',
+                  tagAr: 'خطط تنفيذية',
+                  tagEn: 'Productivity',
+                },
+              ].map((card, idx) => {
+                const Icon = card.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => send(language === 'ar' ? card.promptAr : card.promptEn)}
+                    className="relative group p-4 rounded-2xl bg-[var(--surface)]/90 hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 flex items-start gap-3.5 text-start cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[var(--accent-glow)] overflow-hidden active:scale-[0.98]"
+                  >
+                    <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
+                    <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors shadow-inner">
+                      <Icon size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate">
+                          {language === 'ar' ? card.titleAr : card.titleEn}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--surface-2)] text-[var(--muted)] group-hover:text-[var(--accent)] group-hover:bg-[var(--accent-subtle)] transition">
+                          {language === 'ar' ? card.tagAr : card.tagEn}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[var(--muted)] leading-relaxed block">
+                        {language === 'ar' ? card.descAr : card.descEn}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (

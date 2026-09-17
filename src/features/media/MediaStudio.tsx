@@ -344,34 +344,36 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
   return (
     <section className="feature-page max-w-7xl mx-auto px-4 py-6">
       {/* Studio Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-              <Sparkles size={12} className="fill-current" />
-              ULTRA AI MEDIA STUDIO v3.0
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 tracking-wider">
+              <Sparkles size={13} className="fill-current" />
+              ADEM / CINEMATIC MEDIA ENGINE 2026
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              FLUX & CINEMATIC MOTION
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hidden sm:inline">
+              8K SYNTHESIS & DYNAMIC MOTION
             </span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-            {isAr ? 'استوديو توليد الصور والفيديوهات السينمائية فائق القوة' : 'Ultra-Powerful AI Image & Video Studio'}
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
+            {isAr ? 'استوديو الوسائط والإخراج السينمائي' : 'Cinematic Media & Synthesis Studio'}
           </h1>
-          <p className="text-slate-400 text-sm mt-1 max-w-3xl leading-relaxed">
+          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
             {isAr
-              ? 'محرك بصري وسينمائي معاد بناؤه بالكامل من الصفر؛ يفهم لغتك بعمق، يضخم أوامرك تلقائياً بإضاءات وزوايا تصوير سينمائية، ويولد صوراً وفيديوهات مذهلة بدقة 8K.'
-              : 'Rebuilt from the ground up with deep semantic comprehension, AI prompt expansion, camera motion synthesis, and ultra-high-resolution rendering.'}
+              ? 'توليد وتصميم الصور واللقطات السينمائية بدقة 8K مع تحكم كامل بالإضاءة وزوايا الكاميرا ومسارات الحركة وحفظها في المعرض.'
+              : 'Generate and curate ultra-high-definition 8K cinematic imagery and video shots with comprehensive optical parameters.'}
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-900 border border-slate-800 self-start md:self-auto shadow-inner">
+        {/* Luxury Tab Switcher */}
+        <div className="flex items-center p-1 rounded-2xl bg-slate-900 border border-slate-800 self-start md:self-auto shadow-inner text-xs">
           <button
             type="button"
             onClick={() => setActiveTab('image')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
-              activeTab === 'image' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'image'
+                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <ImageIcon size={14} />
@@ -381,12 +383,14 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
           <button
             type="button"
             onClick={() => setActiveTab('video')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
-              activeTab === 'video' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'video'
+                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Film size={14} />
-            <span>{isAr ? 'استوديو الفيديو السينمائي' : 'Video Cinema'}</span>
+            <span>{isAr ? 'الفيديو السينمائي' : 'Video Cinema'}</span>
           </button>
 
           <button
@@ -395,13 +399,15 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
               setActiveTab('gallery');
               fetchGallery();
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
-              activeTab === 'gallery' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Layers size={14} />
-            <span>{isAr ? 'المعرض والتحميلات' : 'Vault'}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 font-mono">
+            <span>{isAr ? 'المعرض' : 'Vault'}</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950 text-slate-300 font-mono">
               {gallery.length}
             </span>
           </button>

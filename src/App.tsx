@@ -12,6 +12,10 @@ import { MediaStudio } from './features/media/MediaStudio';
 import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
 import { SecurityVulnerabilityLab } from './features/security/SecurityVulnerabilityLab';
 import { Onboarding } from './features/onboarding/Onboarding';
+import { IqTestStudio } from './features/iq/IqTestStudio';
+import { InAppBrowserModal } from './components/InAppBrowserModal';
+import { AuthModal } from './components/AuthModal';
+import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileWebHandler';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
   agentName: 'Adam',
@@ -125,10 +129,10 @@ export default function App() {
   }, [preferences.language]);
 
   useEffect(() => {
-    const handleAppOpenEvent = (e: CustomEvent<{ view?: ViewId; sandboxAppId?: string; url?: string }>) => {
-      const { view, sandboxAppId, url } = e.detail || {};
+    const handleAppOpenEvent = (e: CustomEvent<{ view?: ViewId; sandboxAppId?: string; url?: string; title?: string }>) => {
+      const { view, sandboxAppId, url, title } = e.detail || {};
       if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        openSafeExternalUrl(url, { title });
         return;
       }
       if (sandboxAppId) {
@@ -142,10 +146,21 @@ export default function App() {
     };
 
     window.addEventListener('adam_open_app' as any, handleAppOpenEvent);
+
+    // Setup hardware back guard for APK & Mobile
+    const unguard = setupAndroidBackGuard(() => {
+      if (activeView !== 'chat') {
+        setActiveView('chat');
+        return true;
+      }
+      return false;
+    });
+
     return () => {
       window.removeEventListener('adam_open_app' as any, handleAppOpenEvent);
+      unguard();
     };
-  }, []);
+  }, [activeView]);
 
   if (!preferences.onboardingComplete) {
     return <Onboarding initial={preferences} onComplete={handleOnboardingComplete} />;
@@ -224,6 +239,7 @@ export default function App() {
             />
           )}
           {activeView === 'security' && <SecurityVulnerabilityLab language={preferences.language} />}
+          {activeView === 'iq' && <IqTestStudio language={preferences.language} />}
           {activeView === 'settings' && (
             <Settings
               language={preferences.language}
@@ -233,6 +249,12 @@ export default function App() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Safe In-App Browser for Mobile and APK WebView environments */}
+      <InAppBrowserModal language={preferences.language} />
+
+      {/* Authentication Dialog with Instant Mobile Login & Storage Partitioning Protection */}
+      <AuthModal language={preferences.language} />
     </AppShell>
   );
 }

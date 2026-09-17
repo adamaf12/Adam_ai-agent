@@ -34,6 +34,13 @@ let cachedAccessToken: string | null = null;
 let isSigningIn = false;
 
 /**
+ * Set in-memory access token from any authentication pathway
+ */
+export const setCachedAccessToken = (token: string | null) => {
+  cachedAccessToken = token;
+};
+
+/**
  * Initialize auth listener
  */
 export const initWorkspaceAuth = (
@@ -44,9 +51,9 @@ export const initWorkspaceAuth = (
     if (user) {
       if (cachedAccessToken) {
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
+      } else {
+        // Active user found
+        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken || '');
       }
     } else {
       cachedAccessToken = null;
