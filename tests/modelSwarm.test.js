@@ -11,7 +11,7 @@ test('model registry starts with usable built-in models', () => {
 
 test('remote catalogs can add models without hardcoding their count', () => {
   const registry = new ModelRegistry();
-  const models = registerRemoteModels({ data: [{ id: 'demo-a', name: 'Demo A', capabilities: ['coding'] }, { id: 'demo-b', name: 'Demo B' }] });
+  const models = registerRemoteModels({ data: [{ id: 'demo-a', name: 'Demo A', capabilities: ['coding'] }, { id: 'demo-b', name: 'Demo B' }] }, 'pollinations', undefined, registry);
   models.forEach(model => registry.register(model));
   assert.equal(registry.size(), 2);
   assert.ok(registry.get('demo-a').capabilities.includes('coding'));
