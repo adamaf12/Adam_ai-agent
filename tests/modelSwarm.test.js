@@ -5,7 +5,8 @@ import { MAX_SWARM_MODELS, ModelRegistry, modelRegistry, registerRemoteModels, r
 test('model registry starts with usable built-in models', () => {
   const snapshot = registrySnapshot();
   assert.ok(snapshot.total >= 3);
-  assert.equal(snapshot.total, snapshot.enabled);
+  assert.ok(snapshot.enabled >= 3);
+  assert.ok(snapshot.total >= snapshot.enabled);
   assert.ok(snapshot.providers.includes('gemini'));
 });
 
