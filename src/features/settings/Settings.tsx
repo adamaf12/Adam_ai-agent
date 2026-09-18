@@ -133,8 +133,48 @@ export function Settings({
   const [resetSuccess, setResetSuccess] = useState(false);
   const [hfTokenInput, setHfTokenInput] = useState(preferences.huggingFaceToken || '');
   const [hfSavedNotice, setHfSavedNotice] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => {
+    return typeof localStorage !== 'undefined'
+      ? localStorage.getItem('gemini_api_key') || localStorage.getItem('adam_gemini_key') || ''
+      : '';
+  });
+  const [geminiSavedNotice, setGeminiSavedNotice] = useState(false);
+  const [customApiUrlInput, setCustomApiUrlInput] = useState(() => {
+    return typeof localStorage !== 'undefined'
+      ? localStorage.getItem('adam_custom_api_url') || ''
+      : '';
+  });
+  const [apiUrlSavedNotice, setApiUrlSavedNotice] = useState(false);
   const [testingModel, setTestingModel] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const handleSaveGeminiKey = () => {
+    const val = geminiKeyInput.trim();
+    if (typeof localStorage !== 'undefined') {
+      if (val) {
+        localStorage.setItem('gemini_api_key', val);
+        localStorage.setItem('adam_gemini_key', val);
+      } else {
+        localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('adam_gemini_key');
+      }
+    }
+    setGeminiSavedNotice(true);
+    setTimeout(() => setGeminiSavedNotice(false), 2500);
+  };
+
+  const handleSaveCustomApiUrl = () => {
+    const val = customApiUrlInput.trim();
+    if (typeof localStorage !== 'undefined') {
+      if (val) {
+        localStorage.setItem('adam_custom_api_url', val);
+      } else {
+        localStorage.removeItem('adam_custom_api_url');
+      }
+    }
+    setApiUrlSavedNotice(true);
+    setTimeout(() => setApiUrlSavedNotice(false), 2500);
+  };
 
   // Calculate rough storage used
   const storageCount = typeof localStorage !== 'undefined' ? localStorage.length : 0;
@@ -402,6 +442,81 @@ export function Settings({
                 className="px-4 py-2 rounded-xl bg-[var(--accent)] text-slate-950 text-xs font-bold transition-all hover:opacity-90 active:scale-95 cursor-pointer whitespace-nowrap shadow-sm"
               >
                 {hfSavedNotice ? (language === 'ar' ? '✓ تم الحفظ' : '✓ Saved') : (language === 'ar' ? 'حفظ المفتاح' : 'Save Key')}
+              </button>
+            </div>
+          </div>
+
+          {/* Google Gemini Direct API Key (For Mobile APK & Offline Autonomy) */}
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-cyan-400" />
+                <strong className="text-xs text-[var(--text)]">
+                  {language === 'ar'
+                    ? 'مفتاح Google Gemini API لتطبيق الهاتف APK (اختياري):'
+                    : 'Google Gemini API Key for Mobile APK (Optional):'}
+                </strong>
+              </div>
+              <span className="text-[10px] text-[var(--muted)]">
+                {language === 'ar'
+                  ? 'يسمح لتطبيق الهاتف بالاتصال المباشر بنماذج Google'
+                  : 'Enables direct phone connection to Gemini models'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="password"
+                value={geminiKeyInput}
+                onChange={(e) => setGeminiKeyInput(e.target.value)}
+                placeholder="AIzaSy..."
+                className="flex-1 px-3 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleSaveGeminiKey}
+                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition-all active:scale-95 cursor-pointer whitespace-nowrap shadow-sm"
+              >
+                {geminiSavedNotice ? (language === 'ar' ? '✓ تم الحفظ' : '✓ Saved') : (language === 'ar' ? 'حفظ المفتاح' : 'Save Key')}
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--muted)] mt-2">
+              {language === 'ar'
+                ? '💡 عند وضع مفتاح Gemini الخاص بك، سيعمل تطبيق APK بكامل الذكاء وسرعة الاستجابة على هاتفك مباشرة دون الحاجة لأي خادم وسيط.'
+                : '💡 Setting your Gemini key allows the mobile APK to generate responses directly with zero intermediary server needed.'}
+            </p>
+          </div>
+
+          {/* Custom Backend Server URL */}
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <HardDrive size={16} className="text-emerald-400" />
+                <strong className="text-xs text-[var(--text)]">
+                  {language === 'ar'
+                    ? 'عنوان خادم ADEM المخصص (Custom API Server URL):'
+                    : 'Custom ADEM API Server URL:'}
+                </strong>
+              </div>
+              <span className="text-[10px] text-[var(--muted)]">
+                {language === 'ar' ? 'اختياري لربط APK بخادم خاص' : 'Optional endpoint for mobile app'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="url"
+                value={customApiUrlInput}
+                onChange={(e) => setCustomApiUrlInput(e.target.value)}
+                placeholder="https://your-server.run.app"
+                className="flex-1 px-3 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleSaveCustomApiUrl}
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all active:scale-95 cursor-pointer whitespace-nowrap shadow-sm"
+              >
+                {apiUrlSavedNotice ? (language === 'ar' ? '✓ تم الحفظ' : '✓ Saved') : (language === 'ar' ? 'حفظ الرابط' : 'Save URL')}
               </button>
             </div>
           </div>

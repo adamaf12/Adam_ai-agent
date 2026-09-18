@@ -5,10 +5,17 @@ import { parseStreamLines, type StreamEvent } from './streamParser';
 import { classifyChatError, toUserFacingChatError } from './errors';
 import { getRetryDelayMs, shouldRetryChatError } from './retry';
 import { generateLocalFallbackResponse } from './localFallback';
+import {
+  hasDirectClientAi,
+  getClientGeminiApiKey,
+  getClientHuggingFaceToken,
+  executeDirectGemini,
+  executeDirectHuggingFace,
+} from './directAiClient';
 
 function getResolvedApiBase(): string {
   if (typeof window === 'undefined') return '';
-  
+
   // 1. Custom user-specified endpoint in settings/storage
   const customUrl = localStorage.getItem('adam_custom_api_url')?.trim();
   if (customUrl) return customUrl.replace(/\/$/, '');
@@ -17,18 +24,7 @@ function getResolvedApiBase(): string {
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
   if (envUrl) return envUrl.replace(/\/$/, '');
 
-  // 3. Detect the native Android/iOS WebView. The APK must use the same
-  // production API as the browser instead of a stale preview/Cloud Run URL.
-  const isNativeApk =
-    /^(capacitor|ionic|file|content):$/i.test(window.location.protocol) ||
-    (window.location.hostname === 'localhost' && window.location.port !== '3000') ||
-    window.location.protocol === 'file:';
-
-  if (isNativeApk) {
-    return 'https://adam-ai-agent.vercel.app';
-  }
-
-  // 4. Default browser origin
+  // 3. Native Android/iOS WebView: Return custom URL or empty for relative/direct
   return '';
 }
 
@@ -117,7 +113,41 @@ async function streamRequest(
   request: ChatRequest,
   signal: AbortSignal,
   onDelta: (text: string) => void
-) {
+): Promise<Message> {
+  const userPrompt = request.messages[request.messages.length - 1]?.content || '';
+
+  // 1. Direct Client AI (Gemini or Hugging Face)
+  if (hasDirectClientAi()) {
+    try {
+      if (getClientGeminiApiKey()) {
+        const text = await executeDirectGemini({
+          prompt: userPrompt,
+          history: request.messages.slice(0, -1),
+          language: request.language,
+          agentName: request.agentName || 'Adam',
+          signal,
+          onDelta,
+        });
+        return createAssistantMessage(text) as Message;
+      }
+
+      if (getClientHuggingFaceToken()) {
+        const text = await executeDirectHuggingFace({
+          prompt: userPrompt,
+          history: request.messages.slice(0, -1),
+          language: request.language,
+          agentName: request.agentName || 'Adam',
+          signal,
+          onDelta,
+        });
+        return createAssistantMessage(text) as Message;
+      }
+    } catch (directAiErr) {
+      console.warn('[Adam Client] Direct AI failed, attempting server or fallback:', directAiErr);
+    }
+  }
+
+  // 2. HTTP Server Endpoint
   const apiBase = getResolvedApiBase();
   const primaryUrl = `${apiBase}${path}`;
 
@@ -132,38 +162,27 @@ async function streamRequest(
         !(error instanceof ChatError && error.status === undefined && kind === 'unknown');
 
       if (!canRetry) {
-        // Gracefully provide intelligent local fallback response to ensure user is never blocked by billing, rate-limit, or network errors
-        const userPrompt =
-          request.messages[request.messages.length - 1]?.content || '';
-        const fallback = generateLocalFallbackResponse({
-          prompt: userPrompt,
-          language: request.language,
-          agentName: request.agentName || 'Adam',
-          messages: request.messages,
-        });
-
-        // Simulate brief natural streaming
-        for (let i = 1; i <= fallback.length; i += 6) {
-          if (signal.aborted) break;
-          onDelta(fallback.slice(0, i));
-          await new Promise((r) => setTimeout(r, 15));
-        }
-        onDelta(fallback);
-        return createAssistantMessage(fallback) as Message;
+        break;
       }
 
       await wait(getRetryDelayMs(retryCount), signal);
     }
   }
 
-  // Final fallback
-  const userPrompt = request.messages[request.messages.length - 1]?.content || '';
+  // 3. Intelligent Local Cognitive Fallback
   const fallback = generateLocalFallbackResponse({
     prompt: userPrompt,
     language: request.language,
     agentName: request.agentName || 'Adam',
     messages: request.messages,
   });
+
+  // Brief natural streaming effect
+  for (let i = 1; i <= fallback.length; i += 8) {
+    if (signal.aborted) break;
+    onDelta(fallback.slice(0, i));
+    await new Promise((r) => setTimeout(r, 12));
+  }
   onDelta(fallback);
   return createAssistantMessage(fallback) as Message;
 }
