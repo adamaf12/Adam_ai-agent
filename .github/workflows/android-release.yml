@@ -14,25 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - name: Setup Android
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
-      - name: Install Android build tools
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build web app
@@ -44,38 +40,9 @@ jobs:
           if [ ! -d android ]; then npx cap add android; fi
       - name: Sync Capacitor
         run: npx cap sync android
-      - name: Configure installable release signing
-        working-directory: android
-        run: |
-          set -euo pipefail
-          mkdir -p app/build/keys
-          keytool -genkeypair -v \
-            -keystore app/build/keys/adam-release.jks \
-            -storepass adam-release-password \
-            -keypass adam-release-password \
-            -alias adam-release \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Adam AI Agent, OU=Adam, O=Adam AI Agent, L=Blida, ST=Blida, C=DZ"
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('app/build.gradle')
-          s = p.read_text()
-          if 'signingConfigs {' not in s:
-              marker = 'android {\n'
-              block = '''android {\n    signingConfigs {\n        release {\n            storeFile file("build/keys/adam-release.jks")\n            storePassword "adam-release-password"\n            keyAlias "adam-release"\n            keyPassword "adam-release-password"\n        }\n    }\n'''
-              s = s.replace(marker, block, 1)
-          if 'signingConfig signingConfigs.release' not in s:
-              build_types = s.find('buildTypes {')
-              if build_types < 0:
-                  raise SystemExit('buildTypes block not found')
-              release = s.find('release {', build_types)
-              if release < 0:
-                  raise SystemExit('release build type not found')
-              insert_at = release + len('release {')
-              s = s[:insert_at] + '\n            signingConfig signingConfigs.release' + s[insert_at:]
-          p.write_text(s)
-          PY
-      - name: Build signed release APK
+      - name: Make Gradle wrapper executable
+        run: chmod +x android/gradlew
+      - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
       - name: Verify APK signature and prepare download

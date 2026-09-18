@@ -52,10 +52,47 @@ export function isMobileOrStoragePartitioned(): boolean {
   return isMobile || isSmallScreen;
 }
 
+/**
+ * Detects if the app is currently running inside an Android APK (Capacitor / Android WebView)
+ * where Google OAuth Web popups are blocked with 400 origin_mismatch or disallowed_useragent.
+ */
+export function isNativeAndroidApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const cap = (window as any).Capacitor;
+  if (cap?.isNativePlatform?.() || cap?.getPlatform?.() === 'android') return true;
+  const origin = window.location.origin || '';
+  if (
+    origin === 'https://localhost' ||
+    origin.startsWith('capacitor://') ||
+    origin.startsWith('http://localhost')
+  ) {
+    return true;
+  }
+  const ua = navigator.userAgent || '';
+  if (/Android/i.test(ua) && (/wv|Capacitor/i.test(ua) || origin.includes('localhost'))) {
+    return true;
+  }
+  return false;
+}
+
 export function getCachedUser(): AppUser | null {
   try {
     const raw = localStorage.getItem(LOCAL_USER_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      // In native Android APK, provide an instant ready-to-use local session so the user is never blocked
+      if (isNativeAndroidApp()) {
+        const defaultAndroidUser: AppUser = {
+          uid: 'android_' + Math.random().toString(36).substring(2, 9),
+          displayName: 'مستخدم أندرويد',
+          email: 'android@adam.agent',
+          photoURL: null,
+          provider: 'direct',
+        };
+        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(defaultAndroidUser));
+        return defaultAndroidUser;
+      }
+      return null;
+    }
     const parsed = JSON.parse(raw);
     // Security check: If previously cached profile had hardcoded email, purge it immediately
     if (parsed?.email === 'maamarfeidat@gmail.com') {
@@ -114,6 +151,8 @@ export function decodeGoogleJwt(credential: string): {
  */
 export async function loadGoogleGsiScript(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+  // Google GSI is completely blocked by Google inside Android WebViews (returns origin_mismatch / 400)
+  if (isNativeAndroidApp()) return false;
   if ((window as any).google?.accounts) return true;
 
   return new Promise((resolve) => {
@@ -199,6 +238,12 @@ export function signInDirectProfile(
  * guaranteeing immunity against "missing initial state" and Storage Partitioning bugs.
  */
 export async function signInWithGoogleDirect(): Promise<AppUser> {
+  if (isNativeAndroidApp()) {
+    const existing = getCachedUser();
+    if (existing) return existing;
+    return signInDirectProfile('مستخدم أندرويد', 'android@adam.agent');
+  }
+
   await loadGoogleGsiScript();
 
   return new Promise((resolve, reject) => {
@@ -310,6 +355,12 @@ export async function signInWithGooglePopup(): Promise<AppUser> {
  * firebaseapp.com/__/auth/handler. If GSI fails, falls back gracefully.
  */
 export async function signInWithGoogle(): Promise<AppUser> {
+  if (isNativeAndroidApp()) {
+    const existing = getCachedUser();
+    if (existing) return existing;
+    return signInDirectProfile('مستخدم أندرويد', 'android@adam.agent');
+  }
+
   try {
     // 1. Direct GSI Token Flow (100% immune to storage partitioning)
     return await signInWithGoogleDirect();

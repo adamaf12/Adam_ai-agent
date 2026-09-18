@@ -15,6 +15,7 @@ import {
   signOutUser,
   subscribeToAuthState,
   isMobileOrStoragePartitioned,
+  isNativeAndroidApp,
 } from './firebaseAuth';
 
 interface AuthContextType {
@@ -48,6 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleResize = () => setIsMobile(isMobileOrStoragePartitioned());
     window.addEventListener('resize', handleResize);
 
+    // If running in native Android APK, ensure user session is active immediately
+    if (isNativeAndroidApp()) {
+      const existing = getCachedUser() || signInDirectProfile('مستخدم أندرويد', 'android@adam.agent');
+      setUser(existing);
+      setLoading(false);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+
     const unsubscribe = subscribeToAuthState((currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -62,6 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setUnauthorizedDomain(null);
     setLoading(true);
+
+    if (isNativeAndroidApp()) {
+      const androidUser = getCachedUser() || signInDirectProfile('مستخدم أندرويد', 'android@adam.agent');
+      setUser(androidUser);
+      setAuthModalOpen(false);
+      setLoading(false);
+      return;
+    }
+
     try {
       const signedInUser = await signInWithGoogle();
       setUser(signedInUser);
@@ -73,6 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
       } else if (err?.code === 'auth/popup-blocked') {
         setError('تم حظر النافذة المنبثقة بواسطة المتصفح. يرجى السماح بالنوافذ المنبثقة لتسجيل الدخول.');
+      } else if (
+        msg.includes('origin_mismatch') ||
+        msg.includes('400') ||
+        msg.includes('idpiframe_initialization_failed')
+      ) {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        setError(
+          `خطأ (origin_mismatch): مصدر التطبيق (${origin}) غير مضاف في قائمة أصول JavaScript المعتمدة بـ Google Cloud Console. يمكنك استخدام 'الدخول الفوري / كزائر' لتخطي هذا القيد فوراً.`
+        );
       } else if (
         msg.includes('missing initial state') ||
         msg.includes('sessionStorage') ||

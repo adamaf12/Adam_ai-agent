@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { LogOut, CheckCircle2, Copy, Check, ExternalLink, ShieldAlert, UserCheck, X } from 'lucide-react';
 import { useAuth } from '../core/auth/AuthContext';
+import { isNativeAndroidApp } from '../core/auth/firebaseAuth';
 import type { Language } from '../core/domain';
 
 interface GoogleAuthButtonProps {
@@ -88,7 +89,15 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
                 </div>
                 <div className="google-badge">
                   <CheckCircle2 size={12} className="text-emerald-400" />
-                  <span>{user.uid.startsWith('guest_') ? (isAr ? 'حساب محلي نشط' : 'Local Account') : (isAr ? 'حساب Google متصل' : 'Google Account')}</span>
+                  <span>
+                    {user.uid.startsWith('guest_') || user.uid.startsWith('android_')
+                      ? isAr
+                        ? 'حساب محلي نشط'
+                        : 'Local Account'
+                      : isAr
+                      ? 'حساب Google متصل'
+                      : 'Google Account'}
+                  </span>
                 </div>
               </div>
 
