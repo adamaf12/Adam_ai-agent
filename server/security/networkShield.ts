@@ -107,6 +107,10 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
     !origin ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('http://127.0.0.1:') ||
+    origin.startsWith('capacitor://') ||
+    origin.startsWith('ionic://') ||
+    origin === 'https://adam-ai-agent.vercel.app' ||
+    origin.includes('.vercel.app') ||
     origin.includes('.run.app') ||
     origin.includes('.google.com') ||
     origin.includes('.googleusercontent.com') ||
