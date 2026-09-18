@@ -85,7 +85,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://image.pollinations.ai https://pollinations.ai https://lh3.googleusercontent.com https://*.googleusercontent.com https://picsum.photos https://images.unsplash.com",
       "media-src 'self' data: blob: https://pollinations.ai https://image.pollinations.ai",
-      "connect-src 'self' https://generativelanguage.googleapis.com https://gen.pollinations.ai https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://apis.google.com https://accounts.google.com wss: ws:",
+      "connect-src 'self' http: https: ws: wss: capacitor: ionic: data: blob:",
       "frame-src 'self' https://accounts.google.com https://apis.google.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -106,11 +106,12 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
   const isAllowed =
     !origin ||
     origin.startsWith('http://localhost:') ||
+    origin.startsWith('https://localhost:') ||
     origin.startsWith('http://127.0.0.1:') ||
     origin.startsWith('capacitor://') ||
     origin.startsWith('ionic://') ||
-    origin === 'https://adam-ai-agent.vercel.app' ||
-    origin.includes('.vercel.app') ||
+    origin === 'file://' ||
+    origin === 'null' ||
     origin.includes('.run.app') ||
     origin.includes('.google.com') ||
     origin.includes('.googleusercontent.com') ||
