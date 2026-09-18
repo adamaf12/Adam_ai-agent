@@ -8,6 +8,13 @@
 import { loadTasks, saveTasks, loadMemories, saveMemories } from '../storage/collections';
 import { saveSandboxApp } from '../appSandboxStorage';
 import type { Task, Memory } from '../domain';
+import {
+  getSmartCalculatorAppCode,
+  getInteractiveTodoAppCode,
+  getPrecisionStopwatchTimerAppCode,
+  getNeonCanvasDrawingAppCode,
+  getNeonSnakeGameCode,
+} from './interactiveAppTemplates';
 
 export type AgentActionType = 
   | 'code_exec' 
@@ -420,6 +427,102 @@ export function checkAndExecuteDirectAutonomousCommand(
       authorityLevel: 'root_unrestricted',
       timestamp: Date.now(),
       payload: { type: 'file_created', data: result },
+    };
+  }
+
+  // 5. Direct App / Calculator / Game / Todo / Timer / Paint creation
+  const calcMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:تطبيق\s+)?(?:آلة\s+حاسبة|الة\s+حاسبة|حاسبة|calculator|calc)\b/i)
+    || clean.match(/^(?:آلة\s+حاسبة|الة\s+حاسبة|calculator|smart\s+calc)$/i);
+  if (calcMatch) {
+    const code = getSmartCalculatorAppCode();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'الآلة الحاسبة الذكية التفاعلية (Smart Calculator)' : 'Smart Interactive Calculator',
+      code,
+      'app'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل الآلة الحاسبة الذكية التفاعلية ⚡' : 'Smart Interactive Calculator Ready ⚡',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  const todoMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:تطبيق\s+)?(?:مهام|قائمة\s+مهام|تودو|تودو\s+ليست|todo|tasks|task\s+list)\b/i)
+    || clean.match(/^(?:مهام|قائمة\s+مهام|تودو\s+ليست|todo\s+app)$/i);
+  if (todoMatch) {
+    const code = getInteractiveTodoAppCode();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'تطبيق المهام الذكي التفاعلي (Smart Task Matrix)' : 'Smart Task Matrix App',
+      code,
+      'app'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل تطبيق المهام الذكي التفاعلي ⚡' : 'Interactive Task Matrix Ready ⚡',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  const timerMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:تطبيق\s+)?(?:مؤقت|ساعة\s+ايقاف|ساعة\s+إيقاف|ستوب\s+ووتش|stopwatch|timer|chrono)\b/i)
+    || clean.match(/^(?:مؤقت|ساعة\s+ايقاف|ساعة\s+إيقاف|stopwatch|timer)$/i);
+  if (timerMatch) {
+    const code = getPrecisionStopwatchTimerAppCode();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'المؤقت وساعة الإيقاف الذكية (Precision Chrono)' : 'Precision Chrono & Timer',
+      code,
+      'app'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل المؤقت وساعة الإيقاف التفاعلية ⏱️' : 'Precision Stopwatch & Timer Ready ⏱️',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  const paintMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:تطبيق\s+)?(?:رسم|تطبيق\s+رسم|لوحة\s+رسم|كانفاس|paint|drawing|draw|canvas)\b/i)
+    || clean.match(/^(?:تطبيق\s+رسم|لوحة\s+رسم|paint\s+app)$/i);
+  if (paintMatch) {
+    const code = getNeonCanvasDrawingAppCode();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'استوديو الرسم الرقمي الذكي (Canvas Paint Studio)' : 'Canvas Paint Studio',
+      code,
+      'app'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل استوديو الرسم الرقمي التفاعلي 🎨' : 'Canvas Paint Studio Ready 🎨',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  const snakeMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:لعبة\s+ثعبان|لعبة\s+السنيك|snake\s+game|لعبة)\b/i)
+    || clean.match(/^(?:لعبة\s+ثعبان|snake\s+game)$/i);
+  if (snakeMatch) {
+    const code = getNeonSnakeGameCode();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'لعبة الثعبان النيون السايبر (Cyber Neon Snake)' : 'Cyber Neon Snake Game',
+      code,
+      'game'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل لعبة الثعبان التفاعلية 🎮' : 'Interactive Snake Game Ready 🎮',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
     };
   }
 

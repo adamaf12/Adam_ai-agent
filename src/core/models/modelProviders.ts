@@ -9,7 +9,10 @@ function getProviderTimeoutMs(): number {
 
 function providerEndpoint(model: ModelDescriptor) {
   if (model.endpoint) return model.endpoint;
-  if (model.provider === 'pollinations') return process.env.POLLINATIONS_BASE_URL ? `${process.env.POLLINATIONS_BASE_URL.replace(/\/$/, '')}/v1/chat/completions` : 'https://gen.pollinations.ai/v1/chat/completions';
+  if (model.provider === 'huggingface') {
+    return '/api/hf/chat';
+  }
+  if (model.provider === 'pollinations') return 'https://gen.pollinations.ai/v1/chat/completions';
   return '';
 }
 
@@ -19,9 +22,38 @@ export class FetchProviderAdapter implements ProviderAdapter {
   async invoke(model: ModelDescriptor, request: ModelRequest): Promise<string> {
     const endpoint = providerEndpoint(model);
     if (!endpoint) throw new Error(`No endpoint configured for ${model.id}`);
+    
+    // Server-proxied endpoints like /api/hf/chat keep all keys 100% hidden in backend
+    if (model.provider === 'huggingface' || endpoint.startsWith('/api/')) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45000);
+      try {
+        const response = await this.fetchImpl('/api/hf/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: model.id,
+            messages: [
+              ...(request.system ? [{ role: 'system', content: request.system }] : []),
+              { role: 'user', content: request.prompt },
+            ],
+            systemPrompt: request.system,
+            temperature: request.temperature,
+            maxTokens: request.maxTokens,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || `Hugging Face API failed with status ${response.status}`);
+        }
+        return data.text || '';
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
-    const key = model.provider === 'pollinations' ? process.env.POLLINATIONS_API_KEY?.trim() : undefined;
-    if (key) headers.Authorization = `Bearer ${key}`;
     const timeoutMs = getProviderTimeoutMs();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -31,7 +63,7 @@ export class FetchProviderAdapter implements ProviderAdapter {
         body: JSON.stringify({ model: model.id, messages: [{ role: 'system', content: request.system ?? '' }, { role: 'user', content: request.prompt }], prompt: request.prompt, system: request.system, temperature: request.temperature, max_tokens: request.maxTokens, maxTokens: request.maxTokens }),
       });
       const raw = await response.text();
-      if (!response.ok) throw new Error(`${model.id}: provider returned HTTP ${response.status}${raw ? ` - ${raw.slice(0, 300)}` : ''}`);
+      if (!response.ok) throw new Error(`${model.id}: provider returned HTTP ${response.status}`);
       let data: any;
       try { data = JSON.parse(raw); } catch { data = { text: raw }; }
       const text = data.text ?? data.output_text ?? data.output ?? data.response ?? data.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.generated_text ?? '';

@@ -92,26 +92,28 @@ html[data-theme='light'] {
 :root[data-theme='glass'],
 :root[data-resolved-theme='glass'],
 html[data-theme='glass'] {
-  --bg: #eaf2ed;
-  --bg-gradient: radial-gradient(circle at 20% 20%, rgba(15, 159, 110, 0.15), transparent 45%),
-                 radial-gradient(circle at 80% 30%, rgba(99, 102, 241, 0.1), transparent 50%),
-                 #eaf2ed;
-  --surface: rgba(255, 255, 255, 0.75);
-  --surface-2: rgba(255, 255, 255, 0.55);
-  --surface-hover: rgba(255, 255, 255, 0.9);
+  --bg: #ebf3ef;
+  --bg-gradient: radial-gradient(circle at 12% 14%, rgba(15, 159, 110, 0.22), transparent 42%),
+                 radial-gradient(circle at 88% 18%, rgba(14, 165, 233, 0.18), transparent 45%),
+                 radial-gradient(circle at 50% 85%, rgba(99, 102, 241, 0.12), transparent 50%),
+                 radial-gradient(circle at 82% 82%, rgba(16, 185, 129, 0.14), transparent 45%),
+                 #ebf3ef;
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-2: rgba(255, 255, 255, 0.45);
+  --surface-hover: rgba(255, 255, 255, 0.82);
   --border: rgba(18, 45, 32, 0.14);
   --border-strong: rgba(15, 159, 110, 0.35);
-  --text: #0b1712;
-  --text-secondary: #40574c;
-  --muted: #678073;
+  --text: #0a1711;
+  --text-secondary: #354e42;
+  --muted: #5e7a6c;
   --accent: #0f9f6e;
   --accent-hover: #0c825a;
-  --accent-glow: rgba(15, 159, 110, 0.2);
+  --accent-glow: rgba(15, 159, 110, 0.25);
   --accent-subtle: rgba(15, 159, 110, 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.7);
   --glass-blur: 26px;
-  --shadow: 0 20px 50px rgba(10, 35, 25, 0.1);
+  --shadow: 0 16px 40px rgba(10, 35, 25, 0.12);
 }
 
 /* 5. Obsidian Glass Dark */
@@ -119,25 +121,27 @@ html[data-theme='glass'] {
 :root[data-resolved-theme='glass-dark'],
 html[data-theme='glass-dark'] {
   --bg: #060e0a;
-  --bg-gradient: radial-gradient(circle at 25% 15%, rgba(39, 214, 155, 0.12), transparent 42%),
-                 radial-gradient(circle at 75% 35%, rgba(16, 185, 129, 0.08), transparent 48%),
+  --bg-gradient: radial-gradient(circle at 15% 12%, rgba(39, 214, 155, 0.22), transparent 42%),
+                 radial-gradient(circle at 85% 18%, rgba(56, 189, 248, 0.18), transparent 45%),
+                 radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.16), transparent 50%),
+                 radial-gradient(circle at 82% 82%, rgba(139, 92, 246, 0.14), transparent 45%),
                  #060e0a;
-  --surface: rgba(14, 28, 22, 0.7);
-  --surface-2: rgba(20, 38, 30, 0.6);
-  --surface-hover: rgba(26, 50, 39, 0.75);
-  --border: rgba(39, 214, 155, 0.18);
+  --surface: rgba(13, 27, 21, 0.52);
+  --surface-2: rgba(19, 38, 30, 0.42);
+  --surface-hover: rgba(28, 54, 43, 0.65);
+  --border: rgba(255, 255, 255, 0.12);
   --border-strong: rgba(39, 214, 155, 0.38);
   --text: #f0f7f3;
   --text-secondary: #9cb5a8;
   --muted: #698376;
   --accent: #27d69b;
   --accent-hover: #34e2a8;
-  --accent-glow: rgba(39, 214, 155, 0.3);
-  --accent-subtle: rgba(39, 214, 155, 0.14);
-  --glass-bg: rgba(14, 28, 22, 0.65);
-  --glass-border: rgba(39, 214, 155, 0.18);
-  --glass-blur: 28px;
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  --accent-glow: rgba(39, 214, 155, 0.35);
+  --accent-subtle: rgba(39, 214, 155, 0.15);
+  --glass-bg: rgba(12, 24, 19, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-blur: 26px;
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 
 /* 6. Aurora Indigo (Northern Lights & Cosmic Violet) */
@@ -642,8 +646,11 @@ html[data-theme='game-of-thrones'] {
 /* Light & Glass Mode Contrast Overrides */
 :root[data-theme='light'] body,
 :root[data-theme='glass'] body,
+:root[data-theme='glass-dark'] body,
 :root[data-theme='rose'] body,
 :root[data-resolved-theme='light'] body,
+:root[data-resolved-theme='glass'] body,
+:root[data-resolved-theme='glass-dark'] body,
 :root[data-resolved-theme='rose'] body {
   background-color: var(--bg);
   background-image: var(--bg-gradient);
@@ -652,37 +659,58 @@ html[data-theme='game-of-thrones'] {
 
 :root[data-theme='light'] .bg-slate-950,
 :root[data-theme='glass'] .bg-slate-950,
+:root[data-theme='glass-dark'] .bg-slate-950,
 :root[data-theme='rose'] .bg-slate-950,
 :root[data-resolved-theme='light'] .bg-slate-950,
+:root[data-resolved-theme='glass'] .bg-slate-950,
+:root[data-resolved-theme='glass-dark'] .bg-slate-950,
 :root[data-resolved-theme='rose'] .bg-slate-950 {
   background-color: var(--surface) !important;
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(160%) !important;
 }
 
 :root[data-theme='light'] .bg-slate-900,
 :root[data-theme='glass'] .bg-slate-900,
+:root[data-theme='glass-dark'] .bg-slate-900,
 :root[data-theme='rose'] .bg-slate-900,
 :root[data-resolved-theme='light'] .bg-slate-900,
+:root[data-resolved-theme='glass'] .bg-slate-900,
+:root[data-resolved-theme='glass-dark'] .bg-slate-900,
 :root[data-resolved-theme='rose'] .bg-slate-900 {
   background-color: var(--surface-2) !important;
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(160%) !important;
 }
 
 :root[data-theme='light'] .bg-slate-800,
 :root[data-theme='glass'] .bg-slate-800,
+:root[data-theme='glass-dark'] .bg-slate-800,
 :root[data-theme='rose'] .bg-slate-800,
 :root[data-resolved-theme='light'] .bg-slate-800,
+:root[data-resolved-theme='glass'] .bg-slate-800,
+:root[data-resolved-theme='glass-dark'] .bg-slate-800,
 :root[data-resolved-theme='rose'] .bg-slate-800 {
   background-color: var(--surface-hover) !important;
   color: var(--text) !important;
+  backdrop-filter: blur(var(--glass-blur, 20px)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) !important;
 }
 
 :root[data-theme='light'] .border-slate-800,
 :root[data-theme='light'] .border-slate-700,
 :root[data-theme='glass'] .border-slate-800,
 :root[data-theme='glass'] .border-slate-700,
+:root[data-theme='glass-dark'] .border-slate-800,
+:root[data-theme='glass-dark'] .border-slate-700,
 :root[data-theme='rose'] .border-slate-800,
 :root[data-theme='rose'] .border-slate-700,
 :root[data-resolved-theme='light'] .border-slate-800,
 :root[data-resolved-theme='light'] .border-slate-700,
+:root[data-resolved-theme='glass'] .border-slate-800,
+:root[data-resolved-theme='glass'] .border-slate-700,
+:root[data-resolved-theme='glass-dark'] .border-slate-800,
+:root[data-resolved-theme='glass-dark'] .border-slate-700,
 :root[data-resolved-theme='rose'] .border-slate-800,
 :root[data-resolved-theme='rose'] .border-slate-700 {
   border-color: var(--border) !important;
@@ -690,16 +718,22 @@ html[data-theme='game-of-thrones'] {
 
 :root[data-theme='light'] .text-slate-400,
 :root[data-theme='glass'] .text-slate-400,
+:root[data-theme='glass-dark'] .text-slate-400,
 :root[data-theme='rose'] .text-slate-400,
 :root[data-resolved-theme='light'] .text-slate-400,
+:root[data-resolved-theme='glass'] .text-slate-400,
+:root[data-resolved-theme='glass-dark'] .text-slate-400,
 :root[data-resolved-theme='rose'] .text-slate-400 {
   color: var(--muted) !important;
 }
 
 :root[data-theme='light'] .text-slate-300,
 :root[data-theme='glass'] .text-slate-300,
+:root[data-theme='glass-dark'] .text-slate-300,
 :root[data-theme='rose'] .text-slate-300,
 :root[data-resolved-theme='light'] .text-slate-300,
+:root[data-resolved-theme='glass'] .text-slate-300,
+:root[data-resolved-theme='glass-dark'] .text-slate-300,
 :root[data-resolved-theme='rose'] .text-slate-300 {
   color: var(--text-secondary) !important;
 }

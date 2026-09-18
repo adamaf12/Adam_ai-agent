@@ -11,6 +11,7 @@ import { AppLauncherCard, type AppLauncherData } from './AppLauncherCard';
 import { AgentActionCard } from './AgentActionCard';
 import { extractAgentActions } from '../../core/agent/ademDuoAutonomousAgent';
 import { extractAppCode, saveSandboxApp } from '../../core/appSandboxStorage';
+import { InteractiveAppCard } from './InteractiveAppCard';
 
 function extractPromptFromUrl(src: string): string {
   try {
@@ -233,37 +234,15 @@ export function MessageBubble({
           />
         ))}
 
-        {/* Dedicated App / Game Launcher Banner when code is generated */}
+        {/* Dedicated Interactive Live App / Game Runner */}
         {assistant && appData && (
-          <div className="my-2.5 p-3.5 rounded-2xl bg-slate-900/95 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                {appData.isGameOrApp ? <Gamepad2 size={20} /> : <Code2 size={20} />}
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                  <span>
-                    {language === 'ar'
-                      ? '🎮 كود لعبة / تطبيق تفاعلي جاهز للتشغيل'
-                      : '🎮 Interactive App / Game Code Ready'}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  {language === 'ar'
-                    ? 'تم حفظ وتجهيز الكود في مشغل الألعاب والتطبيقات المستقل'
-                    : 'Saved and ready to run in the dedicated Sandbox Player'}
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleLaunchSandbox}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
-            >
-              <Play size={13} />
-              {language === 'ar' ? 'فتح وتشغيل في مشغل الألعاب 🚀' : 'Launch in Sandbox 🚀'}
-            </button>
-          </div>
+          <InteractiveAppCard
+            code={appData.code}
+            category={appData.isGameOrApp ? 'game' : 'app'}
+            language={language}
+            onOpenSandbox={handleLaunchSandbox}
+            onNavigateView={onNavigateView}
+          />
         )}
 
         {displayMarkdown ? (

@@ -37,7 +37,15 @@ export interface Message {
   metadata?: Record<string, unknown>;
 }
 
-export interface AppPreferences { agentName: string; language: Language; theme: Theme; onboardingComplete: boolean; }
+export interface AppPreferences {
+  agentName: string;
+  language: Language;
+  theme: Theme;
+  onboardingComplete: boolean;
+  activeModelId?: string;
+  huggingFaceToken?: string;
+  preferHuggingFace?: boolean;
+}
 export interface ChatConversation { id: string; title: string; messages: Message[]; updatedAt: number; createdAt?: number; }
 export interface Task { id: string; title: string; notes: string; completed: boolean; priority: TaskPriority; dueAt?: number; createdAt: number; updatedAt: number; }
 export interface Memory { id: string; content: string; category: MemoryCategory; createdAt: number; updatedAt: number; }

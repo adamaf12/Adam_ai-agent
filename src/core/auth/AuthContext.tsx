@@ -72,20 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (err?.code === 'auth/popup-closed-by-user' || msg === 'popup_closed_by_user') {
         setError(null);
       } else if (err?.code === 'auth/popup-blocked') {
-        // Seamless instant fallback without white screen
-        const directUser = signInDirectProfile('معمر فيدات', 'maamarfeidat@gmail.com');
-        setUser(directUser);
-        setAuthModalOpen(false);
+        setError('تم حظر النافذة المنبثقة بواسطة المتصفح. يرجى السماح بالنوافذ المنبثقة لتسجيل الدخول.');
       } else if (
         msg.includes('missing initial state') ||
         msg.includes('sessionStorage') ||
         msg.includes('storage-partitioned') ||
         msg === 'GSI_NOT_LOADED'
       ) {
-        // Seamless instant fallback preventing storage partition white screen
-        const directUser = signInDirectProfile('معمر فيدات', 'maamarfeidat@gmail.com');
-        setUser(directUser);
-        setAuthModalOpen(false);
+        setError('تعذر إكمال المصادقة التلقائية. يرجى تجربة تسجيل الدخول بحساب Google أو الدخول كزائر.');
       } else if (err?.code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
         const host = typeof window !== 'undefined' ? window.location.hostname : 'run.app';
         setUnauthorizedDomain(host);
@@ -115,8 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInDirect = (customName?: string, customEmail?: string) => {
     const directUser = signInDirectProfile(
-      customName || 'معمر فيدات',
-      customEmail || 'maamarfeidat@gmail.com'
+      customName || 'مستخدم آدم',
+      customEmail || 'user@adam.agent'
     );
     setUser(directUser);
     setError(null);
@@ -125,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInAsGuest = (customName?: string) => {
-    signInDirect(customName || 'مستخدم آدم', 'user@adam.agent');
+    signInDirect(customName || 'مستخدم زائر', 'guest@adam.agent');
   };
 
   const handleSignOut = async () => {

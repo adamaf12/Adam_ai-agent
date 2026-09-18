@@ -1,6 +1,7 @@
 import {
   Bell,
   Bot,
+  Brain,
   Camera,
   CheckCircle2,
   Clock,
@@ -498,19 +499,19 @@ export function Chat({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Side Panel Trigger Button (الجلسة والذاكرة) */}
+          {/* Side Panel Trigger Button (الزر الجانبي للجلسات والذاكرة) */}
           <button
             type="button"
             onClick={() => {
               setMemoryStats(getInfiniteMemoryStats());
               setIsSessionDrawerOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition cursor-pointer active:scale-95 shadow-sm"
             title={language === 'ar' ? 'إدارة الجلسات والذاكرة والسجل' : 'Manage Sessions & Memory'}
           >
             <SlidersHorizontal size={13} className="text-[var(--accent)]" />
             <span className="hidden sm:inline">{language === 'ar' ? 'الجلسات والذاكرة' : 'Sessions & Memory'}</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-mono font-bold">
               {conversations.length}
             </span>
           </button>

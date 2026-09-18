@@ -190,11 +190,11 @@ export function GoogleAuthButton({ language, compact = false }: GoogleAuthButton
 
             <button
               type="button"
-              onClick={() => signInDirect('معمر فيدات', 'maamarfeidat@gmail.com')}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-medium transition-colors"
+              onClick={() => signInAsGuest()}
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-medium transition-colors cursor-pointer"
             >
               <UserCheck size={13} />
-              <span>{isAr ? 'متابعة الدخول الفوري بحسابي' : 'Continue with My Account'}</span>
+              <span>{isAr ? 'المتابعة كزائر مؤقتاً' : 'Continue as Guest'}</span>
             </button>
           </div>
         </div>

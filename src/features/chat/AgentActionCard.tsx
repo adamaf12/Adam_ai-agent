@@ -16,6 +16,7 @@ import type { AgentActionData } from '../../core/agent/ademDuoAutonomousAgent';
 import { executeCodeInBrowser, executeTerminalCommand } from '../../core/agent/ademDuoAutonomousAgent';
 import { loadTasks, saveTasks } from '../../core/storage/collections';
 import type { ViewId } from '../../core/domain';
+import { InteractiveAppCard } from './InteractiveAppCard';
 
 interface AgentActionCardProps {
   action: AgentActionData;
@@ -315,36 +316,15 @@ export function AgentActionCard({
 
         {/* 5. SANDBOX APP */}
         {dynamicPayload.type === 'sandbox_app' && (
-          <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-                <Play size={20} />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-100">
-                  {dynamicPayload.data.title}
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  {isAr ? 'تطبيق تفاعلي مدمج جاهز للتشغيل الفوري' : 'Interactive App Ready to Run'}
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenSandbox) {
-                  onOpenSandbox(dynamicPayload.data.appId);
-                } else if (onNavigateView) {
-                  onNavigateView('apps', dynamicPayload.data.appId);
-                }
-              }}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
-            >
-              <Play size={13} />
-              <span>{isAr ? 'تشغيل التطبيق 🚀' : 'Launch App 🚀'}</span>
-            </button>
-          </div>
+          <InteractiveAppCard
+            title={dynamicPayload.data.title}
+            code={dynamicPayload.data.code}
+            category={dynamicPayload.data.category}
+            language={language}
+            appId={dynamicPayload.data.appId}
+            onOpenSandbox={onOpenSandbox}
+            onNavigateView={onNavigateView}
+          />
         )}
       </div>
     </div>

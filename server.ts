@@ -13,6 +13,7 @@ import { registerAgentRoute, searchCircuitBreaker, isExplicitImageRequest, isExp
 import { createAgentModelGateway } from './src/core/models/agentModelGateway';
 import { modelRegistry } from './src/core/models/modelSwarm';
 import { hermesEngine } from './server/hermesAgent';
+import { huggingFaceEngine } from './server/huggingfaceEngine';
 import { mediaEngine, CognitiveMediaBrain } from './server/mediaEngine';
 import { secretsManager, redactSecrets } from './server/security/secrets';
 import { authenticateSession, requirePermission, requireRole } from './server/security/auth';
@@ -64,7 +65,15 @@ app.use(express.urlencoded({ limit: '30mb', extended: true }));
 // 4. Session & Authentication Middleware (populates req.user)
 app.use(authenticateSession);
 
-// 5. Global API Rate Limiter
+// 5. Global API Response Redaction Shield & Rate Limiter
+app.use('/api', (req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = function (body: any) {
+    const sanitized = secretsManager.redactObject(body);
+    return originalJson(sanitized);
+  };
+  next();
+});
 app.use('/api', globalRateLimiter.middleware());
 
 export function safeWrite(res: express.Response, chunk: object | string): boolean {
@@ -490,6 +499,49 @@ app.get('/api/hermes/skills', (_req, res) => {
 
 app.get('/api/hermes/stats', (_req, res) => {
   res.json({ ok: true, stats: hermesEngine.getStats() });
+});
+
+// Hugging Face Intelligence & Open Model Hub Endpoints
+app.get('/api/hf/status', (req, res) => {
+  const customToken = typeof req.query.token === 'string' ? req.query.token : undefined;
+  res.json({ ok: true, ...huggingFaceEngine.getStatus(customToken) });
+});
+
+app.post('/api/hf/chat', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { messages, model, systemPrompt, temperature, maxTokens, customToken } = req.body || {};
+    if (!Array.isArray(messages) || !messages.length) {
+      return res.status(400).json({ ok: false, error: 'Messages are required' });
+    }
+    const result = await huggingFaceEngine.generateChatCompletion({
+      model,
+      messages,
+      systemPrompt,
+      temperature: Number(temperature) || 0.35,
+      maxTokens: Number(maxTokens) || 4096,
+      customToken,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Hugging Face chat failed' });
+  }
+});
+
+app.post('/api/hf/image', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { prompt, model, customToken } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Prompt is required' });
+    }
+    const result = await huggingFaceEngine.generateImage({
+      prompt,
+      model,
+      customToken,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Hugging Face image failed' });
+  }
 });
 
 // Next-Gen Media Studio & Generator Endpoints (with P0 DB Isolation & P1 Rate Limiting)
@@ -1013,30 +1065,48 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     // Grounding sources omitted per user request
 
     if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
-      console.warn('[Adam AI chat] Gemini models unavailable or quota exceeded, attempting remote model gateway fallback...');
+      console.warn('[Adam AI chat] Gemini models unavailable or quota exceeded, attempting Hugging Face & remote model gateway fallback...');
       try {
-        const remoteGateway = createAgentModelGateway();
-        const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini');
-        for (const fbModel of fallbackCandidates) {
-          if (aborted || res.writableEnded || res.destroyed) break;
-          try {
-            const resp = await remoteGateway.gateway.invokeSelected(fbModel, {
-              prompt: userPrompt,
-              system: systemInstruction(language, agentName),
-              temperature: 0.45,
-              maxTokens: 4096,
-            });
-            if (resp.text?.trim()) {
-              output = resp.text.trim();
-              safeWrite(res, { type: 'delta', text: output });
-              break;
-            }
-          } catch (fbErr: any) {
-            console.warn(`[Adam AI fallback] ${fbModel.id} error:`, fbErr?.message || fbErr);
-          }
+        const hfResult = await huggingFaceEngine.generateChatCompletion({
+          model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+          messages: [{ role: 'user', content: userPrompt }],
+          systemPrompt: systemInstruction(language, agentName),
+          temperature: 0.35,
+          maxTokens: 4096,
+        });
+        if (hfResult.text?.trim()) {
+          output = hfResult.text.trim();
+          safeWrite(res, { type: 'delta', text: output });
         }
-      } catch (gwErr) {
-        console.warn('[Adam AI gateway error]:', gwErr);
+      } catch (hfErr: any) {
+        console.warn('[Adam AI HuggingFace fallback direct error]:', hfErr?.message || hfErr);
+      }
+
+      if (!output.trim()) {
+        try {
+          const remoteGateway = createAgentModelGateway();
+          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini');
+          for (const fbModel of fallbackCandidates) {
+            if (aborted || res.writableEnded || res.destroyed) break;
+            try {
+              const resp = await remoteGateway.gateway.invokeSelected(fbModel, {
+                prompt: userPrompt,
+                system: systemInstruction(language, agentName),
+                temperature: 0.45,
+                maxTokens: 4096,
+              });
+              if (resp.text?.trim()) {
+                output = resp.text.trim();
+                safeWrite(res, { type: 'delta', text: output });
+                break;
+              }
+            } catch (fbErr: any) {
+              console.warn(`[Adam AI fallback] ${fbModel.id} error:`, fbErr?.message || fbErr);
+            }
+          }
+        } catch (gwErr) {
+          console.warn('[Adam AI gateway error]:', gwErr);
+        }
       }
     }
 

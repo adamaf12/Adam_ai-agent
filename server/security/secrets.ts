@@ -16,6 +16,13 @@ class SecretsManager {
     // Collect all sensitive environment variables
     const sensitiveKeys = [
       'GEMINI_API_KEY',
+      'HUGGINGFACE_API_KEY',
+      'HF_TOKEN',
+      'HUGGINGFACE_TOKEN',
+      'HUGGING_FACE_HUB_TOKEN',
+      'POLLINATIONS_API_KEY',
+      'OPENAI_API_KEY',
+      'ANTHROPIC_API_KEY',
       'API_KEY',
       'ADMIN_SECRET_KEY',
       'SESSION_SECRET',
@@ -26,6 +33,8 @@ class SecretsManager {
       'SECRET',
       'TOKEN',
       'PRIVATE_KEY',
+      'CREDENTIAL',
+      'AUTH',
     ];
 
     for (const key of Object.keys(process.env)) {
@@ -65,19 +74,55 @@ class SecretsManager {
     }
 
     // 2. Generic API Key & Token patterns
-    // Google Gemini API keys: AIzaSy...
-    sanitized = sanitized.replace(/AIzaSy[A-Za-z0-9_-]{33}/g, '[REDACTED_GEMINI_KEY]');
+    // Hugging Face Tokens (hf_...)
+    sanitized = sanitized.replace(/hf_[A-Za-z0-9]{25,}/g, '[REDACTED_HF_TOKEN]');
+
+    // Google Gemini / Cloud API keys: AIza...
+    sanitized = sanitized.replace(/AIza[A-Za-z0-9_-]{35}/g, '[REDACTED_GOOGLE_KEY]');
 
     // Bearer tokens
     sanitized = sanitized.replace(/Bearer\s+[A-Za-z0-9\-_.~+/]+=*/gi, 'Bearer [REDACTED_TOKEN]');
 
-    // Generic OpenAI / Third-party style keys (sk-...)
-    sanitized = sanitized.replace(/sk-[A-Za-z0-9_-]{20,}/g, '[REDACTED_API_KEY]');
+    // OpenAI / Third-party / Anthropic style keys (sk-..., ant-...)
+    sanitized = sanitized.replace(/(?:sk|ant)-[A-Za-z0-9_-]{20,}/g, '[REDACTED_API_KEY]');
+
+    // GitHub tokens
+    sanitized = sanitized.replace(/(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}/g, '[REDACTED_GITHUB_TOKEN]');
+    sanitized = sanitized.replace(/github_pat_[A-Za-z0-9_]{50,}/g, '[REDACTED_GITHUB_PAT]');
 
     // Database connection strings: postgres://user:pass@host/db
     sanitized = sanitized.replace(/(postgres(?:ql)?|mysql|mongodb(?:\+srv)?):\/\/[^:]+:([^@]+)@/gi, '$1://[REDACTED_USER]:[REDACTED_PASS]@');
 
     return sanitized;
+  }
+
+  /**
+   * Recursively sanitize any object/array to ensure no keys or tokens leak into JSON responses
+   */
+  public redactObject<T>(input: T): T {
+    if (input === null || input === undefined) return input;
+    if (typeof input === 'string') return this.redactSecrets(input) as unknown as T;
+    if (typeof input !== 'object') return input;
+
+    if (Array.isArray(input)) {
+      return input.map((item) => this.redactObject(item)) as unknown as T;
+    }
+
+    const forbiddenKeys = new Set([
+      'apikey', 'api_key', 'token', 'secret', 'password', 'privatekey', 'private_key',
+      'gemini_api_key', 'hf_token', 'huggingface_api_key', 'authorization', 'cookie'
+    ]);
+
+    const result: Record<string, any> = {};
+    for (const [k, v] of Object.entries(input)) {
+      const lowerKey = k.toLowerCase().replace(/[-_]/g, '');
+      if (forbiddenKeys.has(lowerKey) && typeof v === 'string' && v.length > 0) {
+        result[k] = '[REDACTED_VALUE]';
+      } else {
+        result[k] = this.redactObject(v);
+      }
+    }
+    return result as T;
   }
 
   /**

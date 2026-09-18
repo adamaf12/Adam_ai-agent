@@ -5,12 +5,11 @@ import { createNewConversation, loadPreferences, normalizePreferences, savePrefe
 import { AppShell } from './components/AppShell';
 import { Chat } from './features/chat/Chat';
 import { Tasks } from './features/tasks/Tasks';
-import { Memory } from './features/memory/Memory';
 import { Settings } from './features/settings/Settings';
 import { Workspace } from './features/workspace/Workspace';
 import { MediaStudio } from './features/media/MediaStudio';
 import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
-import { SecurityVulnerabilityLab } from './features/security/SecurityVulnerabilityLab';
+import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { IqTestStudio } from './features/iq/IqTestStudio';
 import { InAppBrowserModal } from './components/InAppBrowserModal';
@@ -20,14 +19,20 @@ import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileW
 const DEFAULT_PREFERENCES: AppPreferences = {
   agentName: 'Adam',
   language: 'ar',
-  theme: 'system',
+  theme: 'glass-dark',
   onboardingComplete: true,
 };
 
 export default function App() {
-  const [preferences, setPreferences] = useState<AppPreferences>(() =>
-    loadPreferences(DEFAULT_PREFERENCES)
-  );
+  const [preferences, setPreferences] = useState<AppPreferences>(() => {
+    const loaded = loadPreferences(DEFAULT_PREFERENCES);
+    if (loaded.theme === 'system' || loaded.theme === 'dark') {
+      const updated = { ...loaded, theme: 'glass-dark' as const };
+      savePreferences(updated);
+      return updated;
+    }
+    return loaded;
+  });
   const [activeView, setActiveView] = useState<ViewId>('chat');
   const [chatSessionKey, setChatSessionKey] = useState(1);
   const [selectedSandboxAppId, setSelectedSandboxAppId] = useState<string | undefined>(undefined);
@@ -49,6 +54,12 @@ export default function App() {
     setChatSessionKey((prev) => prev + 1);
     setActiveView('chat');
   };
+
+  useEffect(() => {
+    if ((activeView as string) === 'memory') {
+      setActiveView('chat');
+    }
+  }, [activeView]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -223,7 +234,6 @@ export default function App() {
               }}
             />
           )}
-          {activeView === 'memory' && <Memory language={preferences.language} />}
           {activeView === 'workspace' && (
             <Workspace
               language={preferences.language}
@@ -238,7 +248,6 @@ export default function App() {
               onRunPromptInChat={() => setActiveView('chat')}
             />
           )}
-          {activeView === 'security' && <SecurityVulnerabilityLab language={preferences.language} />}
           {activeView === 'iq' && <IqTestStudio language={preferences.language} />}
           {activeView === 'settings' && (
             <Settings
@@ -249,6 +258,9 @@ export default function App() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Autonomous Background Security Sentinel (حارس الأمان النشط في الخلفية لحماية المستخدم) */}
+      <BackgroundSecuritySentinel />
 
       {/* Safe In-App Browser for Mobile and APK WebView environments */}
       <InAppBrowserModal language={preferences.language} />

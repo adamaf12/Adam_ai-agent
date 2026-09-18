@@ -287,50 +287,50 @@ export function Composer({
         </div>
       )}
 
-      {/* Quick Developer & Creator Chips Drawer */}
+      {/* Quick Developer & Creator Chips Drawer (Horizontal scroll for all phone widths) */}
       {showQuickModes && (
-        <div className="flex flex-wrap items-center gap-2 mb-3 px-1 animate-fadeIn">
+        <div className="flex items-center gap-2 mb-2.5 px-1 overflow-x-auto scrollbar-none py-0.5 animate-fadeIn select-none">
           <button
             type="button"
             onClick={() => insertPromptChip(isAr ? 'برمج لي كود كامل بنسبة 100% لـ: ' : 'Write 100% complete production code for: ')}
-            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
           >
-            <Code2 size={14} className="text-[var(--accent)]" />
+            <Code2 size={13} className="text-[var(--accent)]" />
             <span>{isAr ? 'برمجة كود' : 'Write Code'}</span>
           </button>
           <button
             type="button"
             onClick={() => insertPromptChip(isAr ? 'اصنع لعبة تفاعلية HTML5 Canvas لـ: ' : 'Build a playable HTML5 Canvas game for: ')}
-            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
           >
-            <Gamepad2 size={14} className="text-cyan-400" />
+            <Gamepad2 size={13} className="text-cyan-400" />
             <span>{isAr ? 'لعبة تفاعلية' : 'Interactive Game'}</span>
           </button>
           <button
             type="button"
             onClick={() => insertPromptChip(isAr ? 'افحص هذا الخطأ واشرح سببه وقدم الحل الجذري: ' : 'Analyze this error and provide the root cause fix: ')}
-            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
           >
-            <Wrench size={14} className="text-amber-400" />
+            <Wrench size={13} className="text-amber-400" />
             <span>{isAr ? 'تصحيح أخطاء' : 'Debug Fix'}</span>
           </button>
           <button
             type="button"
             onClick={() => insertPromptChip(isAr ? 'أنشئ صورة سينمائية فائقة الدقة 8K لـ: ' : 'Generate an 8K photorealistic visual of: ')}
-            className="text-xs font-bold px-3.5 py-2 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
           >
-            <Sparkles size={14} className="text-purple-400" />
+            <Sparkles size={13} className="text-purple-400" />
             <span>{isAr ? 'توليد 8K' : '8K Visual'}</span>
           </button>
         </div>
       )}
 
       {/* Main Luxury Composer Box */}
-      <div className="composer flex items-end gap-2 p-2 sm:p-2.5 rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)]">
+      <div className="composer flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)]">
         {/* Quick Power Tools Toggle */}
         <button
           type="button"
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
             showQuickModes
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -339,13 +339,13 @@ export function Composer({
           aria-label="Toggle prompt tools"
           title={isAr ? 'أدوات مساعدة سريعة' : 'Quick Prompt Tools'}
         >
-          <Sparkles size={18} />
+          <Sparkles size={16} />
         </button>
 
         {/* Attach Image Button */}
         <button
           type="button"
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
             images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -356,9 +356,9 @@ export function Composer({
           disabled={processingImages}
         >
           {processingImages ? (
-            <Loader2 size={18} className="animate-spin text-[var(--accent)]" />
+            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
           ) : (
-            <Camera size={18} />
+            <Camera size={16} />
           )}
         </button>
 
@@ -390,13 +390,13 @@ export function Composer({
           }
           rows={1}
           disabled={busy}
-          className="flex-1 bg-transparent border-0 outline-none text-sm text-[var(--text)] placeholder-[var(--muted)] resize-none py-2 px-1 min-h-[26px] max-h-[160px] font-normal leading-relaxed"
+          className="flex-1 bg-transparent border-0 outline-none text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 sm:py-2 px-1 min-h-[26px] max-h-[160px] font-normal leading-relaxed"
         />
 
         {/* Voice Input Microphone */}
         <button
           type="button"
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
             listening
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -405,13 +405,13 @@ export function Composer({
           aria-label={isAr ? 'تسجيل صوتي' : 'Voice input'}
           title={listening ? (isAr ? 'إيقاف التسجيل' : 'Stop voice') : (isAr ? 'إملاء صوتي' : 'Voice dictation')}
         >
-          {listening ? <MicOff size={18} className="text-rose-400" /> : <Mic size={18} />}
+          {listening ? <MicOff size={16} className="text-rose-400" /> : <Mic size={16} />}
         </button>
 
         {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-lg ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-lg ${
             busy
               ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
               : draft.trim() || images.length > 0
@@ -422,7 +422,7 @@ export function Composer({
           aria-label={busy ? t.stop : t.send}
           disabled={!busy && !draft.trim() && images.length === 0}
         >
-          {busy ? <Square size={14} fill="currentColor" /> : <Send size={16} />}
+          {busy ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
         </button>
       </div>
 

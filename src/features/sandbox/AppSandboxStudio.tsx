@@ -30,6 +30,7 @@ import {
   deleteSandboxApp,
   type SandboxApp
 } from '../../core/appSandboxStorage';
+import { getSmartCalculatorAppCode } from '../../core/agent/interactiveAppTemplates';
 
 interface AppSandboxStudioProps {
   language: Language;
@@ -37,8 +38,16 @@ interface AppSandboxStudioProps {
   onNavigateToChat?: (prompt: string) => void;
 }
 
-// 4 Curated Luxury Built-in Templates
+// Curated Luxury Built-in Templates
 const CURATED_MODELS: SandboxApp[] = [
+  {
+    id: 'adem_smart_calculator',
+    title: 'الآلة الحاسبة الذكية التفاعلية (Smart Calculator)',
+    prompt: 'برمج لي آلة حاسبة تفاعلية متكاملة تحسب بدقة مع مؤثرات صوتية وتصميم نيون ودعم الأقواس والجذور ولوحة المفاتيح',
+    category: 'app',
+    createdAt: Date.now() - 1200000,
+    code: getSmartCalculatorAppCode(),
+  },
   {
     id: 'cyber_space_odyssey',
     title: 'مغامرة الفضاء السايبر (Cyber Space Odyssey)',
@@ -937,6 +946,7 @@ export function AppSandboxStudio({
   const [copied, setCopied] = useState(false);
   const [promptInput, setPromptInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const activeApp = useMemo(() => {
@@ -1053,8 +1063,24 @@ export function AppSandboxStudio({
             </div>
           </div>
 
-          {/* Quick Filters */}
+          {/* Quick Filters & Mobile Toggle */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              className="lg:hidden px-2.5 py-1 rounded-xl text-xs font-bold bg-[var(--surface-2)] border border-[var(--border)] text-[var(--accent)] hover:bg-[var(--surface-hover)] transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+            >
+              <Gamepad2 size={13} />
+              <span>
+                {mobileSidebarOpen
+                  ? isAr
+                    ? 'إخفاء النماذج'
+                    : 'Hide Models'
+                  : isAr
+                  ? `النماذج (${apps.length})`
+                  : `Models (${apps.length})`}
+              </span>
+            </button>
             <div className="flex items-center p-0.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
               {(['all', 'game', 'app'] as const).map((cat) => (
                 <button
@@ -1079,7 +1105,11 @@ export function AppSandboxStudio({
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Sidebar: Curated Cards Showcase */}
         {!isFullscreen && (
-          <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-[var(--border)] bg-[var(--surface)]/40 flex flex-col max-h-56 lg:max-h-full overflow-hidden">
+          <aside
+            className={`w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-[var(--border)] bg-[var(--surface)]/40 flex flex-col max-h-56 lg:max-h-full overflow-hidden flex-shrink-0 ${
+              mobileSidebarOpen ? 'flex' : 'hidden lg:flex'
+            }`}
+          >
             {/* Search Input */}
             <div className="p-3 border-b border-[var(--border)]">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs">
@@ -1106,11 +1136,13 @@ export function AppSandboxStudio({
                     onClick={() => {
                       setSelectedId(app.id);
                       setActiveTab('preview');
+                      setMobileSidebarOpen(false);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         setSelectedId(app.id);
                         setActiveTab('preview');
+                        setMobileSidebarOpen(false);
                       }
                     }}
                     className={`w-full p-3 rounded-2xl border text-start transition-all cursor-pointer flex items-center justify-between group select-none ${

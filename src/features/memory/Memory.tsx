@@ -67,9 +67,9 @@ const i18n = {
         text: 'بيئة العمل المفضلة: نظام لينكس (Mint/Debian) وأندرويد (Termux)، مع التركيز على حاويات Docker ومشاريع TypeScript وPython.',
       },
       {
-        label: 'بيانات الحساب والمطور',
-        category: 'fact' as MemoryCategory,
-        text: 'اسم المستخدم الرئيسي: معمر فيدات (Maamar Feidat) - البريد: maamarfeidat@gmail.com.',
+        label: 'أسلوب التفاعل والردود',
+        category: 'instruction' as MemoryCategory,
+        text: 'الالتزام بأسلوب تنفيذي مباشر وسريع، وتقديم الأكواد والحلول التقنية الجاهزة دون إطالة ولا استطراد.',
       },
       {
         label: 'هدف تطوير التطبيقات',
@@ -126,9 +126,9 @@ const i18n = {
         text: 'Target environment: Linux (Mint/Debian) & Android (Termux). Prioritize Docker, TypeScript, and Python solutions.',
       },
       {
-        label: 'Developer Profile',
-        category: 'fact' as MemoryCategory,
-        text: 'Primary User: Maamar Feidat — Email: maamarfeidat@gmail.com.',
+        label: 'Direct Execution Pattern',
+        category: 'instruction' as MemoryCategory,
+        text: 'Always provide concise executive answers. Deliver working code and solutions with zero boilerplate fluff.',
       },
       {
         label: 'App Excellence Goal',
@@ -162,8 +162,8 @@ export function Memory({ language }: { language: Language }) {
       {
         id: uid(),
         content: isAr
-          ? 'المستخدم: معمر فيدات (maamarfeidat@gmail.com) — المطور والمالك لتطبيق آدم الذكي.'
-          : 'User: Maamar Feidat (maamarfeidat@gmail.com) — Developer and owner of Adam AI.',
+          ? 'تفضيل بيئة لينكس وأندرويد والحلول البرمجية عالية الكفاءة بلغات TypeScript وPython.'
+          : 'Preferred environment: Linux and Android with high-efficiency TypeScript and Python solutions.',
         category: 'fact',
         createdAt: now - 3600000 * 24,
         updatedAt: now - 3600000 * 24,

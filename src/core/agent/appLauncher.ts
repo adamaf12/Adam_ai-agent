@@ -236,39 +236,6 @@ export const REGISTERED_APPS: AppTarget[] = [
     ],
   },
   {
-    id: 'memory',
-    type: 'view',
-    view: 'memory',
-    titleAr: 'سجل الذاكرة المعرفية (Cognitive Memory)',
-    titleEn: 'Cognitive Memory Vault',
-    categoryAr: 'ذاكرة وإدراك',
-    categoryEn: 'Long-term Memory',
-    descriptionAr: 'استعراض الذكريات المعرفية الدائمة، التفضيلات المحفوظة، والقواعد المكتسبة.',
-    descriptionEn: 'View persistent cross-session memories, learned rules, and knowledge graph.',
-    iconName: 'Brain',
-    aliases: [
-      'ذاكرة', 'الذاكرة', 'سجل الذاكرة', 'ذكريات', 'الذكريات', 'المعلومات المحفوظة',
-      'memory', 'memories', 'memory vault', 'second brain'
-    ],
-  },
-  {
-    id: 'security',
-    type: 'view',
-    view: 'security',
-    titleAr: 'مختبر الحماية والأمان (Security & WAF)',
-    titleEn: 'Security & WAF Shield Lab',
-    categoryAr: 'أمان ومراقبة',
-    categoryEn: 'Cybersecurity & Monitoring',
-    descriptionAr: 'لوحة التحكم بجدار الحماية، فحص الثغرات، ومراقبة تدفق البيانات.',
-    descriptionEn: 'Firewall rules, vulnerability scanner, audit logs, and security shield.',
-    iconName: 'ShieldCheck',
-    aliases: [
-      'حماية', 'الحماية', 'أمان', 'الامان', 'الأمان', 'مختبر الحماية', 'جدار الحماية', 'فحص الثغرات',
-      'واف', 'حماية النظام',
-      'security', 'waf', 'security lab', 'firewall', 'shield', 'cybersecurity'
-    ],
-  },
-  {
     id: 'settings',
     type: 'view',
     view: 'settings',

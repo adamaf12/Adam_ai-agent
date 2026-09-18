@@ -292,7 +292,24 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 - عندما يطلب منك كتابة كود أو تشغيله: قم بتنفيذ الكود فورياً أو تضمين كتلة \`:::agent-action\` بنوع \`code_exec\` مع المخرجات الواقعية (stdout/stderr) ووقت التنفيذ.
 - عندما يطلب منك أمر طرفية أو فحص نظام لينكس/أندرويد: قم بتضمين كتلة \`:::agent-action\` بنوع \`terminal_command\` مع الأمر ومخرجات الطرفية Monospace وكود الخروج 0.
 - عندما يطلب منك إنشاء ملف أو سكربت: قم بتضمين كتلة \`:::agent-action\` بنوع \`file_created\` مع اسم الملف ومحتواه ورابط تحميل data URL جاهز.
-- عندما يطلب منك إنشاء مهمة: قم بتضمين كتلة \`:::agent-action\` بنوع \`task_created\` لتسجيلها فورياً في قائمة مهام ADEM.${dynamicContext}`;
+- عندما يطلب منك إنشاء مهمة: قم بتضمين كتلة \`:::agent-action\` بنوع \`task_created\` لتسجيلها فورياً في قائمة مهام ADEM.
+
+---
+
+## 9. معايير هندسة وبرمجة التطبيقات التفاعلية الكاملة (100% WORKING APPS & ZERO-MOCK MANDATE)
+عندما يطلب المستخدم إنشاء أو برمجة أي تطبيق أو أداة أو لعبة تفاعلية (مثل: آلة حاسبة، قائمة مهام، مؤقت وساعة إيقاف، محول وحدات أو عملات، لوحة رسم، تطبيق طقس، مفكرة وملاحظات، مسابقة، أو لعبة كانفاس):
+1. **حظر كامل للواجهات الصورية والوهمية (STRICTLY NO MOCK / NO SKELETON UI):**
+   - يُمنع منعاً باتاً كتابة مجرد واجهة بصرية دون منطق تشغيلي داخلي!
+   - يُمنع وضع تعليقات مثل \`// TODO\` أو \`// اكتب المنطق هنا\` أو دوال فارغة أو \`alert('clicked')\`.
+   - كل زر، كل حقل إدخال، كل نموذج، كل منزلق، وكل قائمة يجب أن تؤدي وظيفتها الحقيقية بنسبة 100% عبر كود JavaScript كامل ونظيف داخل وسم \`<script>\`.
+2. **إدارة الحالة والتخزين الدائم (State Management & Local Storage):**
+   - تطبيقات المهام والملاحظات: تدعم الإضافة، الحذف، التعديل، تغيير حالة الإنجاز (Toggle Check)، الفرز، حفظ البيانات في \`localStorage\` وتحديث الـ DOM لحظياً.
+   - الآلات الحاسبة: معالجة كافة الأزرار والأرقام والعمليات الرياضية والأقواس والجذور مع الحساب الدقيق والتعامل الآمن مع الأخطاء ودعم لوحة المفاتيح.
+   - الساعات والمؤقتات: حساب زمني واقعي بالمللي ثانية، بدء وإيقاف مؤقت، تسجيل الدورات (Laps)، وتنبيه صوتي حقيقي عبر \`Web Audio API\`.
+   - أدوات الرسم والكانفاس: دعم حركة الفأرة ولمس الشاشة (Touch events)، تغيير الفرشاة والألوان، الممحاة، مسح اللوحة، وتنزيل الصورة كملف PNG.
+   - الألعاب التفاعلية: حلقة لعب متكاملة (\`requestAnimationFrame\` أو \`setInterval\`)، تحكم لمسي وأسهم لوحة المفاتيح، تصادم الكائنات، النقاط، والمؤثرات الصوتية.
+3. **تضمين كود كامل ومستقل (Self-Contained Executable):**
+   - ضع دائماً الكود البرمجي الكامل والشامل داخل كتلة \`\`\`html \`\`\` واحدة مستقلة وجاهزة للتشغيل الفوري في نافذة المعاينة التفاعلية. ${dynamicContext}`;
   }
 
   return `# SYSTEM INSTRUCTION & FULL ARCHITECTURAL BLUEPRINT: ADEM AUTONOMOUS AGENT
@@ -347,7 +364,21 @@ You are NOT merely a conversational chat responder; you are an **Autonomous Exec
 - When code execution is requested: execute or output an \`:::agent-action\` block with \`code_exec\` payload including real output and execution telemetry.
 - When terminal commands are requested: output an \`:::agent-action\` block with \`terminal_command\` payload including standard output and exit code 0.
 - When file creation is requested: output an \`:::agent-action\` block with \`file_created\` payload including file name, content, and download URL.
-- When task creation is requested: output an \`:::agent-action\` block with \`task_created\` payload.${dynamicContext}`;
+- When task creation is requested: output an \`:::agent-action\` block with \`task_created\` payload.
+
+---
+
+## 8. FULLY FUNCTIONAL APPS & ZERO-MOCK MANDATE
+When the user requests to create, build, or code any interactive application (e.g. calculator, stopwatch, converter, todo list, notes, drawing canvas, weather tool, quiz) or game (e.g. snake, tic-tac-toe, space defender, arcade):
+1. **STRICTLY NO MOCK / NO SKELETON UI:** Never produce a visual-only mockup without internal operational logic. Never use \`// TODO: add logic\`, empty handlers, or \`alert('clicked')\`.
+2. **100% COMPLETE JAVASCRIPT STATE & LOGIC:**
+   - Every button, input, form, slider, and toggle must execute real JavaScript operations updating state and DOM.
+   - Todo & Note Apps: Full add, delete, toggle completion, search/filter, and localStorage persistence.
+   - Calculators: Real expression evaluation, all operations (+, -, *, /, %, √, ±, parentheses), error boundary, and full keyboard events.
+   - Timers & Stopwatches: Real millisecond counters, lap recording, countdown intervals, and Web Audio alarms.
+   - Drawing & Canvas Apps: Mouse and touch listeners, color palette, brush size adjustment, eraser, and PNG download.
+   - Games: Full requestAnimationFrame/setInterval game loop, collision detection, live score, and mobile touch controls.
+3. **SELF-CONTAINED EXECUTABLE:** Always output complete, self-contained HTML5/CSS3/JavaScript code enclosed within a single \`\`\`html \`\`\` code block.${dynamicContext}`;
 }
 
 function safeWrite(res: Response, payload: object): boolean {

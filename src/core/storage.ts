@@ -49,7 +49,7 @@ export function safeJsonParse<T>(value: string | null, fallback: T): T {
 
 export function normalizePreferences(input: Partial<AppPreferences> | null | undefined): AppPreferences {
   const source = input ?? {};
-  const theme = THEMES.includes(source.theme as Theme) ? source.theme as Theme : 'system';
+  const theme = THEMES.includes(source.theme as Theme) ? source.theme as Theme : 'glass-dark';
   return {
     agentName: typeof source.agentName === 'string' && source.agentName.trim() ? source.agentName.trim().slice(0, 40) : 'Adam',
     language: source.language === 'en' ? 'en' : 'ar',

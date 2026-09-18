@@ -55,7 +55,7 @@ export function Workspace({ language, onSelectAction, onNavigate }: WorkspacePro
   };
 
   return (
-    <section className="w-full max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-6 space-y-5 select-none" dir={isAr ? 'rtl' : 'ltr'}>
+    <section className="w-full max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-6 space-y-5 select-none h-full overflow-y-auto pb-24 md:pb-8" dir={isAr ? 'rtl' : 'ltr'}>
       {/* Clean Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
         <div>
@@ -93,11 +93,13 @@ export function Workspace({ language, onSelectAction, onNavigate }: WorkspacePro
           )}
           <div className="min-w-0 pr-1">
             <span className="text-xs font-bold text-[var(--text)] block truncate max-w-[160px]">
-              {user?.displayName || (isAr ? 'معمر فيدات' : 'Maamar Feidat')}
+              {user?.displayName || (isAr ? 'حساب المستخدم' : 'User Account')}
             </span>
-            <span className="text-[10px] text-[var(--muted)] font-mono block truncate max-w-[160px]">
-              {user?.email || 'maamarfeidat@gmail.com'}
-            </span>
+            {user?.email && (
+              <span className="text-[10px] text-[var(--muted)] font-mono block truncate max-w-[160px]">
+                {user.email}
+              </span>
+            )}
           </div>
         </div>
       </div>

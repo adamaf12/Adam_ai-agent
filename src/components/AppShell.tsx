@@ -1,5 +1,4 @@
 import {
-  Brain,
   CalendarCheck,
   Clock,
   Gamepad2,
@@ -47,9 +46,8 @@ const navItems: Array<{
   { id: 'apps', icon: Gamepad2, key: 'apps', shortcut: '3' },
   { id: 'workspace', icon: Sparkles, key: 'workspace', shortcut: '4' },
   { id: 'media', icon: Film, key: 'media', shortcut: '5' },
-  { id: 'memory', icon: Brain, key: 'memory', shortcut: '6' },
-  { id: 'iq', icon: Award, key: 'iq', shortcut: '7' },
-  { id: 'settings', icon: Settings2, key: 'settings', shortcut: '8' },
+  { id: 'iq', icon: Award, key: 'iq', shortcut: '6' },
+  { id: 'settings', icon: Settings2, key: 'settings', shortcut: '7' },
 ];
 
 export function AppShell({
@@ -148,14 +146,20 @@ export function AppShell({
             <span>{t.online}</span>
           </div>
 
-          {/* Mobile Unified Context (One slim layer combining title and status) */}
-          <div className="navbar-mobile-context mobile-only">
+          {/* Mobile Unified Context (One slim layer combining title and status, click opens all tools drawer) */}
+          <button
+            type="button"
+            className="navbar-mobile-context mobile-only cursor-pointer"
+            onClick={() => window.dispatchEvent(new CustomEvent('adam:open-nav-drawer'))}
+            title={language === 'ar' ? 'استعراض جميع أدوات وتطبيقات ADEM' : 'Browse all ADEM tools'}
+            aria-label="Open ADEM Tools Drawer"
+          >
             <span className="navbar-context-sep">/</span>
             <span className="navbar-context-dot" title={t.online} />
             <span className="navbar-context-text" title={currentDisplayTitle}>
               {currentDisplayTitle}
             </span>
-          </div>
+          </button>
         </div>
 
         {/* Center: Navigation Tabs for Desktop/Tablet (Floating capsule with scroll affordance) */}

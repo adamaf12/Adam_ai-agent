@@ -303,7 +303,7 @@ export function IqTestStudio({ language }: IqTestStudioProps) {
   const selectedOption = currentQ ? answers[currentQ.id] : undefined;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto flex flex-col justify-center">
+    <div className="w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 max-w-5xl mx-auto flex flex-col pb-24 md:pb-8">
       {/* INTRO SCREEN */}
       {testState === 'intro' && (
         <motion.div

@@ -55,7 +55,14 @@ export function isMobileOrStoragePartitioned(): boolean {
 export function getCachedUser(): AppUser | null {
   try {
     const raw = localStorage.getItem(LOCAL_USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Security check: If previously cached profile had hardcoded email, purge it immediately
+    if (parsed?.email === 'maamarfeidat@gmail.com') {
+      localStorage.removeItem(LOCAL_USER_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -177,8 +184,8 @@ export function signInDirectProfile(
 ): AppUser {
   const profile: AppUser = {
     uid: 'user_' + Date.now().toString(36),
-    displayName: customName || 'معمر فيدات',
-    email: customEmail || 'maamarfeidat@gmail.com',
+    displayName: customName || 'مستخدم زائر',
+    email: customEmail || null,
     photoURL: photoURL || null,
     provider: 'direct',
   };
@@ -292,12 +299,6 @@ export async function signInWithGooglePopup(): Promise<AppUser> {
     return appUser;
   } catch (error: any) {
     const msg = String(error?.message || '');
-    if (msg.includes('missing initial state') || msg.includes('sessionStorage') || error?.code === 'auth/popup-blocked') {
-      console.warn('[Google Auth] Caught storage partition issue. Falling back cleanly.');
-      // Auto-fallback so user never gets stuck
-      const fallback = signInDirectProfile('معمر فيدات', 'maamarfeidat@gmail.com');
-      return fallback;
-    }
     console.error('[Google Auth] Popup error:', error);
     throw error;
   }
