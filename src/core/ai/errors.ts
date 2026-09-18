@@ -19,7 +19,7 @@ export function toUserFacingChatError(error: unknown): UserFacingChatError {
   const kind = classifyChatError(error);
   switch (kind) {
     case 'auth': return { kind, code: value.code ?? 'UNAUTHORIZED', message: 'اتصال الذكاء الاصطناعي غير مصادق عليه. جاري التبديل للمحرك البديل.', retryable: true };
-    case 'billing': return { kind, code: value.code ?? 'BILLING_REQUIRED', message: 'جاري المعالجة عبر المسار المجاني التلقائي فائق السرعة.', retryable: true };
+    case 'billing': return { kind, code: value.code ?? 'BILLING_REQUIRED', message: 'تعذر إتمام العملية بسبب متطلبات الفوترة أو الرصيد/الدفع. جاري التبديل للمسار المجاني التلقائي.', retryable: true };
     case 'rate_limit': return { kind, code: value.code ?? 'RATE_LIMITED', message: 'الخدمة مشغولة الآن. جاري المعالجة فورياً عبر النموذج البديل.', retryable: true };
     case 'server': return { kind, code: value.code ?? 'AI_SERVER_ERROR', message: 'انقطع مسار الإجابة. جرّب مرة أخرى؛ سيستخدم Adam محركًا بديلًا عند الحاجة.', retryable: true };
     case 'network': return { kind, code: 'NETWORK_ERROR', message: 'تعذر الوصول إلى خدمة الذكاء الاصطناعي. تحقق من الاتصال وحاول مرة أخرى.', retryable: true };
