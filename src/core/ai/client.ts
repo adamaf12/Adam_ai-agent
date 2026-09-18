@@ -17,15 +17,15 @@ function getResolvedApiBase(): string {
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
   if (envUrl) return envUrl.replace(/\/$/, '');
 
-  // 3. Detect Native Mobile APK / WebView (Capacitor, Cordova, Ionic, file://, or localhost in standalone APK)
+  // 3. Detect the native Android/iOS WebView. The APK must use the same
+  // production API as the browser instead of a stale preview/Cloud Run URL.
   const isNativeApk =
     /^(capacitor|ionic|file|content):$/i.test(window.location.protocol) ||
     (window.location.hostname === 'localhost' && window.location.port !== '3000') ||
     window.location.protocol === 'file:';
 
   if (isNativeApk) {
-    // Production Cloud Run deployment endpoint for APKs
-    return 'https://ais-pre-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app';
+    return 'https://adam-ai-agent.vercel.app';
   }
 
   // 4. Default browser origin
