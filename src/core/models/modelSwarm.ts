@@ -46,7 +46,7 @@ function normalizeCapability(value: unknown): ModelCapability | null {
 }
 
 /** Hydrate the registry from a remote OpenAI-compatible catalog without hardcoding a fake "1000 models" list. */
-export function registerRemoteModels(input: unknown, provider: ModelProvider = 'pollinations', endpoint = 'https://gen.pollinations.ai/v1/chat/completions') {
+export function registerRemoteModels(input: unknown, provider: ModelProvider = 'pollinations', endpoint = 'https://gen.pollinations.ai/v1/chat/completions', registry: ModelRegistry = modelRegistry) {
   const entries = Array.isArray(input) ? input : (input && typeof input === 'object' && Array.isArray((input as any).data) ? (input as any).data : []);
   const models: ModelDescriptor[] = entries.map((entry: any) => {
     const id = typeof entry?.id === 'string' ? entry.id.trim() : '';
@@ -56,7 +56,7 @@ export function registerRemoteModels(input: unknown, provider: ModelProvider = '
     const contextLength = Number(entry?.context_length ?? entry?.contextLength ?? entry?.max_context_length);
     return { id, provider, displayName: String(entry?.name ?? entry?.display_name ?? id), capabilities, contextLength: Number.isFinite(contextLength) ? contextLength : undefined, quality: 7.5, speed: 7.5, cost: 0, enabled: true, endpoint };
   }).filter(Boolean) as ModelDescriptor[];
-  modelRegistry.registerMany(models);
+  registry.registerMany(models);
   return models;
 }
 
