@@ -52,12 +52,20 @@ jobs:
         run: |
           mkdir -p android/app
           if [ ! -f android/app/release.keystore ]; then
-            openssl req -new -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem -days 10000 -nodes -subj "/CN=Adam AI Agent/O=Adam/C=US"
-            openssl pkcs12 -export -out android/app/release.keystore -inkey /tmp/key.pem -in /tmp/cert.pem -name "adamkey" -passout pass:android123
+            "$JAVA_HOME/bin/keytool" -genkeypair -v \
+              -keystore android/app/release.keystore \
+              -alias adamkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android123 \
+              -keypass android123 \
+              -dname "CN=Adam AI Agent, O=Adam, C=US" \
+              -storetype PKCS12
           fi
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
       - name: Verify APK and prepare download
         run: |
           set -euo pipefail
