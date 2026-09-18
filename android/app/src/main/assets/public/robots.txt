@@ -1,0 +1,7 @@
+# Adam AI Personal Operating System Robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: /sitemap.xml

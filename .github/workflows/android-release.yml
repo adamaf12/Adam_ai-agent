@@ -48,6 +48,13 @@ jobs:
       - name: Force Gradle JDK 21
         working-directory: android
         run: echo "org.gradle.java.home=$JAVA_HOME" >> gradle.properties
+      - name: Ensure release keystore
+        run: |
+          mkdir -p android/app
+          if [ ! -f android/app/release.keystore ]; then
+            openssl req -new -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem -days 10000 -nodes -subj "/CN=Adam AI Agent/O=Adam/C=US"
+            openssl pkcs12 -export -out android/app/release.keystore -inkey /tmp/key.pem -in /tmp/cert.pem -name "adamkey" -passout pass:android123
+          fi
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
@@ -62,8 +69,18 @@ jobs:
           fi
           echo "Found APK: $APK"
           APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner -perm -u+x -print -quit 2>/dev/null || true)"
+          ZIPALIGN="$(find "${ANDROID_HOME}/build-tools" -type f -name zipalign -perm -u+x -print -quit 2>/dev/null || true)"
           if [ -n "$APKSIGNER" ]; then
-            "$APKSIGNER" verify --verbose "$APK" || echo "apksigner verification notice (continuing)"
+            if ! "$APKSIGNER" verify "$APK" >/dev/null 2>&1; then
+              echo "APK is not signed or signature failed verification, signing now with apksigner..."
+              if [ -n "$ZIPALIGN" ]; then
+                "$ZIPALIGN" -f -v 4 "$APK" "$APK.aligned" || true
+                if [ -f "$APK.aligned" ]; then mv "$APK.aligned" "$APK"; fi
+              fi
+              "$APKSIGNER" sign --ks android/app/release.keystore --ks-pass pass:android123 --ks-key-alias adamkey --key-pass pass:android123 --out "$APK.signed" "$APK"
+              mv "$APK.signed" "$APK"
+            fi
+            "$APKSIGNER" verify --verbose "$APK" || echo "apksigner verification note"
           fi
           mkdir -p release
           VERSION="${GITHUB_REF_NAME:-${GITHUB_SHA::7}}"

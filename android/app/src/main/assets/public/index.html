@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#07100c" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="application-name" content="Adam AI" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Adam AI" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Google Identity Services (In-Page Auth to avoid storage-partitioned redirect errors) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- SEO & Discoverability Layer -->
+    <title>Adam AI — Personal Operating System & Autonomous Intelligence</title>
+    <meta name="description" content="Adam AI is not just a chat interface, but a complete Personal Operating System combining advanced Brain, Autonomous Agents, Tools, Action Center, and Verified Intelligence in Arabic and English." />
+    <meta name="keywords" content="Adam AI, Personal Operating System, AI Agent, Autonomous Intelligence, LLM Workspace, Memory, Tasks, Calendar, Search, Arabic AI" />
+    <meta name="author" content="Maamar Feidat" />
+
+    <!-- OpenGraph / Social Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Adam AI — Personal Operating System" />
+    <meta property="og:description" content="A next-generation Personal Operating System powered by autonomous agents, deep memory, tools, and rigorous verification." />
+    <meta property="og:image" content="/icon.png" />
+
+    <!-- Twitter / X Metadata -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Adam AI — Personal Operating System" />
+    <meta name="twitter:description" content="A next-generation Personal Operating System powered by autonomous agents, deep memory, tools, and rigorous verification." />
+    <meta name="twitter:image" content="/icon.png" />
+
+    <!-- Structured Data (JSON-LD for AI crawlers & search engines) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Adam AI",
+      "operatingSystem": "Web, Android, iOS",
+      "applicationCategory": "ProductivityApplication",
+      "description": "Adam AI is a Personal Operating System integrating persistent memory, autonomous planning agents, multi-tool execution, and human-in-the-loop verification.",
+      "author": {
+        "@type": "Person",
+        "name": "Maamar Feidat",
+        "email": "maamarfeidat@gmail.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <link rel="icon" href="/icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+    <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin />
+    <link rel="preconnect" href="https://pollinations.ai" crossorigin />
+    <link rel="preconnect" href="https://image.pollinations.ai" crossorigin />
+    <link rel="dns-prefetch" href="https://pollinations.ai" />
+    <link rel="dns-prefetch" href="https://image.pollinations.ai" />
+
+    <!-- Google AdSense (Auto-Ads runs silently in background without any UI or buttons) -->
+    <!-- To activate once approved, set VITE_ADSENSE_PUB_ID in Vercel or uncomment: -->
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+    <script type="module" crossorigin src="/assets/index-DSU647Uf.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C6LaWJ2W.css">
+  </head>
+  <body>
+    <!-- Semantic Landing & SEO Fallback for crawlers / non-JS inspection -->
+    <noscript>
+      <div style="padding: 40px; font-family: sans-serif; text-align: center; background: #07100c; color: #f0f7f3;">
+        <h1>Adam AI — Personal Operating System</h1>
+        <p>Adam AI is a comprehensive Personal Operating System combining Brain, Agents, Tools, and Action Center. Please enable JavaScript to launch your personalized AI workspace.</p>
+      </div>
+    </noscript>
+
+    <div id="root"></div>
+    <script>
+      // Service Worker registration for PWA and offline APK cache
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
+  </body>
+</html>
