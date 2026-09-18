@@ -19,7 +19,7 @@ test('normalizePreferences supplies safe defaults without losing explicit values
   assert.deepEqual(normalizePreferences({ agentName: 'Adam', language: 'ar' }), {
     agentName: 'Adam',
     language: 'ar',
-    theme: 'system',
+    theme: 'glass-dark',
     onboardingComplete: false,
   });
 });
