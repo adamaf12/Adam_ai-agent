@@ -46,12 +46,25 @@ public class MainActivity extends BridgeActivity {
 
         if (!missing.isEmpty()) {
             ActivityCompat.requestPermissions(this, missing.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+        } else {
+            maybeRequestOverlayPermission();
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            maybeRequestOverlayPermission();
+        }
+    }
+
+    private void maybeRequestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)
+                && !getPreferences(Activity.MODE_PRIVATE).getBoolean("overlay_prompted", false)) {
+            getPreferences(Activity.MODE_PRIVATE).edit().putBoolean("overlay_prompted", true).apply();
+            openOverlaySettings();
+        }
     }
 
     public void openOverlaySettings() {
