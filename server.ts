@@ -923,8 +923,8 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     }
 
     const baseConfig: any = {
-      temperature: 0.35,
-      topP: 0.95,
+      temperature: 0.25,
+      topP: 0.90,
       maxOutputTokens: 8192,
       systemInstruction: finalSystemInstruction,
     };
