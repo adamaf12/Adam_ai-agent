@@ -844,16 +844,18 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       return m;
     });
 
-    const requiresSearch = searchCircuitBreaker.isAvailable() && /\b(search the web|google search|search online|live search)\b|ابحث في الويب|بحث في جوجل/i.test(userPrompt);
+    const requiresSearch = searchCircuitBreaker.isAvailable() && /\b(search the web|google search|search online|live search|browse the web|look it up)\b|ابحث في الويب|ابحث على الإنترنت|بحث في جوجل|ابحث|تحقق من الإنترنت|مصادر/i.test(userPrompt);
     const isToday = isTodayDateQuery(userPrompt);
+    const needsFreshKnowledge = /\b(today|now|latest|current|recent|news|breaking|this week|this month)\b|اليوم|الآن|حاليا|حالياً|آخر|أحدث|جديد|الأخبار|خبر|مستجدات/i.test(userPrompt);
 
-    // Fetch live web knowledge if needed for factual or general questions
+    // Do not hit external search providers for every ordinary message.
+    // This was a major source of latency and intermittent hangs, especially on mobile.
     let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
-    if (!isToday && (requiresSearch || userPrompt.length > 5)) {
+    if (!isToday && (requiresSearch || needsFreshKnowledge)) {
       try {
         webGrounding = await fetchLiveWebKnowledge(userPrompt, language);
       } catch {
-        // Safe fallback
+        // Search is an enhancement, never a prerequisite for answering.
       }
     }
 
