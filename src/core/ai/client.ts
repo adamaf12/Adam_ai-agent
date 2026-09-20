@@ -26,7 +26,11 @@ function getResolvedApiBase(): string {
 
   // Explicit endpoint remains supported for self-hosted deployments.
   const customUrl = localStorage.getItem('adam_custom_api_url')?.trim();
-  if (customUrl && /^https?:\/\//i.test(customUrl)) return customUrl.replace(/\/$/, '');
+  if (customUrl && /^https?:\/\//i.test(customUrl)) {
+    const isLegacyCloudRun = /\.run\.app\/?$/i.test(customUrl);
+    if (!(isNativeApp() && isLegacyCloudRun)) return customUrl.replace(/\/$/, '');
+    localStorage.removeItem('adam_custom_api_url');
+  }
 
   // Build-time endpoint.
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
@@ -64,11 +68,12 @@ async function streamRequestOnce(
   onDelta: (text: string) => void
 ) {
   const requestController = new AbortController();
-  let timedOut = false;
+  let startupTimedOut = false;
   const abortFromCaller = () => requestController.abort();
   signal.addEventListener('abort', abortFromCaller, { once: true });
-  const timeoutId = setTimeout(() => {
-    timedOut = true;
+
+  const startupTimeoutId = setTimeout(() => {
+    startupTimedOut = true;
     requestController.abort();
   }, 55_000);
 
@@ -81,13 +86,12 @@ async function streamRequestOnce(
       signal: requestController.signal,
     });
   } catch (error) {
-    if (timedOut && !signal.aborted) {
+    if (startupTimedOut && !signal.aborted) {
       throw new ChatError('REQUEST_TIMEOUT', 'The AI service took too long to start responding.');
     }
     throw error;
   } finally {
-    clearTimeout(timeoutId);
-    signal.removeEventListener('abort', abortFromCaller);
+    clearTimeout(startupTimeoutId);
   }
 
   if (!response.ok) {
@@ -100,10 +104,15 @@ async function streamRequestOnce(
       code: payload.code,
       message: payload.message,
     });
+    signal.removeEventListener('abort', abortFromCaller);
     throw new ChatError(userError.code, userError.message, response.status);
   }
 
-  if (!response.body) throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
+  if (!response.body) {
+    signal.removeEventListener('abort', abortFromCaller);
+    throw new ChatError('NO_STREAM', 'The AI stream is unavailable.');
+  }
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -126,18 +135,40 @@ async function streamRequestOnce(
     }
   };
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    consume(buffer + decoder.decode(value, { stream: true }));
-  }
+  const readWithTimeout = async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new ChatError('STREAM_TIMEOUT', 'The AI stream stopped responding.'));
+          }, 35_000);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
 
-  consume(buffer + decoder.decode());
-  if (buffer.trim() || !completed || !text.trim()) {
-    throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
-  }
+  try {
+    while (true) {
+      const { value, done } = await readWithTimeout();
+      if (done) break;
+      consume(buffer + decoder.decode(value, { stream: true }));
+      if (completed) break;
+    }
 
-  return createAssistantMessage(text) as Message;
+    consume(buffer + decoder.decode());
+    if (buffer.trim() || !completed || !text.trim()) {
+      throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
+    }
+
+    return createAssistantMessage(text) as Message;
+  } finally {
+    signal.removeEventListener('abort', abortFromCaller);
+    try { reader.releaseLock(); } catch {}
+  }
 }
 
 async function streamRequest(
