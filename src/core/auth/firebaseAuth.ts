@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../../firebase-applet-config.json';
 import { WORKSPACE_SCOPES, setCachedAccessToken } from '../googleWorkspace';
+import { startAndroidGoogleSignIn, signOutAndroidGoogle } from '../utils/permissionManager';
 
 const resolvedConfig = {
   ...firebaseConfig,
@@ -350,15 +351,52 @@ export async function signInWithGooglePopup(): Promise<AppUser> {
 }
 
 /**
+ * Google Sign-In on Native Android using Google Play Services bridge
+ * Backed by the Android OAuth Client in Google Cloud Console.
+ */
+export async function signInWithGoogleForAndroid(): Promise<AppUser> {
+  if (typeof window !== 'undefined' && window.AndroidApp?.signInWithGoogle) {
+    const payload = await startAndroidGoogleSignIn(GOOGLE_CLIENT_ID);
+    let appUser: AppUser = {
+      uid: payload.uid || ('android_google_' + Date.now().toString(36)),
+      displayName: payload.displayName || 'Google User',
+      email: payload.email,
+      photoURL: payload.photoURL,
+      provider: 'google',
+    };
+
+    if (payload.idToken) {
+      try {
+        const cred = GoogleAuthProvider.credential(payload.idToken);
+        const fbRes = await signInWithCredential(auth, cred);
+        appUser = {
+          uid: fbRes.user.uid,
+          displayName: fbRes.user.displayName || appUser.displayName,
+          email: fbRes.user.email || appUser.email,
+          photoURL: fbRes.user.photoURL || appUser.photoURL,
+          provider: 'google',
+        };
+      } catch (e) {
+        console.warn('[Android Google Auth] Firebase link note (using Google profile directly):', e);
+      }
+    }
+
+    saveCachedUser(appUser);
+    return appUser;
+  }
+
+  // Fallback to direct GSI / Web flow if bridge is unavailable
+  return await signInWithGoogleDirect();
+}
+
+/**
  * Universal Master Sign-In:
- * Prioritizes direct Google Identity Services (GSI) to completely bypass
- * firebaseapp.com/__/auth/handler. If GSI fails, falls back gracefully.
+ * If on native Android app with Google Play Services bridge, triggers native Google Sign-In.
+ * In Web, prioritizes direct Google Identity Services (GSI) or popup.
  */
 export async function signInWithGoogle(): Promise<AppUser> {
-  if (isNativeAndroidApp()) {
-    const existing = getCachedUser();
-    if (existing) return existing;
-    return signInDirectProfile('مستخدم أندرويد', 'android@adam.agent');
+  if (typeof window !== 'undefined' && window.AndroidApp?.signInWithGoogle) {
+    return await signInWithGoogleForAndroid();
   }
 
   try {
@@ -377,6 +415,9 @@ export async function signInWithGoogle(): Promise<AppUser> {
 }
 
 export async function signOutUser(): Promise<void> {
+  try {
+    signOutAndroidGoogle();
+  } catch {}
   try {
     await fbSignOut(auth);
   } catch (err) {

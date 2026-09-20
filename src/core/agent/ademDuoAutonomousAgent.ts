@@ -526,6 +526,20 @@ export function checkAndExecuteDirectAutonomousCommand(
     };
   }
 
+  // 6. Direct System Diagnostics command
+  const sysCheckMatch = clean.match(/^(?:فحص\s+النظام|تشخيص\s+النظام|حالة\s+النظام|system\s+check|diagnose\s+system|sysinfo)\b/i);
+  if (sysCheckMatch) {
+    const result = executeTerminalCommand('free && df -h && uptime', '/home/adem/workspace');
+    return {
+      actionType: 'terminal_command',
+      title: language === 'ar' ? 'تشخيص موارد النظام والذاكرة والمعالج ⚡' : 'System Health & Resource Diagnostic ⚡',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'terminal_command', data: result },
+    };
+  }
+
   return null;
 }
 

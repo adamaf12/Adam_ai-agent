@@ -27,6 +27,7 @@ import { costControlManager } from './server/security/costControl';
 import { BetterMemoryEngine } from './server/security/betterMemory';
 import { backgroundTaskQueue } from './server/security/taskQueue';
 import { systemMonitor } from './server/security/monitoring';
+import { AcademicEngine } from './server/academicEngine';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -1294,6 +1295,140 @@ app.post('/api/unreal-engine/bridge', authenticateSession, async (req: express.R
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// ACADEMIC & WORLD LIBRARIES STUDENT API
+// ==========================================
+app.get('/api/academic/search', async (req, res) => {
+  try {
+    const query = typeof req.query.q === 'string' ? req.query.q : '';
+    const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+    const results = await AcademicEngine.searchWorks(query, category);
+    res.json({ ok: true, results, count: results.length });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Academic search failed' });
+  }
+});
+
+app.post('/api/academic/solve', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { prompt, stage, subject, language } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Problem prompt is required' });
+    }
+    const result = await AcademicEngine.solveStepByStep({
+      prompt,
+      stage: stage || 'secondary',
+      subject,
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Solver failed' });
+  }
+});
+
+app.post('/api/academic/explain', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { concept, stage, language } = req.body || {};
+    if (!concept || typeof concept !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Concept is required' });
+    }
+    const result = await AcademicEngine.explainConcept({
+      concept,
+      stage: stage || 'secondary',
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Explanation failed' });
+  }
+});
+
+app.post('/api/academic/quiz', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { subject, topic, stage, count, language } = req.body || {};
+    const questions = await AcademicEngine.generateQuiz({
+      subject: subject || 'Mathematics',
+      topic: topic || 'Fundamentals',
+      stage: stage || 'secondary',
+      count: Number(count) || 5,
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, questions });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Quiz generation failed' });
+  }
+});
+
+app.post('/api/academic/citations', (req, res) => {
+  try {
+    const citations = AcademicEngine.generateCitations(req.body || {});
+    res.json({ ok: true, citations });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Citation generation failed' });
+  }
+});
+
+app.post('/api/academic/thesis', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { topic, degree, field, language } = req.body || {};
+    if (!topic || typeof topic !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Topic is required' });
+    }
+    const plan = await AcademicEngine.generateThesisPlan({
+      topic,
+      degree: degree || 'Master',
+      field: field || 'Science',
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, plan });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Thesis plan failed' });
+  }
+});
+
+app.post('/api/academic/study-plan', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { stage, targetExam, subjectsToFocus, hoursPerDay, daysUntilExam, language } = req.body || {};
+    const plan = await AcademicEngine.generateStudyPlan({
+      stage: stage || 'secondary',
+      targetExam: targetExam || 'Final Exams',
+      subjectsToFocus: Array.isArray(subjectsToFocus) && subjectsToFocus.length ? subjectsToFocus : ['General'],
+      hoursPerDay: Number(hoursPerDay) || 3,
+      daysUntilExam: Number(daysUntilExam) || 30,
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, plan });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Study plan generation failed' });
+  }
+});
+
+app.post('/api/academic/analyze-mistake', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { question, studentAnswer, correctAnswer, stage, language } = req.body || {};
+    if (!question || !studentAnswer) {
+      return res.status(400).json({ ok: false, error: 'Question and student answer are required' });
+    }
+    const analysis = await AcademicEngine.analyzeExamMistake({
+      question,
+      studentAnswer,
+      correctAnswer,
+      stage: stage || 'secondary',
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey,
+    });
+    res.json({ ok: true, analysis });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Mistake analysis failed' });
   }
 });
 

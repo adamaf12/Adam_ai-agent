@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import type { AppPreferences, Language } from '../../core/domain';
 import { THEME_CATALOG } from '../../core/themeCatalog';
+import { AndroidPermissionsBanner } from '../../components/AndroidPermissionsBanner';
+import { AndroidOAuthSetupCard } from '../../components/AndroidOAuthSetupCard';
 
 interface HuggingFaceModelCard {
   id: string;
@@ -600,6 +602,12 @@ export function Settings({
             </button>
           </div>
         </div>
+
+        {/* Android Over-App & Full Operational Permissions */}
+        <AndroidPermissionsBanner language={language} />
+
+        {/* Android Google Sign-In & OAuth Client Configuration */}
+        <AndroidOAuthSetupCard language={language} defaultExpanded={false} />
 
         {/* Mobile & APK Readiness Foundation */}
         <div className="settings-card p-5 sm:p-6 rounded-3xl border border-[var(--border-strong)] bg-[var(--surface)] backdrop-blur-xl shadow-xl">

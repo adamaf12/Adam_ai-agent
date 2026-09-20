@@ -32,8 +32,8 @@
         "Handle window resize and device touch gracefully"
       ],
       "acquiredAt": 1788559126719,
-      "lastUsedAt": 1789592197329,
-      "usageCount": 47,
+      "lastUsedAt": 1789931703196,
+      "usageCount": 48,
       "successRate": 0.98,
       "level": 9,
       "origin": "builtin"
@@ -66,8 +66,8 @@
         "Structure answers logically with Markdown"
       ],
       "acquiredAt": 1788731926719,
-      "lastUsedAt": 1789592197329,
-      "usageCount": 71,
+      "lastUsedAt": 1789931921261,
+      "usageCount": 73,
       "successRate": 0.99,
       "level": 10,
       "origin": "builtin"
@@ -203,8 +203,36 @@
       "successRate": 0.95,
       "level": 1,
       "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_ec6aa734",
+      "name": "Dynamic Heuristic (افضل المدارس والجامعات الجزائرية)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: افضل المدارس والجامعات الجزائرية",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"افضل المدارس والجامعات الجزائرية\".",
+      "triggers": [
+        "افضل",
+        "المدارس",
+        "والجامعات",
+        "الجزائرية"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [افضل, المدارس, والجامعات, الجزائرية]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1789931708266,
+      "lastUsedAt": 1789931924438,
+      "usageCount": 3,
+      "successRate": 0.95,
+      "level": 2,
+      "origin": "autonomous_learned"
     }
   ],
-  "totalExecutions": 6,
-  "lastSavedAt": 1789592197329
+  "totalExecutions": 8,
+  "lastSavedAt": 1789931924438
 }

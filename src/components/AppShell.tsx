@@ -10,6 +10,7 @@ import {
   Sparkles,
   Film,
   Award,
+  GraduationCap,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,

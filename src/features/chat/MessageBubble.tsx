@@ -12,6 +12,11 @@ import { AgentActionCard } from './AgentActionCard';
 import { extractAgentActions } from '../../core/agent/ademDuoAutonomousAgent';
 import { extractAppCode, saveSandboxApp } from '../../core/appSandboxStorage';
 import { InteractiveAppCard } from './InteractiveAppCard';
+import { AcademicCard, type AcademicCardPayload } from './AcademicCard';
+import { MediaStudioCard, type MediaCardPayload } from './MediaStudioCard';
+import { CognitiveIqCard, type CognitiveIqCardPayload } from './CognitiveIqCard';
+import { GeospatialCard, type GeospatialCardPayload } from './GeospatialCard';
+import { InteractiveTaskCard, type TaskCardPayload } from './InteractiveTaskCard';
 
 function extractPromptFromUrl(src: string): string {
   try {
@@ -82,10 +87,55 @@ export function MessageBubble({
   // Check if message contains structured autonomous agent actions
   const agentActions = extractAgentActions(message.content);
 
+  // Check if message contains structured academic card payload
+  const academicMatch = message.content.match(/:::academic-card\s*([\s\S]*?)\s*:::/i);
+  let academicData: AcademicCardPayload | null = null;
+  if (academicMatch) {
+    try {
+      academicData = JSON.parse(academicMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured media studio card payload
+  const mediaMatch = message.content.match(/:::media-card\s*([\s\S]*?)\s*:::/i);
+  let mediaData: MediaCardPayload | null = null;
+  if (mediaMatch) {
+    try {
+      mediaData = JSON.parse(mediaMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured cognitive IQ card payload
+  const iqMatch = message.content.match(/:::iq-card\s*([\s\S]*?)\s*:::/i);
+  let iqData: CognitiveIqCardPayload | null = null;
+  if (iqMatch) {
+    try {
+      iqData = JSON.parse(iqMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured geospatial card payload
+  const geoMatch = message.content.match(/:::geo-card\s*([\s\S]*?)\s*:::/i);
+  let geoData: GeospatialCardPayload | null = null;
+  if (geoMatch) {
+    try {
+      geoData = JSON.parse(geoMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured interactive task card payload
+  const taskMatch = message.content.match(/:::task-card\s*([\s\S]*?)\s*:::/i);
+  let taskData: TaskCardPayload | null = null;
+  if (taskMatch) {
+    try {
+      taskData = JSON.parse(taskMatch[1]);
+    } catch {}
+  }
+
   // Check if message contains runnable app/game code
   const appData = assistant ? extractAppCode(message.content) : null;
 
-  // Clean raw image card or grounding or app launcher or agent action tags from display markdown
+  // Clean raw image card or grounding or app launcher or agent action or academic card tags from display markdown
   let displayMarkdown = message.content;
   if (imageCardMatch) {
     displayMarkdown = displayMarkdown.replace(/:::image-card\s*[\s\S]*?\s*:::/gi, '').trim();
@@ -101,6 +151,21 @@ export function MessageBubble({
   }
   if (agentActions.length > 0) {
     displayMarkdown = displayMarkdown.replace(/:::agent-action\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (academicMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::academic-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (mediaMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::media-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (iqMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::iq-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (geoMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::geo-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (taskMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::task-card\s*[\s\S]*?\s*:::/gi, '').trim();
   }
 
   const copy = () => navigator.clipboard?.writeText(displayMarkdown || message.content);
@@ -241,6 +306,50 @@ export function MessageBubble({
             category={appData.isGameOrApp ? 'game' : 'app'}
             language={language}
             onOpenSandbox={handleLaunchSandbox}
+            onNavigateView={onNavigateView}
+          />
+        )}
+
+        {/* Dedicated Academic Intelligence Card (Formulas, Mistakes, Study Plans, Quizzes, Sources) */}
+        {academicData && (
+          <AcademicCard
+            data={academicData}
+            language={language}
+            onNavigateView={onNavigateView}
+          />
+        )}
+
+        {/* Dedicated Media Studio Card (Palettes, SVG Vectors, Prompts, 3D specs) */}
+        {mediaData && (
+          <MediaStudioCard
+            payload={mediaData}
+            language={language}
+            onNavigateView={onNavigateView}
+          />
+        )}
+
+        {/* Dedicated Cognitive IQ & Logic Reasoning Card */}
+        {iqData && (
+          <CognitiveIqCard
+            payload={iqData}
+            language={language}
+            onNavigateView={onNavigateView}
+          />
+        )}
+
+        {/* Dedicated Geospatial Intelligence & Navigation Card */}
+        {geoData && (
+          <GeospatialCard
+            payload={geoData}
+            language={language}
+          />
+        )}
+
+        {/* Dedicated Interactive Task Matrix Card */}
+        {taskData && (
+          <InteractiveTaskCard
+            payload={taskData}
+            language={language}
             onNavigateView={onNavigateView}
           />
         )}

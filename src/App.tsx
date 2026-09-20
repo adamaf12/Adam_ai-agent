@@ -152,7 +152,14 @@ export default function App() {
         return;
       }
       if (view) {
-        setActiveView(view);
+        if ((view as string) === 'academic') {
+          setActiveView('chat');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('adam_open_academic_modal'));
+          }, 100);
+        } else {
+          setActiveView(view);
+        }
       }
     };
 
@@ -166,6 +173,13 @@ export default function App() {
       }
       return false;
     });
+
+    // Auto-prompt Android permissions on launch
+    if (typeof window !== 'undefined' && (window as any).AndroidApp) {
+      try {
+        (window as any).AndroidApp.requestAllPermissions();
+      } catch {}
+    }
 
     return () => {
       window.removeEventListener('adam_open_app' as any, handleAppOpenEvent);

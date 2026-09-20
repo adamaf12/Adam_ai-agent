@@ -8,6 +8,7 @@ import {
   Settings2,
   Sparkles,
   Award,
+  GraduationCap,
   Grid,
   X,
   ChevronRight,

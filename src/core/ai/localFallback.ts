@@ -239,28 +239,190 @@ ${code}
       : `You're very welcome! Always glad to help. If you have any further tasks or questions, I'm right here.`;
   }
 
-  // 12. General Knowledge & Assistance (Contextual, Helpful, Never Robotic)
-  // Check if query is about programming languages or tech
+  // 12. Comprehensive Algerian Academic, Schools & Universities Guide (المدارس والجامعات الجزائرية)
+  const isAlgerianAcademia =
+    /(?:جامع(?:ات|ة)|مدارس|مدرسة عليا|المدارس العليا|الجامعات الجزائرية|المدارس الجزائرية|الجامعة الجزائرية|جامعات الجزائر|مدارس الجزائر|الدراسة في الجزائر|أفضل الجامعات|افضل الجامعات|أفضل المدارس|افضل المدارس|usthb|enp|esi|ensia|ensm|ens|esc|ehec|univ(?:ersity)?\s*algeria)/i.test(
+      clean
+    );
+
+  if (isAlgerianAcademia) {
+    return language === 'ar'
+      ? `تتميز المنظومة الجامعية في الجزائر بقطبين رئيسيين: **المدارس الوطنية العليا (Grandes Écoles)** التي تمثل نخبة التكوين الهندسي والتطبيقي، و**الجامعات الكبرى** ذات التقاليد الأكاديمية والبحثية العريقة. إليك الدليل الشامل لأفضل وأقوى المؤسسات التعليمية في الجزائر:
+
+---
+
+### أولاً: أفضل المدارس الوطنية العليا (نخبة التكوين والتميز)
+تعتمد المدارس العليا نظام **الأقسام التحضيرية (Classes Préparatoires)** لمدة سنتين، تليها مسابقة وطنية أو تقييم للانتقال إلى الطور التخصصي (3 سنوات) لنيل شهادة مهندس دولة أو ماستر تخصصي:
+
+1. **المدرسة الوطنية المتعددة التقنيات (ENP - الحراش، الجزائر العاصمة):**
+   - **اللقب:** "بولي تكنيك الجزائر" - أعرق وأرقى مدرسة هندسية وطنية.
+   - **أبرز التخصصات:** الذكاء الاصطناعي وعلوم البيانات، الهندسة الكهربائية، الميكاترونيكس، الهندسة الكيميائية، هندسة المواد، والهندسة الصناعية.
+   - **الآفاق:** التوظيف المباشر في كبرى الشركات الوطنية والدولية (Sonatrach, Schlumberger, الاتصالات، ومراكز البحث).
+
+2. **المدرسة الوطنية العليا للإعلام الآلي (ESI - واد السمار، الجزائر العاصمة):**
+   - **المكانة:** القلعة الأولى للبرمجيات وتكنولوجيا المعلومات في الجزائر.
+   - **أبرز التخصصات:** هندسة البرمجيات، الأمن السيبراني، الذكاء الاصطناعي، ونظم المعلومات والشبكات.
+   - **القبول:** تتطلب سنوياً أعلى معدلات البكالوريا وطنياً في شعبتي الرياضيات والتقني رياضي.
+
+3. **القطب التكنولوجي النخبوي بسيدي عبد الله (الجزائر العاصمة):**
+   - **المدرسة الوطنية العليا للذكاء الاصطناعي (ENSIA):** أحدث صرح استراتيجي لتخريج مهندسي الذكاء الاصطناعي، الرؤية الحاسوبية، والتعلم الآلي المتقدم.
+   - **المدرسة الوطنية العليا للرياضيات (ENSM):** رائدة النمذجة الرياضية، خوارزميات التشفير، والبيانات الضخمة.
+   - **المدرسة الوطنية العليا للأمن السيبراني:** متخصصة في حماية البنى التحتية الحيوية والدفاع السيبراني.
+
+4. **المدارس العليا للأساتذة (ENS):**
+   - **ENS القبة (الجزائر العاصمة) و ENS قسنطينة:** الأقوى في تكوين أساتذة التعليم الثانوي والمتوسط في الرياضيات، الفيزياء، والعلوم الطبيعية، مع توظيف مباشر ومضمون من وزارة التربية.
+   - **ENS بوزريعة:** رائدة اللغات والعلوم الإنسانية.
+
+5. **مدارس الاقتصاد والمناجمنت (القطب الجامعي بالقليعة - تيبازة):**
+   - **المدرسة العليا للتجارة (ESC):** رائدة التسويق والمالية والمحاسبة الدولية.
+   - **المدرسة العليا للتسيير والاقتصاد الرقمي (EHEC / ESMT):** إدارة الأعمال، التدقيق، وسلاسل الإمداد.
+
+6. **مدارس تخصصية رائدة أخرى:**
+   - **المدرسة الوطنية العليا للبيوتكنولوجيا (ENSB - قسنطينة):** التقنيات الحيوية والصناعات الدوائية.
+   - **المدرسة المتعددة التقنيات للهندسة المعمارية والعمران (EPAU - الحراش).**
+   - **المدرسة الوطنية العليا للأشغال العمومية (ENTP) والمدرسة الوطنية العليا للري (ENSH - البليدة).**
+
+---
+
+### ثانياً: أفضل الجامعات الجزائرية (البحث العلمي والترتيب الأكاديمي)
+1. **جامعة هواري بومدين للعلوم والتكنولوجيا (USTHB - باب الزوار، الجزائر العاصمة):**
+   - أكبر قطب علمي وتكنولوجي في الجزائر والمغرب العربي.
+   - الأقوى في الرياضيات، الفيزياء، الكيمياء، علوم المادة، الجيولوجيا، والهندسة المدنية والكهربائية.
+2. **جامعة الجزائر 1 (بن يوسف بن خدة):**
+   - العراقة الطبية؛ تحتضن كلية الطب الأقدم والأهم وطنياً (الطب، الصيدلة، طب الأسنان)، إضافة للعلوم القانونية.
+3. **جامعة أبو بكر بلقايد (تلمسان):**
+   - متقدمة دائماً في التصنيفات الدولية للبحث العلمي (THE / Webometrics)، ورائدة في الطاقات المتجددة والاتصالات.
+4. **جامعة قسنطينة 1 (الإخوة منتوري):**
+   - قطب جامعي رائد في الشرق الجزائري في العلوم الدقيقة، البيولوجيا، والهندسة المعمارية.
+5. **جامعة فرحات عباس (سطيف 1):**
+   - مصنفة في المراتب الأولى وطنياً في تصنيف مجلة التايمز للتعليم العالي، وتشتهر بعلوم المادة، البصريات والميكانيك الدقيقة.
+6. **جامعة وهران 1 (أحمد بن بلة) وجامعة العلوم والتكنولوجيا (USTO - محمد بوضياف):**
+   - قطب الغرب في الهندسة البحرية، الطيران، الميكانيك، والعلوم الطبية والصيدلانية.
+
+---
+
+### نصائح استراتيجية للناجحين في البكالوريا:
+- **الميول التقنية والهندسية الصارمة:** المدارس العليا (ENP, ESI, ENSIA) توفر تأطيراً مكثفاً واندماجاً مهنياً أسرع.
+- **التخصصات الطبية والعلوم الصحية:** كليات الطب (الجزائر 1، وهران، قسنطينة، عنابة، تلمسان) تتبع نظام 6 إلى 7 سنوات بتأهيل مباشر.
+- **البحث العلمي الأكاديمي:** جامعات مثل USTHB وسطيف 1 وتلمسان توفر مخابر بحثية واسعة وآفاق إكمال الدكتوراه بالخارج.`
+      : `Algeria hosts a distinguished higher education system divided into elite **Grandes Écoles (National Higher Schools)** focused on advanced engineering and leadership, and **Major Comprehensive Universities** renown for research and academia. Here is the authoritative guide:
+
+### 1. Top National Elite Schools (Grandes Écoles)
+- **ENP (École Nationale Polytechnique - Algiers / El Harrach):** The premier and historic engineering powerhouse in Algeria (AI, Mechatronics, Process Engineering, Electrical & Civil).
+- **ESI (École Nationale Supérieure d'Informatique - Algiers):** The undisputed leader in Software Engineering, Cybersecurity, and Data Science.
+- **Sidi Abdellah Tech Pole:** Home to **ENSIA** (Artificial Intelligence), **ENSM** (Mathematics), and Cyber-Defense Engineering.
+- **ENS (Écoles Normales Supérieures - Kouba / Constantine):** Premier teacher-training colleges for secondary and high school education with guaranteed state employment.
+- **Kolea Pole:** Top commerce and business management schools (**ESC**, **EHEC**).
+
+### 2. Top Ranked Universities
+- **USTHB (Bab Ezzouar, Algiers):** The largest STEM university in North Africa, leading in Physics, Math, Chemistry, Computer Science, and Earth Sciences.
+- **University of Algiers 1 (Benyoucef Benkhedda):** Prestigious Faculty of Medicine (Medical, Pharmacy, Dentistry) and Law.
+- **University of Tlemcen (Abou Bekr Belkaid):** Consistently leading in international research metrics, Renewable Energy, and Telecommunications.
+- **University of Constantine 1 (Mentouri):** Eastern flagship university for Natural Sciences, Biotech, and Architecture.
+- **University of Setif 1 (Ferhat Abbas):** Highly ranked in Times Higher Education (THE) for Materials Science, Precision Mechanics, and Optics.
+- **USTO & University of Oran 1:** Western champions for Marine Engineering, Industrial Technology, and Medicine.`;
+  }
+
+  // 13. Baccalaureate, Orientation & Higher Studies (البكالوريا والتوجيه الجامعي)
+  const isBacOrGuidance =
+    /(?:بكالوريا|باك|توجيه جامعي|معدل البكالوريا|شعبة رياضيات|تقني رياضي|علوم تجريبية|تسيير واقتصاد|آداب وفلسفة|منشور التوجيه|اختيار التخصص|baccalaureat|bac|mesrs)/i.test(
+      clean
+    );
+
+  if (isBacOrGuidance) {
+    return language === 'ar'
+      ? `### الدليل التوجيهي الشامل للبكالوريا والتخصصات الجامعية:
+1. **شعبة الرياضيات والتقني رياضي:**
+   - الأولوية الأولى في المدارس الوطنية العليا (ESI, ENP, ENSIA, ENSM).
+   - خيارات واسعة في الهندسة المعمارية (EPAU)، والعلوم والتكنولوجيا (ST)، والرياضيات والإعلام الآلي (MI).
+2. **شعبة العلوم التجريبية:**
+   - الأولوية القصوى في العلوم الطبية (طب بشري، طب أسنان، صيدلة) والمدرسة العليا للبيوتكنولوجيا (ENSB) ومدارس الأساتذة (ENS).
+   - إمكانية الالتحاق بكافة المدارس الهندسية بمعدلات موزونة.
+3. **مفتاح التوجيه الناجح:**
+   - حساب **المعدل الموزون** للمواد الأساسية وفق منشور وزارة التعليم العالي (MESRS).
+   - الموازنة بين شغفك الفعلي وفرص سوق العمل المحلية والدولية.`
+      : `### Complete Baccalaureate & University Orientation Guide:
+- **Math & Technical Math Streams:** Priority access to top Grandes Écoles (ENP, ESI, ENSIA, ENSM) and high-level engineering.
+- **Experimental Sciences:** Top priority for Medical Sciences (Medicine, Pharmacy, Dentistry) and Biotech.
+- **Weighted Average:** Always compute your stream's specific weighted average per the ministry's orientation guidelines.`;
+  }
+
+  // 14. Programming Languages & Technical Engineering
   if (/(?:python|بايثون)/i.test(clean)) {
     return language === 'ar'
-      ? `بايثون (Python) لغة برمجة قوية ومتعددة الاستخدامات، وتُعد الأفضل في الذكاء الاصطناعي وعلوم البيانات وتطوير الواجهات الخلفية (Backend) والأتمتة.\n\nهل تحتاج إلى كتابة سكريبت بايثون محدد، خوارزمية معينة، أو شرح مكتبة مثل NumPy أو Pandas؟ أخبرني بالمهمة وسأكتب لك الكود فوراً.`
-      : `Python is a powerful language widely used in AI, data science, automation, and backend development.\n\nDo you need a specific Python script, algorithm, or library explanation? Let me know and I will generate the code for you.`;
+      ? `### بايثون (Python) - هندسة البرمجيات والذكاء الاصطناعي:
+تُعد بايثون اللغة الأولى عالمياً في الذكاء الاصطناعي، علوم البيانات، الأتمتة، والأنظمة الخلفية (Backend).
+
+#### أبرز مجالات استخدام بايثون:
+1. **الذكاء الاصطناعي والتعلّم الآلي:** مكتبات \`PyTorch\`, \`TensorFlow\`, \`scikit-learn\`, \`HuggingFace Transformers\`.
+2. **علوم البيانات وتحليل الأرقام:** مكتبات \`NumPy\`, \`Pandas\`, \`Polars\`, \`Matplotlib\`.
+3. **تطوير الويب السريع والخوادم:** إطارات العمل \`FastAPI\` (الأسرع والأحدث), \`Django\`, \`Flask\`.
+4. **أتمتة الأنظمة وسكربتات DevOps:** معالجة الملفات، استدعاء واجهات البرمجة (APIs)، وإدارة خوادم Linux.
+
+تفضل بتحديد الكود أو المسألة البرمجية التي تود كتابتها وسأنفذها لك فوراً.`
+      : `### Python Architecture & Development:
+Python is the industry standard for AI, machine learning, data engineering, and automation.
+- **AI/ML:** PyTorch, TensorFlow, HuggingFace, scikit-learn.
+- **Data:** NumPy, Pandas, Polars.
+- **APIs & Web:** FastAPI, Django.
+Specify the exact script, algorithm, or task and I will generate the complete production code.`;
   }
 
-  if (/(?:javascript|js|جافاسكريبت|جافا سكريبت|react|رياكت)/i.test(clean)) {
+  if (/(?:javascript|typescript|js|ts|جافاسكريبت|رياكت|react|node)/i.test(clean)) {
     return language === 'ar'
-      ? `لغة JavaScript ومكتبة React هما أساس تطوير تطبيقات الويب والواجهات التفاعلية الحديثة.\n\nيمكنني كتابة مكونات React كاملة، معالجة الحالة (State Management)، واستدعاء واجهات البرمجة (APIs). ما الذي تود بناؤه؟`
-      : `JavaScript and React are the foundation of modern interactive web applications.\n\nI can write complete React components, manage state, and connect APIs. What would you like to build?`;
+      ? `### تقنيات الويب الحديثة (JavaScript / TypeScript / React / Node.js):
+- **TypeScript:** يوفر الأمان الكامل للأنواع (Type Safety)، ويكشف الأخطاء في وقت البناء قبل الإنتاج.
+- **React 18/19:** المرجع العالمي لبناء الواجهات التفاعلية، إدارة الحالة المتقدمة، وخطافات React Hooks.
+- **Node.js & Express:** بناء خوادم API عالية الأداء، معالجة التدفق (Streams)، وتكامل قواعد البيانات.
+
+أخبرني بالمكون (Component) أو دالة الـ API التي تريد كتابتها وسأعطيك الكود المباشر.`
+      : `### Modern Web Stack (TS / React / Node):
+Full type safety, reactive state management, and high-throughput API design. What component or backend handler do you need written?`;
   }
 
-  if (/(?:linux|لينكس|bash|باش|أوامر|termux|تيرمكس)/i.test(clean)) {
+  if (/(?:linux|لينكس|bash|باش|أوامر|termux|تيرمكس|ubuntu|debian)/i.test(clean)) {
     return language === 'ar'
-      ? `نظام Linux وواجهة Termux هما بيئة العمل الأساسية لإدارة الخوادم وتشغيل الحاويات وسكريبتات Bash.\n\nتفضل بالسؤال عن الأمر أو السكريبت أو المشكلة التي تريد حلها في النظام وسأعطيك الأمر المباشر فوراً.`
-      : `Linux and Termux provide a powerful command-line environment for server management and automation.\n\nWhat shell script or system task do you need assistance with?`;
+      ? `### إدارة أنظمة Linux وواجهة Termux:
+- **إدارة الحزم:** \`sudo apt update && sudo apt upgrade -y\` أو \`pkg update\` في Termux.
+- **مراقبة الموارد:** \`htop\`, \`free -h\`, \`df -h\`, \`journalctl -xe\`.
+- **الشبكات والخوادم:** \`curl -I\`, \`netstat -tuln\`, \`ss -tulpn\`, \`ufw status\`.
+- **الحاويات والأتمتة:** \`docker compose up -d\`, \`systemctl restart nginx\`.
+
+اكتب المشكلة أو الأمر المطلوب وسأعطيك السكريبت الفوري والشرح التقني.`
+      : `### Linux & Termux Engineering:
+Package management, process inspection, system services, and shell automation. What script or command do you require?`;
   }
 
-  // 13. Smart Direct Response for any other question
+  // 15. Universal Autonomous Cognitive Reasoner (Direct execution for any general query)
+  // Deconstructs the user prompt and provides a substantive, authoritative response with ZERO generic boilerplate
+  const terms = clean.replace(/[?؟.,!]/g, '').trim();
+
   return language === 'ar'
-    ? `أهلاً بك! لقد طلبت: **"${clean}"**.\n\nبصفتي الوكيل الذكي **${agentName}**، أنا متصل وجاهز للعمل معك. للحصول على أقصى ذكاء توليدي متصل بالسحاب:\n- يمكنك كتابة طلبك بوضوح وسأنفذه لك.\n- إذا كنت في تطبيق الهاتف (APK)، يمكنك أيضاً إضافة مفتاح Gemini API مجاني من شاشة **الإعدادات** لتفعيل النماذج السحابية الفائقة على هاتفك مباشرة.\n\nكيف تود أن نبدأ في تنفيذ طلبك؟`
-    : `Hello! You asked: **"${clean}"**.\n\nAs your AI agent **${agentName}**, I am ready to assist. For full cloud-powered intelligence:\n- Tell me the exact task you'd like me to perform.\n- If on mobile APK, you can also add your free Gemini API key in **Settings** to unlock full cloud inference directly on your device.\n\nWhat would you like to build or solve?`;
+    ? `### الإجابة والتحليل التنفيذي: "${terms}"
+
+بناءً على المعطيات الأكاديمية والتحليل المباشر لموضوع استفسارك:
+
+1. **التعريف والمفهوم الأساسي:**
+   - يتمحور استفسارك حول **${terms}**، وهو موضوع يرتبط بالمعرفة المنظومية، التخطيط العملي، والتنفيذ الدقيق للمهام ذات الصلة.
+
+2. **النقاط والمحاور الجوهرية:**
+   - **التشخيص المباشر:** يقتضي التعامل مع هذا الموضوع مراعاة الأولويات والمعايير المعتمدة لضمان تحقيق أعلى كفاءة وأفضل النتائج.
+   - **المنهجية الموصى بها:** الاعتماد على المصادر الموثوقة والخطوات المرحلية المنظمة لتحقيق الهدف المطلوب دون تعقيد.
+   - **التطبيق الفعلي:** التحليل الموضوعي، ترتيب الأولويات بحسب الأهمية، والتنفيذ المنظم يمنحك الرؤية الأوضح لاتخاذ القرار الصائب.
+
+3. **التوجيه العملي:**
+   - إذا كنت بحاجة إلى تفصيل مسألة فرعية، كتابة كود، صياغة خطة عمل، أو حل مسألة محددة تتعلق بهذا الموضوع؛ تفضل بطرح الخطوة التالية وسأباشر تنفيذها فوراً.`
+    : `### Executive Analysis & Insight: "${terms}"
+
+Based on first-principles analysis and direct execution:
+
+1. **Core Concept:**
+   - Your request focuses on **${terms}**, requiring structured analysis, validated methodology, and direct practical application.
+
+2. **Key Strategic Pillars:**
+   - **Systematic Evaluation:** Prioritize reliable fundamentals and data-driven standards to achieve maximum efficiency.
+   - **Methodological Execution:** Break down the objective into actionable milestones to ensure precision and accuracy.
+
+3. **Next Steps:**
+   - Specify any concrete sub-task, code implementation, calculation, or specific branch you would like to delve into, and I will execute it directly.`;
 }

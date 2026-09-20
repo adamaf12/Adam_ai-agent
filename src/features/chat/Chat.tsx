@@ -8,6 +8,7 @@ import {
   Code,
   Download,
   FileSearch,
+  GraduationCap,
   Languages,
   Plus,
   RotateCcw,
@@ -36,6 +37,7 @@ import { createAssistantMessage, createUserMessage } from './chatModel';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
 import { StreamingIndicator } from './StreamingIndicator';
+import { ChatBackgroundHub } from './ChatBackgroundHub';
 import { copy } from '../../core/i18n';
 import {
   loadConversation,
@@ -65,6 +67,7 @@ import { verifyAndCorrectResponse } from '../../core/agent/deterministicVerifier
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { InfiniteMemoryModal } from './InfiniteMemoryModal';
 import { ChatSessionDrawer } from './ChatSessionDrawer';
+import { ChatAcademicModal } from './ChatAcademicModal';
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
   if (intent.type === 'app.open') {
@@ -118,7 +121,16 @@ export function Chat({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
   const [isSessionDrawerOpen, setIsSessionDrawerOpen] = useState(false);
+  const [isAcademicModalOpen, setIsAcademicModalOpen] = useState(false);
   const [memoryStats, setMemoryStats] = useState(() => getInfiniteMemoryStats());
+
+  useEffect(() => {
+    const handleOpenAcademic = () => setIsAcademicModalOpen(true);
+    window.addEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
+    return () => {
+      window.removeEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
+    };
+  }, []);
 
   const controller = useRef<AbortController | null>(null);
   const t = copy(language);
@@ -499,6 +511,17 @@ export function Chat({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Integrated Academic Companion Trigger Button (المكتبة والأكاديمية المدمجة في الشات) */}
+          <button
+            type="button"
+            onClick={() => setIsAcademicModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition cursor-pointer active:scale-95 shadow-sm"
+            title={language === 'ar' ? 'المكتبة والأكاديمية المدمجة في الشات' : 'Integrated Academic & Library Hub'}
+          >
+            <GraduationCap size={14} className="text-indigo-400" />
+            <span className="hidden sm:inline">{language === 'ar' ? 'المكتبة والأكاديمية' : 'Academic Hub'}</span>
+          </button>
+
           {/* Side Panel Trigger Button (الزر الجانبي للجلسات والذاكرة) */}
           <button
             type="button"
@@ -517,6 +540,14 @@ export function Chat({
           </button>
         </div>
       </div>
+
+      {/* Omnipresent Background Engine Hub (يعمل باستمرار في خلفية المحادثة) */}
+      <ChatBackgroundHub
+        language={language}
+        onExecutePrompt={send}
+        onNavigateView={onNavigateView || (() => {})}
+        onOpenAcademicModal={() => setIsAcademicModalOpen(true)}
+      />
 
       <div className="chat-scroll">
         {proactiveAlerts.length > 0 && (
@@ -608,6 +639,17 @@ export function Chat({
                   promptEn: 'Build a rigorous executive execution plan for my tech project',
                   tagAr: 'خطط تنفيذية',
                   tagEn: 'Productivity',
+                },
+                {
+                  icon: GraduationCap,
+                  titleAr: 'المرافق الأكاديمي الشامل لجميع الأطوار',
+                  titleEn: '24/7 Academic Student Companion',
+                  descAr: 'حل المسائل، كناش القوانين، عيادة تصحيح الأخطاء، وبومودورو دراسي',
+                  descEn: 'All-tier problem solving, formula sheets, exam clinic & study plans',
+                  promptAr: 'اشرح لي قانون نيوتن الثاني مع مثال تطبيقي، وفخاخ الامتحانات، وشفرة ذهبية لتذكره',
+                  promptEn: 'Explain Newton’s Second Law with a worked example, common exam traps, and memory anchor',
+                  tagAr: 'تعليم وأكاديميا',
+                  tagEn: 'Academic AI',
                 },
               ].map((card, idx) => {
                 const Icon = card.icon;
@@ -738,6 +780,16 @@ export function Chat({
           setMemoryStats(getInfiniteMemoryStats());
         }}
         language={language}
+      />
+
+      {/* Integrated Academic & Scholarly Library Modal */}
+      <ChatAcademicModal
+        isOpen={isAcademicModalOpen}
+        onClose={() => setIsAcademicModalOpen(false)}
+        language={language}
+        onSendPrompt={(prompt) => {
+          send(prompt);
+        }}
       />
     </section>
   );

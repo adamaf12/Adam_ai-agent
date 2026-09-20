@@ -63,6 +63,8 @@ jobs:
               -dname "CN=Adam AI Agent, O=Adam, C=US" \
               -storetype PKCS12
           fi
+          echo "=== Android Keystore SHA Fingerprints for Google Cloud Console ==="
+          "$JAVA_HOME/bin/keytool" -list -v -keystore android/app/release.keystore -alias adamkey -storepass android123 | grep -E "SHA1:|SHA256:" || true
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
