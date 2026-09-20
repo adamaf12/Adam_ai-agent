@@ -113,6 +113,7 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
     origin === 'file://' ||
     origin === 'null' ||
     origin.includes('.run.app') ||
+    origin.includes('.vercel.app') ||
     origin.includes('.google.com') ||
     origin.includes('.googleusercontent.com') ||
     origin.includes('ai.studio');
