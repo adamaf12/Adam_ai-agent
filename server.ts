@@ -82,6 +82,9 @@ export function safeWrite(res: express.Response, chunk: object | string): boolea
     const raw = typeof chunk === 'string' ? chunk : JSON.stringify(chunk) + '\n';
     const payload = redactSecrets(raw);
     res.write(payload);
+    // Force streamed NDJSON chunks through compression/proxy buffers immediately.
+    // This is especially important for Capacitor Android WebViews.
+    res.flush?.();
     return true;
   } catch {
     return false;
@@ -741,6 +744,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
+    safeWrite(res, { type: 'delta', text: '' });
 
     // Direct, ultra-precise handling for explicit image & video requests (only when user did NOT attach images for vision analysis)
     const hasInlineImages = messages.some(m => m.parts.some((p: any) => 'inlineData' in p));
