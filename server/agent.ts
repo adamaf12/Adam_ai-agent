@@ -455,7 +455,8 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
 
     // Fetch live web knowledge if needed
     let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
-    if (!isToday && (useSearch || promptText.length > 5)) {
+    const needsFreshKnowledge = /\b(today|now|latest|current|recent|news|breaking|this week|this month)\b|اليوم|الآن|حاليا|حالياً|آخر|أحدث|جديد|الأخبار|خبر|مستجدات/i.test(promptText);
+    if (!isToday && (useSearch || needsFreshKnowledge)) {
       try {
         webGrounding = await fetchLiveWebKnowledge(promptText, language);
       } catch {
@@ -477,10 +478,21 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       augmentedSystem += `\n${webGrounding.knowledgeContext}`;
     }
 
+    const isComplex = promptText.length > 900 || /(?:debug|architect|refactor|implement|build|analy[sz]e|compare|research|prove|derive|algorithm|security|performance|migration|deploy|أصلح|صحح|طوّر|طور|برمج|كود|حل|حلل|قارن|ابحث|دقق|برهان|اشتق|خوارزم|أمان|أداء|هجرة|نشر)/i.test(promptText);
+    const isDeep = promptText.length > 2200 || /(?:step by step|deep reasoning|root cause|comprehensive|end to end|من الصفر|بالتفصيل|بشكل شامل|السبب الجذري|خطوة بخطوة|حل كامل|مشروع كامل)/i.test(promptText);
+    const thinkingLevel = isDeep ? 'high' : isComplex ? 'medium' : 'low';
     const baseConfig: any = {
-      temperature: req.temperature ?? 0.35,
-      maxOutputTokens: req.maxTokens ?? 4096,
-      systemInstruction: augmentedSystem,
+      temperature: req.temperature ?? (isDeep ? 0.20 : isComplex ? 0.22 : 0.28),
+      topP: isDeep ? 0.88 : 0.90,
+      maxOutputTokens: req.maxTokens ?? (isDeep ? 12288 : isComplex ? 8192 : 4096),
+      thinkingConfig: { thinkingLevel },
+      systemInstruction: augmentedSystem + (
+        isDeep
+          ? '\n\nRESPONSE MODE: DEEP. Reason carefully, verify assumptions and edge cases, then provide the finished answer without exposing private chain-of-thought.'
+          : isComplex
+            ? '\n\nRESPONSE MODE: REASONING. Solve carefully and verify important assumptions, but keep the final answer practical and focused.'
+            : '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply.'
+      ),
     };
 
     const contents = history.length > 0
@@ -488,11 +500,11 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
     const modelVariants = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
+      'gemini-3.8-flash',
       'gemini-3.6-flash',
       'gemini-3.5-flash',
-      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
       modelDesc.id,
     ];
     const uniqueModels = [...new Set(modelVariants.filter(m => Boolean(m) && !m.includes('-pro')))];
