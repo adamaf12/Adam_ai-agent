@@ -10,6 +10,7 @@ const config: CapacitorConfig = {
     allowNavigation: [
       '*.google.com',
       '*.googleapis.com',
+      'adam-ai-agent.vercel.app',
       '*.gstatic.com',
       '*.pollinations.ai',
       '*.firebaseapp.com',
