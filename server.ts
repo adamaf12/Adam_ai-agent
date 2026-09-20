@@ -747,6 +747,21 @@ app.post('/api/media/image-to-image', mediaRateLimiter.middleware(), async (req,
   }
 });
 
+function getReasoningProfile(prompt: string, messageCount: number) {
+  const p = prompt.trim();
+  const complex =
+    p.length > 900 ||
+    messageCount > 10 ||
+    /(?:debug|architect|architecture|refactor|implement|build|design|analy[sz]e|compare|research|prove|derive|algorithm|database|security|performance|migration|deploy|أصلح|صحح|طوّر|طور|برمج|كود|حل|حلل|قارن|ابحث|بحث|دقق|برهان|اشتق|خوارزم|قاعدة بيانات|أمان|أداء|هجرة|نشر)/i.test(p);
+  const veryComplex =
+    p.length > 2200 ||
+    /(?:step by step|multi[- ]step|deep reasoning|root cause|comprehensive|end to end|من الصفر|بالتفصيل|بشكل شامل|السبب الجذري|خطوة بخطوة|حل كامل|مشروع كامل)/i.test(p);
+
+  if (veryComplex) return { thinkingLevel: 'high', maxOutputTokens: 12288, mode: 'deep' as const };
+  if (complex) return { thinkingLevel: 'medium', maxOutputTokens: 8192, mode: 'reasoning' as const };
+  return { thinkingLevel: 'low', maxOutputTokens: 4096, mode: 'fast' as const };
+}
+
 app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   // Prevent socket errors from escaping
   res.on('error', () => {});
@@ -764,6 +779,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
   const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
   const query = userPrompt.toLowerCase();
+  const reasoningProfile = getReasoningProfile(userPrompt, messages.length);
 
   // P2 Cost Control Budget Check
   const budgetCheck = costControlManager.checkBudget(req.user?.uid, false);
@@ -910,6 +926,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     }
 
     let finalSystemInstruction = hermesAugmentedInstruction;
+    finalSystemInstruction += reasoningProfile.mode === 'fast'
+      ? '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply. Do not over-explain unless asked.'
+      : reasoningProfile.mode === 'reasoning'
+        ? '\n\nRESPONSE MODE: REASONING. Work through the problem carefully, verify important assumptions, then present only the useful conclusion and supporting steps.'
+        : '\n\nRESPONSE MODE: DEEP. Decompose the task, examine alternatives and edge cases, verify the result, then deliver a practical finished answer. Do not expose private chain-of-thought.';
     if (isToday) {
       const now = new Date();
       const arDate = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -924,9 +945,10 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     }
 
     const baseConfig: any = {
-      temperature: 0.25,
-      topP: 0.90,
-      maxOutputTokens: 8192,
+      temperature: reasoningProfile.mode === 'deep' ? 0.20 : reasoningProfile.mode === 'reasoning' ? 0.22 : 0.28,
+      topP: reasoningProfile.mode === 'deep' ? 0.88 : 0.90,
+      maxOutputTokens: reasoningProfile.maxOutputTokens,
+      thinkingConfig: { thinkingLevel: reasoningProfile.thinkingLevel },
       systemInstruction: finalSystemInstruction,
     };
 
