@@ -13,18 +13,30 @@ import {
   executeDirectHuggingFace,
 } from './directAiClient';
 
+function isNativeApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const cap = (window as any).Capacitor;
+  if (cap?.isNativePlatform?.() || cap?.getPlatform?.() === 'android') return true;
+  const origin = window.location.origin || '';
+  return origin === 'https://localhost' || origin.startsWith('capacitor://') || origin.startsWith('ionic://');
+}
+
 function getResolvedApiBase(): string {
   if (typeof window === 'undefined') return '';
 
-  // 1. Custom user-specified endpoint in settings/storage
+  // Explicit endpoint remains supported for self-hosted deployments.
   const customUrl = localStorage.getItem('adam_custom_api_url')?.trim();
-  if (customUrl) return customUrl.replace(/\/$/, '');
+  if (customUrl && /^https?:\/\//i.test(customUrl)) return customUrl.replace(/\/$/, '');
 
-  // 2. Environment variable
+  // Build-time endpoint.
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
-  if (envUrl) return envUrl.replace(/\/$/, '');
+  if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl.replace(/\/$/, '');
 
-  // 3. Native Android/iOS WebView: Return custom URL or empty for relative/direct
+  // IMPORTANT: Capacitor APKs do not have the Express server running at
+  // https://localhost. Use the same production API as the working browser.
+  if (isNativeApp()) return 'https://adam-ai-agent.vercel.app';
+
+  // Browser deployment is same-origin.
   return '';
 }
 
@@ -51,12 +63,32 @@ async function streamRequestOnce(
   signal: AbortSignal,
   onDelta: (text: string) => void
 ) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
-    body: JSON.stringify(request),
-    signal,
-  });
+  const requestController = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => requestController.abort();
+  signal.addEventListener('abort', abortFromCaller, { once: true });
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    requestController.abort();
+  }, 55_000);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
+      body: JSON.stringify(request),
+      signal: requestController.signal,
+    });
+  } catch (error) {
+    if (timedOut && !signal.aborted) {
+      throw new ChatError('REQUEST_TIMEOUT', 'The AI service took too long to start responding.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    signal.removeEventListener('abort', abortFromCaller);
+  }
 
   if (!response.ok) {
     let payload: { code?: string; message?: string } = {};
