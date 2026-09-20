@@ -42,7 +42,7 @@ process.on('unhandledRejection', (reason: any) => {
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
-const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.5-flash';
+const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.8-flash';
 const apiKey = secretsManager.getGeminiApiKey();
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');
@@ -885,11 +885,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     };
 
     const candidateModels = Array.from(new Set([
+      'gemini-3.8-flash',
+      'gemini-3.6-flash',
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
-      'gemini-3.6-flash',
       'gemini-3.5-flash',
-      'gemini-3.8-flash',
       model,
     ].filter(m => Boolean(m) && !m.includes('-pro'))));
     let output = '';
