@@ -133,12 +133,31 @@ function parseDataUrl(dataUrl: string): { mimeType: string; data: string } | nul
 
 function normalizeMessages(input: unknown) {
   if (!Array.isArray(input)) return [];
-  return input
+  const valid = input
     .filter((item): item is { role: string; content: string; images?: string[] } =>
       Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string')
-    )
-    .slice(-40)
-    .map(item => {
+    );
+
+  // Long-context policy: preserve the opening context and the latest turns while
+  // enforcing a predictable server-side budget. Gemini 3.8 Flash supports a 1M
+  // token context, but sending an unbounded 40 x 30k-character history wastes
+  // latency/cost and can drown the current request in stale detail.
+  const selected = valid.length <= 36
+    ? valid
+    : [...valid.slice(0, 4), ...valid.slice(-32)];
+
+  const MAX_CONTEXT_CHARS = 120_000;
+  const compacted: typeof selected = [];
+  let usedChars = 0;
+  for (let i = selected.length - 1; i >= 0; i -= 1) {
+    const item = selected[i];
+    const size = item.content.length + (Array.isArray(item.images) ? item.images.join('').length : 0);
+    if (compacted.length > 0 && usedChars + size > MAX_CONTEXT_CHARS) break;
+    compacted.unshift(item);
+    usedChars += size;
+  }
+
+  return compacted.map(item => {
       const role = item.role === 'assistant' || item.role === 'model' ? 'model' : 'user';
       const parts: any[] = [{ text: item.content.slice(0, 30_000) }];
 
@@ -747,6 +766,16 @@ app.post('/api/media/image-to-image', mediaRateLimiter.middleware(), async (req,
   }
 });
 
+function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
+  // Gemini 3.8 Flash no longer accepts legacy temperature/topP sampling fields.
+  // Keep adaptive thinking, but strip incompatible fields for the current model.
+  if (modelId === 'gemini-3.8-flash') {
+    const { temperature: _temperature, topP: _topP, ...compatible } = baseConfig;
+    return compatible;
+  }
+  return baseConfig;
+}
+
 function getReasoningProfile(prompt: string, messageCount: number) {
   const p = prompt.trim();
   const complex =
@@ -961,6 +990,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       model,
     ].filter(m => Boolean(m) && !m.includes('-pro'))));
     let output = '';
+    const streamModelOutput = reasoningProfile.mode === 'fast';
+    const emitModelText = (text: string) => {
+      output += text;
+      if (streamModelOutput) safeWrite(res, { type: 'delta', text });
+    };
     let lastError: any = null;
     let accumulatedGrounding: GroundingData = isToday
       ? { sources: [], queries: [] }
@@ -986,7 +1020,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       for (const config of configsToTry) {
         if (aborted || res.writableEnded || res.destroyed || modelSuccess) break;
         try {
-          const stream = await ai.models.generateContentStream({ model: currentModel, contents: defendedMessages, config });
+          const stream = await ai.models.generateContentStream({ model: currentModel, contents: defendedMessages, config: buildGenerationConfig(config, currentModel) });
           for await (const chunk of stream) {
             if (aborted || res.writableEnded || res.destroyed) break;
 
@@ -1052,14 +1086,13 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
             const text = typeof (chunk as any).text === 'string' ? (chunk as any).text : '';
             if (text) {
-              output += text;
-              safeWrite(res, { type: 'delta', text });
+              emitModelText(text);
             }
           }
           if (aborted || res.writableEnded || res.destroyed) return;
 
           if (!output.trim()) {
-            const completion = await ai.models.generateContent({ model: currentModel, contents: defendedMessages, config });
+            const completion = await ai.models.generateContent({ model: currentModel, contents: defendedMessages, config: buildGenerationConfig(config, currentModel) });
             const completionMetadata = (completion as any).groundingMetadata || (completion as any).candidates?.[0]?.groundingMetadata;
             if (completionMetadata) {
               const extracted = extractGroundingMetadata(completionMetadata);
@@ -1111,8 +1144,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
             const text = typeof (completion as any).text === 'string' ? (completion as any).text : '';
             if (text.trim()) {
-              output += text;
-              safeWrite(res, { type: 'delta', text });
+              emitModelText(text);
             }
           }
 
@@ -1181,6 +1213,17 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
         } catch (gwErr) {
           console.warn('[Adam AI gateway error]:', gwErr);
         }
+      }
+    }
+
+    if (output.trim() && !streamModelOutput && !res.writableEnded && !res.destroyed) {
+      try {
+        const verification = verifyAndCorrectResponse(output.trim());
+        output = verification.verifiedText;
+        safeWrite(res, { type: 'delta', text: output });
+      } catch (verificationError) {
+        console.warn('[Adam AI verification] verifier failed; preserving model output:', verificationError);
+        safeWrite(res, { type: 'delta', text: output });
       }
     }
 
