@@ -28,6 +28,7 @@ import { BetterMemoryEngine } from './server/security/betterMemory';
 import { backgroundTaskQueue } from './server/security/taskQueue';
 import { systemMonitor } from './server/security/monitoring';
 import { AcademicEngine } from './server/academicEngine';
+import { buildRequestContract, formatRequestContract } from './src/core/agent/requestUnderstanding';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -1034,6 +1035,8 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
     let finalSystemInstruction = hermesAugmentedInstruction;
     finalSystemInstruction += buildIntentProtocol(userPrompt, messages, language);
+    const requestContract = buildRequestContract(userPrompt, messages.map((m: any) => ({ role: m.role, text: Array.isArray(m.parts) ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ') : '' })));
+    finalSystemInstruction += formatRequestContract(requestContract, language);
     finalSystemInstruction += reasoningProfile.mode === 'fast'
       ? '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply. Do not over-explain unless asked.'
       : reasoningProfile.mode === 'reasoning'
