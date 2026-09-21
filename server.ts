@@ -776,6 +776,62 @@ function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string)
   return baseConfig;
 }
 
+function buildIntentProtocol(prompt: string, messages: Array<any>, language: 'ar' | 'en'): string {
+  const recent = messages.slice(-8).map((m: any) => {
+    const role = m.role === 'user' ? 'USER' : 'ASSISTANT';
+    const text = Array.isArray(m.parts)
+      ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ')
+      : '';
+    return text ? `${role}: ${text.slice(0, 5000)}` : '';
+  }).filter(Boolean).join('\n');
+
+  if (language === 'ar') {
+    return `\n\n=== بروتوكول الفهم الدقيق للطلب ===
+قبل الإجابة، كوّن داخلياً "عقد الطلب" التالي من كلام المستخدم وسياق المحادثة:
+1) الهدف النهائي الذي يريد المستخدم الوصول إليه، وليس مجرد الكلمات التي استخدمها.
+2) نوع المطلوب: شرح، حل، إنشاء، تعديل، تصحيح، مقارنة، بحث، تنفيذ، أو متابعة عمل سابق.
+3) القيود الصريحة التي قالها المستخدم، وكل شيء طلب عدم تغييره.
+4) المتطلبات الضمنية الضرورية فقط لإنجاز الهدف، مع عدم اختراع متطلبات جديدة.
+5) شكل النتيجة التي يتوقعها المستخدم وما الذي سيجعلها مكتملة.
+6) أي أسماء/إصدارات/ملفات/روابط/أرقام/منصات يجب الحفاظ عليها حرفياً.
+7) علاقة الرسالة الحالية بالرسائل السابقة: لا تعِد تعريف المشروع إذا كان المستخدم يطلب الاستمرار فيه.
+
+قواعد صارمة:
+- افهم "ما الذي يريده المستخدم" قبل اختيار طريقة الإجابة.
+- لا تستبدل الطلب بمهمة أسهل أو قريبة منه.
+- إذا طلب المستخدم تعديل شيء، حافظ على كل ما طلب إبقاءه كما هو.
+- إذا قال "نعم/واصل/كمل/هذا هو/نفسه"، اربطها مباشرة بآخر مهمة غير مكتملة.
+- لا تسأل سؤالاً إذا كان السياق يحتوي ما يكفي لاتخاذ القرار؛ وإذا كانت معلومة ناقصة فعلاً، اسأل فقط عن المعلومة التي تمنع التنفيذ.
+- لا تفترض أن المستخدم يريد شرحاً عندما يطلب تنفيذ تغيير، ولا تفترض أنه يريد كوداً عندما يطلب نتيجة.
+- افصل بين الحقائق المؤكدة والافتراضات، ولا تملأ الفراغات بتخمين.
+- بعد فهم الطلب، نفّذ الجزء المطلوب فقط ثم تحقق أن الناتج يطابق الهدف والقيود.
+
+الرسالة الحالية:
+USER: ${prompt.slice(0, 12000)}
+
+السياق القريب:
+${recent}
+=== نهاية بروتوكول الفهم الدقيق ===` ;
+  }
+  return `\n\n=== PRECISE REQUEST UNDERSTANDING PROTOCOL ===
+Before answering, internally form a request contract:
+- final goal, task type, explicit constraints, necessary assumptions, expected deliverable, exact names/versions/paths/numbers, and how this turn continues the prior task.
+- Never replace the user's requested task with an easier adjacent task.
+- Preserve everything the user explicitly asked not to change.
+- Interpret short confirmations such as "yes", "continue", "same", and "this one" against the last unfinished task.
+- Do not ask for information already present in context; ask only for a truly blocking missing fact.
+- Do not confuse explanation with execution or code with the requested outcome.
+- Distinguish verified facts from assumptions and never invent missing requirements.
+- After understanding the request, execute only what is needed and check that the result satisfies the goal and constraints.
+
+CURRENT USER:
+${prompt.slice(0, 12000)}
+
+RECENT CONTEXT:
+${recent}
+=== END PRECISE REQUEST UNDERSTANDING PROTOCOL ===`;
+}
+
 function getReasoningProfile(prompt: string, messageCount: number) {
   const p = prompt.trim();
   const complex =
@@ -955,6 +1011,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     }
 
     let finalSystemInstruction = hermesAugmentedInstruction;
+    finalSystemInstruction += buildIntentProtocol(userPrompt, messages, language);
     finalSystemInstruction += reasoningProfile.mode === 'fast'
       ? '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply. Do not over-explain unless asked.'
       : reasoningProfile.mode === 'reasoning'
