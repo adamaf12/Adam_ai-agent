@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  CalendarCheck,
   Film,
   Gamepad2,
   MessageCircle,
@@ -33,14 +32,6 @@ const allNavItems: NavItemDef[] = [
     labelEn: 'Chat',
     descAr: 'الوكيل التنفيذي الذاتي والبرمجة والأنظمة',
     descEn: 'Autonomous executive AI & system engineering',
-  },
-  {
-    id: 'tasks',
-    icon: CalendarCheck,
-    labelAr: 'المهام',
-    labelEn: 'Tasks',
-    descAr: 'إدارة وتتبع المهام ذاتية التفكيك',
-    descEn: 'Intelligent task management & auto-breakdown',
   },
   {
     id: 'apps',
@@ -85,7 +76,7 @@ const allNavItems: NavItemDef[] = [
 ];
 
 // 4 Primary dock items
-const PRIMARY_IDS: ViewId[] = ['chat', 'tasks', 'apps', 'workspace'];
+const PRIMARY_IDS: ViewId[] = ['chat', 'apps', 'workspace', 'media'];
 
 export function BottomNav({
   active,

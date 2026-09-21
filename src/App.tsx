@@ -4,14 +4,11 @@ import type { AppPreferences, Language, ViewId } from './core/domain';
 import { createNewConversation, loadPreferences, normalizePreferences, savePreferences } from './core/storage';
 import { AppShell } from './components/AppShell';
 import { Chat } from './features/chat/Chat';
-import { Tasks } from './features/tasks/Tasks';
 import { Settings } from './features/settings/Settings';
-import { Workspace } from './features/workspace/Workspace';
-import { MediaStudio } from './features/media/MediaStudio';
 import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
+import { TranslatorStudio } from './features/translation/TranslatorStudio';
 import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
 import { Onboarding } from './features/onboarding/Onboarding';
-import { IqTestStudio } from './features/iq/IqTestStudio';
 import { InAppBrowserModal } from './components/InAppBrowserModal';
 import { AuthModal } from './components/AuthModal';
 import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileWebHandler';
@@ -56,7 +53,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if ((activeView as string) === 'memory') {
+    if ((activeView as string) === 'memory' || (activeView as string) === 'tasks') {
       setActiveView('chat');
     }
   }, [activeView]);
@@ -87,6 +84,20 @@ export default function App() {
       'stranger-things',
       'outer-banks',
       'game-of-thrones',
+      'tokyo-night',
+      'catppuccin-mocha',
+      'monokai-pro',
+      'gruvbox-dark',
+      'sunset-miami',
+      'deep-space',
+      'emerald-luxury',
+      'peaky-blinders',
+      'breaking-bad',
+      'interstellar',
+      'batman-gotham',
+      'cyber-samurai',
+      'cherry-blossom',
+      'iceberg-polar',
     ];
 
     const applyThemeClasses = () => {
@@ -238,7 +249,14 @@ export default function App() {
             />
           )}
 
-          {activeView === 'tasks' && <Tasks language={preferences.language} />}
+          {activeView === 'settings' && (
+            <Settings
+              language={preferences.language}
+              preferences={preferences}
+              onChange={updatePreferences}
+            />
+          )}
+
           {activeView === 'apps' && (
             <AppSandboxStudio
               language={preferences.language}
@@ -248,26 +266,13 @@ export default function App() {
               }}
             />
           )}
-          {activeView === 'workspace' && (
-            <Workspace
+
+          {activeView === 'translate' && (
+            <TranslatorStudio
               language={preferences.language}
-              onNavigate={setActiveView}
-              onSelectAction={() => setActiveView('chat')}
-            />
-          )}
-          {activeView === 'media' && (
-            <MediaStudio
-              language={preferences.language}
-              onNavigate={setActiveView}
-              onRunPromptInChat={() => setActiveView('chat')}
-            />
-          )}
-          {activeView === 'iq' && <IqTestStudio language={preferences.language} />}
-          {activeView === 'settings' && (
-            <Settings
-              language={preferences.language}
-              preferences={preferences}
-              onChange={updatePreferences}
+              onNavigateToChat={(_prompt) => {
+                setActiveView('chat');
+              }}
             />
           )}
         </motion.div>

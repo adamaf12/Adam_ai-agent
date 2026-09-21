@@ -2061,6 +2061,47 @@ export function deleteSandboxApp(id: string): SandboxApp[] {
 }
 
 /**
+ * Wraps code into a complete, executable HTML document with Tailwind and icon support if needed
+ */
+export function wrapCodeIntoExecutableApp(rawCode: string, title = 'Interactive App'): string {
+  if (rawCode.includes('<!DOCTYPE html>') || (rawCode.includes('<html') && rawCode.includes('</html>'))) {
+    return rawCode;
+  }
+
+  // If it's a snippet with HTML elements or script/canvas
+  const hasScript = rawCode.includes('<script>') || rawCode.includes('function ') || rawCode.includes('const ') || rawCode.includes('let ');
+  const isPureJs = !rawCode.includes('<') && (rawCode.includes('const ') || rawCode.includes('function ') || rawCode.includes('document.'));
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  ${isPureJs ? `<div id="app" class="w-full max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col items-center"></div><script>${rawCode}</script>` : rawCode}
+</body>
+</html>`;
+}
+
+/**
  * Extracts runnable code and metadata from a message
  */
 export function extractAppCode(content: string): { code: string; isGameOrApp: boolean } | null {
@@ -2087,7 +2128,9 @@ export function extractAppCode(content: string): { code: string; isGameOrApp: bo
             (b.includes('<script') ||
               b.includes('<style') ||
               b.includes('<button') ||
-              b.includes('<canvas')))
+              b.includes('<canvas') ||
+              b.includes('class='))) ||
+          (b.includes('document.createElement') && b.includes('addEventListener'))
       ) || null;
   }
 
@@ -2097,7 +2140,8 @@ export function extractAppCode(content: string): { code: string; isGameOrApp: bo
 
   if (!codeToRun) return null;
 
-  const lower = codeToRun.toLowerCase();
+  const wrapped = wrapCodeIntoExecutableApp(codeToRun);
+  const lower = wrapped.toLowerCase();
   const isGameOrApp =
     lower.includes('<canvas') ||
     lower.includes('game') ||
@@ -2107,7 +2151,8 @@ export function extractAppCode(content: string): { code: string; isGameOrApp: bo
     lower.includes('calculator') ||
     lower.includes('player') ||
     lower.includes('tic-tac-toe') ||
-    lower.includes('snake');
+    lower.includes('snake') ||
+    lower.includes('app');
 
-  return { code: codeToRun, isGameOrApp };
+  return { code: wrapped, isGameOrApp };
 }

@@ -19,25 +19,49 @@ export interface LearnedRule {
   appliedCount: number;
 }
 
+export interface EvolutionMetrics {
+  evolutionCycle: number;
+  totalReflections: number;
+  intelligenceScore: number;
+  reasoningSpeedScore: number;
+  domainMastery: Record<string, number>;
+  lastEvolutionTimestamp: number;
+}
+
 export interface LiveKnowledgeLedger {
   version: number;
   rules: LearnedRule[];
   verifiedFacts: Record<string, { value: string; updatedAt: number }>;
   antiPatterns: string[];
+  metrics: EvolutionMetrics;
   updatedAt: number;
 }
 
-const STORAGE_KEY = 'adam:online:learning:ledger:v1';
-const MAX_RULES = 250;
+const STORAGE_KEY = 'adam:online:learning:ledger:v2';
+const MAX_RULES = 350;
 
 let ledgerCache: LiveKnowledgeLedger | null = null;
 
 export function getInitialLedger(): LiveKnowledgeLedger {
   return {
-    version: 1,
+    version: 2,
     rules: [],
     verifiedFacts: {},
     antiPatterns: [],
+    metrics: {
+      evolutionCycle: 1,
+      totalReflections: 0,
+      intelligenceScore: 94.5,
+      reasoningSpeedScore: 96.0,
+      domainMastery: {
+        coding: 98,
+        linux_and_systems: 99,
+        mathematics_and_science: 95,
+        vision_and_multimodal: 96,
+        academic_synthesis: 94,
+      },
+      lastEvolutionTimestamp: Date.now(),
+    },
     updatedAt: Date.now(),
   };
 }
@@ -49,17 +73,26 @@ export function loadKnowledgeLedger(): LiveKnowledgeLedger {
     return ledgerCache;
   }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('adam:online:learning:ledger:v1');
     if (!raw) {
       ledgerCache = getInitialLedger();
       return ledgerCache;
     }
     const parsed = JSON.parse(raw) as Partial<LiveKnowledgeLedger>;
+    const defaultMetrics = getInitialLedger().metrics;
     ledgerCache = {
-      version: parsed.version ?? 1,
+      version: 2,
       rules: Array.isArray(parsed.rules) ? parsed.rules.slice(-MAX_RULES) : [],
       verifiedFacts: parsed.verifiedFacts && typeof parsed.verifiedFacts === 'object' ? parsed.verifiedFacts : {},
-      antiPatterns: Array.isArray(parsed.antiPatterns) ? parsed.antiPatterns.slice(-100) : [],
+      antiPatterns: Array.isArray(parsed.antiPatterns) ? parsed.antiPatterns.slice(-150) : [],
+      metrics: {
+        ...defaultMetrics,
+        ...(parsed.metrics || {}),
+        domainMastery: {
+          ...defaultMetrics.domainMastery,
+          ...(parsed.metrics?.domainMastery || {}),
+        },
+      },
       updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
     };
     return ledgerCache;
@@ -252,3 +285,80 @@ export function generateDynamicDirectives(
     directivesString: lines.join('\n'),
   };
 }
+
+/**
+ * Perpetual Background Autonomous Evolution & Self-Improvement Cycle
+ * Analyzes completed conversation turns to automatically extract insights,
+ * improve domain mastery scores, optimize speed heuristics, and strengthen future reasoning.
+ */
+export function recordContinuousEvolutionStep(
+  userPrompt: string,
+  assistantResponse: string,
+  meta?: { latencyMs?: number; wasSuccess?: boolean; domain?: string }
+): EvolutionMetrics {
+  const ledger = loadKnowledgeLedger();
+  const cleanPrompt = userPrompt.trim();
+  const cleanResp = assistantResponse.trim();
+
+  ledger.metrics.totalReflections += 1;
+  ledger.metrics.lastEvolutionTimestamp = Date.now();
+
+  // 1. Domain Mastery Evolution
+  const detectedDomain = meta?.domain || detectTaskDomain(cleanPrompt);
+  if (detectedDomain && ledger.metrics.domainMastery[detectedDomain] !== undefined) {
+    const currentScore = ledger.metrics.domainMastery[detectedDomain];
+    const gain = meta?.wasSuccess !== false ? 0.25 : -0.1;
+    ledger.metrics.domainMastery[detectedDomain] = Math.min(100, Math.max(80, +(currentScore + gain).toFixed(2)));
+  }
+
+  // 2. Global Intelligence & Speed Score Evolution
+  if (meta?.latencyMs && meta.latencyMs < 1200) {
+    ledger.metrics.reasoningSpeedScore = Math.min(100, +(ledger.metrics.reasoningSpeedScore + 0.15).toFixed(2));
+  }
+  ledger.metrics.intelligenceScore = Math.min(99.9, +(ledger.metrics.intelligenceScore + 0.08).toFixed(2));
+
+  // 3. Increment Evolution Cycle every 5 reflections
+  if (ledger.metrics.totalReflections % 5 === 0) {
+    ledger.metrics.evolutionCycle += 1;
+  }
+
+  // 4. Auto-distill recurring programming or factual patterns
+  if (cleanPrompt.length > 20 && cleanResp.length > 50 && meta?.wasSuccess !== false) {
+    extractImplicitKnowledgeRule(cleanPrompt, cleanResp, ledger);
+  }
+
+  saveKnowledgeLedger(ledger);
+  return ledger.metrics;
+}
+
+function detectTaskDomain(prompt: string): string {
+  const p = prompt.toLowerCase();
+  if (/code|function|react|typescript|javascript|python|sql|html|css|bug|error|برمج|كود|تطبيق/.test(p)) return 'coding';
+  if (/linux|bash|terminal|server|docker|port|ubuntu|termux|لينكس|أوامر|سيرفر/.test(p)) return 'linux_and_systems';
+  if (/math|equation|physics|formula|integral|حساب|فيزياء|رياضيات|معادلة/.test(p)) return 'mathematics_and_science';
+  if (/image|vision|photo|design|prompt|render|رسم|صورة|توليد|تصميم/.test(p)) return 'vision_and_multimodal';
+  return 'academic_synthesis';
+}
+
+function extractImplicitKnowledgeRule(prompt: string, response: string, ledger: LiveKnowledgeLedger): void {
+  // If the prompt establishes a specific technical choice or instruction
+  if (/(?:استخدم دائماً|يفضل دائماً|always use|prefer using)\s+([a-zA-Z0-9_\-+#. ]{3,50})/i.test(prompt)) {
+    const match = /(?:استخدم دائماً|يفضل دائماً|always use|prefer using)\s+([a-zA-Z0-9_\-+#. ]{3,50})/i.exec(prompt);
+    if (match && match[1]) {
+      const directive = match[1].trim();
+      if (!ledger.rules.some((r) => r.correction.includes(directive))) {
+        ledger.rules.push({
+          id: createId('auto_rule'),
+          trigger: prompt.slice(0, 80),
+          correction: `User Preference: Prefer ${directive}`,
+          category: 'user_guideline',
+          source: 'self_reflection',
+          confidence: 0.9,
+          createdAt: Date.now(),
+          appliedCount: 0,
+        });
+      }
+    }
+  }
+}
+

@@ -3,7 +3,6 @@ import {
   GraduationCap,
   Palette,
   Terminal,
-  ListTodo,
   Gamepad2,
   Brain,
   Compass,
@@ -90,7 +89,7 @@ export function ChatBackgroundHub({
       id: 'media',
       nameAr: 'استوديو الميديا والمرئيات',
       nameEn: 'Media & Visual Studio',
-      viewId: 'media',
+      viewId: 'chat',
       icon: Palette,
       color: 'text-purple-400',
       bgLight: 'bg-purple-500/10',
@@ -118,7 +117,7 @@ export function ChatBackgroundHub({
       id: 'terminal',
       nameAr: 'الطرفية والأنظمة',
       nameEn: 'Linux & Terminal',
-      viewId: 'workspace',
+      viewId: 'chat',
       icon: Terminal,
       color: 'text-emerald-400',
       bgLight: 'bg-emerald-500/10',
@@ -138,33 +137,10 @@ export function ChatBackgroundHub({
       ],
     },
     {
-      id: 'tasks',
-      nameAr: 'مصفوفة المهام والأولويات',
-      nameEn: 'Tasks & Eisenhower',
-      viewId: 'tasks',
-      icon: ListTodo,
-      color: 'text-amber-400',
-      bgLight: 'bg-amber-500/10',
-      borderLight: 'border-amber-500/30',
-      status: 'active',
-      quickActions: [
-        {
-          labelAr: 'قائمة مهام مشروع جديدة',
-          labelEn: 'New Project Tasks',
-          prompt: 'أنشئ لي قائمة مهام تفاعلية فورية لتنظيم أولويات هذا الأسبوع',
-        },
-        {
-          labelAr: 'جدول أيزنهاور للأولويات',
-          labelEn: 'Eisenhower Matrix',
-          prompt: 'قسم مهامي الحالية وفق مصفوفة أيزنهاور (عاجل/مهم)',
-        },
-      ],
-    },
-    {
       id: 'sandbox',
       nameAr: 'تطبيقات وساندبوكس الكانفاس',
       nameEn: 'Apps & Canvas Sandbox',
-      viewId: 'apps',
+      viewId: 'chat',
       icon: Gamepad2,
       color: 'text-rose-400',
       bgLight: 'bg-rose-500/10',
@@ -197,7 +173,7 @@ export function ChatBackgroundHub({
       id: 'iq',
       nameAr: 'الذكاء والاستدلال المنطقي',
       nameEn: 'Cognitive IQ & Logic',
-      viewId: 'iq',
+      viewId: 'chat',
       icon: Brain,
       color: 'text-cyan-400',
       bgLight: 'bg-cyan-500/10',
@@ -220,7 +196,7 @@ export function ChatBackgroundHub({
       id: 'geospatial',
       nameAr: 'الملاحة والخرائط الجغرافية',
       nameEn: 'Geospatial Navigation',
-      viewId: 'workspace',
+      viewId: 'chat',
       icon: Compass,
       color: 'text-teal-400',
       bgLight: 'bg-teal-500/10',
@@ -329,10 +305,10 @@ export function ChatBackgroundHub({
             ) : (
               <button
                 type="button"
-                onClick={() => onNavigateView(currentEngine.viewId)}
+                onClick={() => onExecutePrompt(currentEngine.quickActions[0]?.prompt || currentEngine.nameAr)}
                 className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
               >
-                {isAr ? 'فتح الاستوديو الكامل ↗' : 'Open Full Studio ↗'}
+                {isAr ? 'تشغيل المحرك في الشات ⚡' : 'Run in Chat ⚡'}
               </button>
             )}
           </div>

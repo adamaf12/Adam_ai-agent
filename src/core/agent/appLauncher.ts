@@ -21,23 +21,6 @@ export interface AppTarget {
 
 export const REGISTERED_APPS: AppTarget[] = [
   {
-    id: 'tasks',
-    type: 'view',
-    view: 'tasks',
-    titleAr: 'إدارة المهام والمواعيد (Tasks)',
-    titleEn: 'Tasks & Schedule Manager',
-    categoryAr: 'إنتاجية وتنظيم',
-    categoryEn: 'Productivity & Planning',
-    descriptionAr: 'تنظيم قائمة المهام اليومية، المواعيد الذكية، وتتبع الأولويات.',
-    descriptionEn: 'Organize daily tasks, smart deadlines, and priority checklists.',
-    iconName: 'CalendarCheck',
-    aliases: [
-      'مهام', 'المهام', 'قائمة المهام', 'جدول المهام', 'جدول', 'المواعيد', 'مواعيد',
-      'تذكيرات', 'تذكير', 'تسكات', 'التسكات', 'أولويات',
-      'tasks', 'task', 'todo', 'to-do', 'schedule', 'reminders', 'reminder', 'checklist'
-    ],
-  },
-  {
     id: 'apps',
     type: 'view',
     view: 'apps',

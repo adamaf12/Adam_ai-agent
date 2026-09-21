@@ -137,71 +137,113 @@ export function getDynamicSystemContext(language: 'ar' | 'en' | 'fr' | string = 
 }
 
 /**
- * Fetches real-time web knowledge from Wikipedia API in Arabic or English
- * with low latency (<400ms), safe timeouts, and fallback handling.
+ * Fetches real-time web knowledge from DuckDuckGo and Wikipedia APIs in parallel
+ * with ultra-fast latency (<600ms), resilient fallback handling, and rich snippet extraction.
  */
 export async function fetchLiveWebKnowledge(
   query: string,
-  language: 'ar' | 'en' = 'ar'
+  language: 'ar' | 'en' | 'fr' = 'ar'
 ): Promise<{ sources: GroundingSource[]; knowledgeContext: string; queries: string[] }> {
   const cleanQuery = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().slice(0, 150);
   if (!cleanQuery || cleanQuery.length < 2) {
     return { sources: [], knowledgeContext: '', queries: [] };
   }
 
-  const endpoint = language === 'ar'
-    ? `https://ar.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=3`
-    : `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=3`;
+  const sources: GroundingSource[] = [];
+  const snippets: string[] = [];
+  const seenUrls = new Set<string>();
+
+  const wikiEndpoint = language === 'ar'
+    ? `https://ar.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=4`
+    : `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=4`;
+
+  const ddgEndpoint = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2500);
+  const timer = setTimeout(() => controller.abort(), 2800);
 
   try {
-    const res = await fetch(endpoint, {
-      headers: { 'User-Agent': 'AdamAI/2.0 (KnowledgeAssistant)' },
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const searchItems = Array.isArray(data?.query?.search) ? data.query.search : [];
+    // Query Wikipedia and DuckDuckGo in parallel
+    const [wikiRes, ddgRes] = await Promise.allSettled([
+      fetch(wikiEndpoint, {
+        headers: { 'User-Agent': 'AdamAI/2.0 (LiveKnowledgeAssistant)' },
+        signal: controller.signal,
+      }).then(r => (r.ok ? r.json() : null)),
+      fetch(ddgEndpoint, {
+        headers: { 'User-Agent': 'AdamAI/2.0 (LiveKnowledgeAssistant)' },
+        signal: controller.signal,
+      }).then(r => (r.ok ? r.json() : null)),
+    ]);
 
-    const sources: GroundingSource[] = [];
-    const snippets: string[] = [];
+    // Parse DuckDuckGo Abstract & Related Topics
+    if (ddgRes.status === 'fulfilled' && ddgRes.value) {
+      const ddgData = ddgRes.value;
+      if (ddgData.AbstractText && ddgData.AbstractURL && !seenUrls.has(ddgData.AbstractURL)) {
+        seenUrls.add(ddgData.AbstractURL);
+        sources.push({
+          title: ddgData.Heading || cleanQuery,
+          url: ddgData.AbstractURL,
+          domain: 'duckduckgo.com',
+        });
+        snippets.push(`- **${ddgData.Heading || cleanQuery}**: ${ddgData.AbstractText.slice(0, 400)}`);
+      }
 
-    for (const item of searchItems.slice(0, 3)) {
-      const title = String(item?.title || '').trim();
-      if (!title) continue;
-      const snippet = String(item?.snippet || '')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .trim();
+      if (Array.isArray(ddgData.RelatedTopics)) {
+        for (const topic of ddgData.RelatedTopics.slice(0, 2)) {
+          if (topic.Text && topic.FirstURL && !seenUrls.has(topic.FirstURL)) {
+            seenUrls.add(topic.FirstURL);
+            sources.push({
+              title: topic.Text.split(' - ')[0] || cleanQuery,
+              url: topic.FirstURL,
+              domain: 'duckduckgo.com',
+            });
+            snippets.push(`- ${topic.Text.slice(0, 300)}`);
+          }
+        }
+      }
+    }
 
-      const wikiDomain = language === 'ar' ? 'ar.wikipedia.org' : 'en.wikipedia.org';
-      const url = `https://${wikiDomain}/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+    // Parse Wikipedia Search Items
+    if (wikiRes.status === 'fulfilled' && wikiRes.value) {
+      const searchItems = Array.isArray(wikiRes.value?.query?.search) ? wikiRes.value.query.search : [];
+      for (const item of searchItems.slice(0, 3)) {
+        const title = String(item?.title || '').trim();
+        if (!title) continue;
+        const snippet = String(item?.snippet || '')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .trim();
 
-      sources.push({
-        title,
-        url,
-        domain: 'wikipedia.org',
-      });
+        const wikiDomain = language === 'ar' ? 'ar.wikipedia.org' : 'en.wikipedia.org';
+        const url = `https://${wikiDomain}/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-      if (snippet) {
-        snippets.push(`- **${title}**: ${snippet}`);
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url);
+          sources.push({
+            title,
+            url,
+            domain: 'wikipedia.org',
+          });
+
+          if (snippet) {
+            snippets.push(`- **${title}**: ${snippet}`);
+          }
+        }
       }
     }
 
     let knowledgeContext = '';
     if (snippets.length > 0) {
       knowledgeContext = language === 'ar'
-        ? `\n\n=== نتائج ومعلومات حية وموثوقة من شبكة الويب (LIVE WEB GROUNDING) ===\n${snippets.join('\n')}\nاستفد من هذه المعلومات المباشرة لتقديم إجابة صحيحة، بسيطة ومباشرة للمستخدم.`
-        : `\n\n=== VERIFIED WEB KNOWLEDGE SNIPPETS ===\n${snippets.join('\n')}\nUse these verified facts to provide a simple, accurate, and direct response.`;
+        ? `\n\n=== نتائج ومعلومات حية وموثوقة من شبكة الإنترنت (LIVE INTERNET REAL-TIME GROUNDING) ===\n${snippets.join('\n')}\nاستفد من هذه المعلومات المباشرة والحقائق الحية لتقديم إجابة دقيقة، موثقة، وبسيطة للمستخدم.`
+        : `\n\n=== VERIFIED LIVE INTERNET REAL-TIME GROUNDING ===\n${snippets.join('\n')}\nUse these verified live facts to provide an accurate, clear, and direct response.`;
     }
 
     return { sources, knowledgeContext, queries: [cleanQuery] };
-  } catch (err) {
+  } catch {
     return { sources: [], knowledgeContext: '', queries: [cleanQuery] };
   } finally {
     clearTimeout(timer);

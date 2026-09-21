@@ -1,7 +1,11 @@
 import {
+  BrainCircuit,
   Camera,
+  Check,
   Code2,
   Gamepad2,
+  Globe,
+  Languages,
   Loader2,
   Mic,
   MicOff,
@@ -12,9 +16,55 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { copy } from '../../core/i18n';
 import { processImageFile, formatFileSize, type ProcessedImage } from '../../core/utils/imageUtils';
+import { TranslationModal } from '../translation/TranslationModal';
+
+export interface DialectOption {
+  code: string;
+  label: string;
+  flag: string;
+  nativeName: string;
+}
+
+export const GLOBAL_DIALECTS: DialectOption[] = [
+  { code: 'ar-DZ', label: 'الجزائرية (الدارجة)', flag: '🇩🇿', nativeName: 'Djazairia' },
+  { code: 'ar-SA', label: 'العربية الفصحى / السعودية', flag: '🇸🇦', nativeName: 'Fusha / Saudi' },
+  { code: 'ar-EG', label: 'اللهجة المصرية', flag: '🇪🇬', nativeName: 'Masriya' },
+  { code: 'ar-MA', label: 'المغربية (الدارجة)', flag: '🇲🇦', nativeName: 'Darija Maghribia' },
+  { code: 'ar-TN', label: 'اللهجة التونسية', flag: '🇹🇳', nativeName: 'Tounsia' },
+  { code: 'ar-SY', label: 'الشامية (سوريا/لبنان)', flag: '🇸🇾', nativeName: 'Shamiya' },
+  { code: 'ar-PS', label: 'اللهجة الفلسطينية / الأردنية', flag: '🇵🇸', nativeName: 'Filastiniya / Urduniya' },
+  { code: 'ar-IQ', label: 'اللهجة العراقية', flag: '🇮🇶', nativeName: 'Iraqiya' },
+  { code: 'ar-SD', label: 'اللهجة السودانية', flag: '🇸🇩', nativeName: 'Sudaniya' },
+  { code: 'ar-AE', label: 'اللهجة الإماراتية والخليجية', flag: '🇦🇪', nativeName: 'Emirati / Gulf' },
+  { code: 'ar-KW', label: 'اللهجة الكويتية', flag: '🇰🇼', nativeName: 'Kuwaitiya' },
+  { code: 'ar-YE', label: 'اللهجة اليمنية', flag: '🇾🇪', nativeName: 'Yamaniya' },
+  { code: 'ar-OM', label: 'اللهجة العمانية', flag: '🇴🇲', nativeName: 'Omaniya' },
+  { code: 'ar-LY', label: 'اللهجة الليبية', flag: '🇱🇾', nativeName: 'Libiya' },
+  { code: 'en-US', label: 'English (United States)', flag: '🇺🇸', nativeName: 'English (US)' },
+  { code: 'en-GB', label: 'English (United Kingdom)', flag: '🇬🇧', nativeName: 'English (UK)' },
+  { code: 'en-AU', label: 'English (Australia)', flag: '🇦🇺', nativeName: 'English (AU)' },
+  { code: 'en-CA', label: 'English (Canada)', flag: '🇨🇦', nativeName: 'English (CA)' },
+  { code: 'fr-FR', label: 'Français (France)', flag: '🇫🇷', nativeName: 'Français' },
+  { code: 'fr-CA', label: 'Français (Québec / Canada)', flag: '🇨🇦', nativeName: 'Québécois' },
+  { code: 'es-ES', label: 'Español (España)', flag: '🇪🇸', nativeName: 'Español' },
+  { code: 'es-MX', label: 'Español (México / LatAm)', flag: '🇲🇽', nativeName: 'Latinoamérica' },
+  { code: 'de-DE', label: 'Deutsch (Deutschland)', flag: '🇩🇪', nativeName: 'Deutsch' },
+  { code: 'it-IT', label: 'Italiano (Italia)', flag: '🇮🇹', nativeName: 'Italiano' },
+  { code: 'pt-BR', label: 'Português (Brasil)', flag: '🇧🇷', nativeName: 'Português BR' },
+  { code: 'pt-PT', label: 'Português (Portugal)', flag: '🇵🇹', nativeName: 'Português PT' },
+  { code: 'tr-TR', label: 'Türkçe (Türkiye)', flag: '🇹🇷', nativeName: 'Türkçe' },
+  { code: 'ru-RU', label: 'Русский (Russian)', flag: '🇷🇺', nativeName: 'Русский' },
+  { code: 'zh-CN', label: '中文 (Mandarin Simplified)', flag: '🇨🇳', nativeName: '中文 (简体)' },
+  { code: 'ja-JP', label: '日本語 (Japanese)', flag: '🇯🇵', nativeName: '日本語' },
+  { code: 'ko-KR', label: '한국어 (Korean)', flag: '🇰🇷', nativeName: '한국어' },
+  { code: 'hi-IN', label: 'हिन्दी (Hindi)', flag: '🇮🇳', nativeName: 'हिन्दी' },
+  { code: 'id-ID', label: 'Bahasa Indonesia', flag: '🇮🇩', nativeName: 'Indonesia' },
+  { code: 'fa-IR', label: 'فارسی (Persian)', flag: '🇮🇷', nativeName: 'فارسی' },
+  { code: 'ur-PK', label: 'اردو (Urdu)', flag: '🇵🇰', nativeName: 'اردو' },
+];
 
 export function Composer({
   language,
@@ -33,11 +83,34 @@ export function Composer({
   const [isDragging, setIsDragging] = useState(false);
   const [listening, setListening] = useState(false);
   const [showQuickModes, setShowQuickModes] = useState(false);
+  const [showDialects, setShowDialects] = useState(false);
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
+  const [dialectTab, setDialectTab] = useState<'all' | 'arabic' | 'world'>('all');
+  const [dialectSearch, setDialectSearch] = useState('');
+  const isAr = language === 'ar';
+  const [voiceDialect, setVoiceDialect] = useState<string>(() => {
+    return localStorage.getItem('adam_voice_dialect') || (isAr ? 'ar-DZ' : 'en-US');
+  });
+
+  const filteredDialects = useMemo(() => {
+    return GLOBAL_DIALECTS.filter((d) => {
+      const isArabic = d.code.startsWith('ar-');
+      if (dialectTab === 'arabic' && !isArabic) return false;
+      if (dialectTab === 'world' && isArabic) return false;
+
+      if (!dialectSearch.trim()) return true;
+      const q = dialectSearch.toLowerCase().trim();
+      return (
+        d.label.toLowerCase().includes(q) ||
+        d.nativeName.toLowerCase().includes(q) ||
+        d.code.toLowerCase().includes(q)
+      );
+    });
+  }, [dialectTab, dialectSearch]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const t = copy(language);
-  const isAr = language === 'ar';
 
   // Listen for external image trigger events
   useEffect(() => {
@@ -179,7 +252,7 @@ export function Composer({
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = isAr ? 'ar-SA' : 'en-US';
+      recognition.lang = voiceDialect || (isAr ? 'ar-DZ' : 'en-US');
       recognition.continuous = false;
       recognition.interimResults = true;
 
@@ -198,6 +271,14 @@ export function Composer({
     } catch {
       setListening(false);
     }
+  };
+
+  const handleSelectDialect = (code: string) => {
+    setVoiceDialect(code);
+    try {
+      localStorage.setItem('adam_voice_dialect', code);
+    } catch {}
+    setShowDialects(false);
   };
 
   const insertPromptChip = (prefix: string) => {
@@ -292,6 +373,37 @@ export function Composer({
         <div className="flex items-center gap-2 mb-2.5 px-1 overflow-x-auto scrollbar-none py-0.5 animate-fadeIn select-none">
           <button
             type="button"
+            onClick={() => setShowDialects((prev) => !prev)}
+            className={`text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0 ${
+              showDialects
+                ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent)]'
+                : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border-[var(--border)]'
+            }`}
+          >
+            <Languages size={13} className="text-emerald-400" />
+            <span>
+              {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.flag}{' '}
+              {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.label.split(' ')[0] || (isAr ? 'اللهجة واللغة' : 'Dialect')}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'ترجم هذا الكلام باحترافية ودقة إلى الإنجليزية: ' : 'Translate this text accurately to Arabic: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-emerald-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+          >
+            <Languages size={13} className="text-emerald-400" />
+            <span>{isAr ? 'ترجمة فورية 🌐' : 'Translate 🌐'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'فكر بعمق استثنائي وحلل كل خطوة وقدم أدق حل علمي/برمجي لـ: ' : 'Think deeply step-by-step with ultra-high reasoning for: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-violet-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+          >
+            <BrainCircuit size={13} className="text-violet-400" />
+            <span>{isAr ? 'تفكير عميق 🧠' : 'Deep Reasoning 🧠'}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => insertPromptChip(isAr ? 'برمج لي كود كامل بنسبة 100% لـ: ' : 'Write 100% complete production code for: ')}
             className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
           >
@@ -322,6 +434,105 @@ export function Composer({
             <Sparkles size={13} className="text-purple-400" />
             <span>{isAr ? 'توليد 8K' : '8K Visual'}</span>
           </button>
+        </div>
+      )}
+
+      {/* Dialect / Language Selector Tray */}
+      {showDialects && (
+        <div className="mb-2.5 p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] animate-fadeIn shadow-2xl space-y-2.5">
+          <div className="flex items-center justify-between text-xs font-bold text-[var(--text)]">
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <Globe size={14} />
+              <span>{isAr ? 'اختر لهجة الإملاء والحديث' : 'Select Voice & Dialect Accent'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowDialects(false)}
+              className="text-[var(--muted)] hover:text-[var(--text)] text-xs font-medium cursor-pointer"
+            >
+              {isAr ? 'إغلاق' : 'Close'}
+            </button>
+          </div>
+
+          {/* Dialect Filter Tabs & Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1 bg-[var(--surface)] p-0.5 rounded-xl border border-[var(--border)] flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setDialectTab('all')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                  dialectTab === 'all'
+                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                {isAr ? 'الكل' : 'All'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDialectTab('arabic')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                  dialectTab === 'arabic'
+                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                {isAr ? '🇩🇿 العربية واللهجات' : 'Arabic Dialects'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDialectTab('world')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                  dialectTab === 'world'
+                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                {isAr ? '🌍 لغات عالمية' : 'Global Languages'}
+              </button>
+            </div>
+
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={dialectSearch}
+                onChange={(e) => setDialectSearch(e.target.value)}
+                placeholder={isAr ? 'بحث في اللهجات واللغات...' : 'Filter dialects or countries...'}
+                className="w-full py-1 px-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+              />
+              {dialectSearch && (
+                <button
+                  type="button"
+                  onClick={() => setDialectSearch('')}
+                  className={`absolute top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] text-xs ${isAr ? 'left-2' : 'right-2'}`}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Dialect Options Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+            {filteredDialects.map((d) => (
+              <button
+                key={d.code}
+                type="button"
+                onClick={() => handleSelectDialect(d.code)}
+                className={`flex items-center justify-between gap-1 px-2.5 py-1.5 rounded-xl text-xs text-right transition cursor-pointer ${
+                  voiceDialect === d.code
+                    ? 'bg-[var(--accent)] text-slate-950 font-bold shadow-sm'
+                    : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)]'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <span>{d.flag}</span>
+                  <span className="truncate">{d.label}</span>
+                </div>
+                {voiceDialect === d.code && <Check size={12} className="flex-shrink-0" />}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -360,6 +571,21 @@ export function Composer({
           ) : (
             <Camera size={16} />
           )}
+        </button>
+
+        {/* Dedicated Instant Translation Trigger Button */}
+        <button
+          type="button"
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+            showTranslateModal
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
+              : 'text-[var(--muted)] hover:text-emerald-400 hover:bg-[var(--surface-2)]'
+          }`}
+          onClick={() => setShowTranslateModal(true)}
+          aria-label={isAr ? 'ترجمة فورية للنصوص' : 'Universal Translation'}
+          title={isAr ? 'ترجمة النصوص إلى أي لغة' : 'Translate text to any language'}
+        >
+          <Languages size={16} />
         </button>
 
         {/* Text Input Area */}
@@ -433,6 +659,19 @@ export function Composer({
         </span>
         <span className="font-mono text-[10px]">v2.5 Ultra</span>
       </div>
+
+      {/* Universal Fast Translation Modal */}
+      <TranslationModal
+        isOpen={showTranslateModal}
+        onClose={() => setShowTranslateModal(false)}
+        language={language}
+        initialText={draft}
+        onSendToChat={(translatedText) => {
+          setDraft(translatedText);
+          setShowTranslateModal(false);
+          textareaRef.current?.focus();
+        }}
+      />
     </div>
   );
 }

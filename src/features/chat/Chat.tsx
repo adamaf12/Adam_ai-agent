@@ -37,7 +37,6 @@ import { createAssistantMessage, createUserMessage } from './chatModel';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
 import { StreamingIndicator } from './StreamingIndicator';
-import { ChatBackgroundHub } from './ChatBackgroundHub';
 import { copy } from '../../core/i18n';
 import {
   loadConversation,
@@ -56,6 +55,7 @@ import {
   registerLearnedRule,
   recordSelfCorrection,
   generateDynamicDirectives,
+  recordContinuousEvolutionStep,
 } from '../../core/agent/onlineLearning';
 import {
   consolidateConversationToInfiniteMemory,
@@ -126,9 +126,16 @@ export function Chat({
 
   useEffect(() => {
     const handleOpenAcademic = () => setIsAcademicModalOpen(true);
+    const handleOpenSession = () => {
+      setMemoryStats(getInfiniteMemoryStats());
+      setIsSessionDrawerOpen(true);
+    };
+
     window.addEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
+    window.addEventListener('adam:open-session-drawer' as any, handleOpenSession);
     return () => {
       window.removeEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
+      window.removeEventListener('adam:open-session-drawer' as any, handleOpenSession);
     };
   }, []);
 
@@ -287,6 +294,7 @@ export function Chat({
   };
 
   const send = async (text: string, images?: string[]) => {
+    const turnStartTime = Date.now();
     const clean = text.trim();
     if ((!clean && (!images || images.length === 0)) || busy) return;
     const user = createUserMessage(clean, images);
@@ -475,6 +483,13 @@ export function Chat({
         messages: [...next, { ...assistant, content: finalized }],
       });
       setMemoryStats(getInfiniteMemoryStats());
+
+      // 6. Perpetual Auto-Evolution & Self-Improvement Loop
+      const turnLatency = Date.now() - turnStartTime;
+      recordContinuousEvolutionStep(clean, finalized, {
+        latencyMs: turnLatency,
+        wasSuccess: true,
+      });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       const message = err instanceof Error ? err.message : 'AI request failed';
@@ -499,56 +514,6 @@ export function Chat({
 
   return (
     <section className={busy ? "chat-page chat-page--busy" : "chat-page"}>
-      {/* Modern Minimalist Session Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)] transition-colors">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] flex-shrink-0" />
-          <span className="text-xs font-bold text-[var(--text)] truncate max-w-[200px] sm:max-w-md">
-            {messages.length
-              ? currentConversation.title || (language === 'ar' ? 'المحادثة الحالية' : 'Current Chat')
-              : (language === 'ar' ? 'جلسة ذكاء اصطناعي جديدة' : 'New AI Session')}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Integrated Academic Companion Trigger Button (المكتبة والأكاديمية المدمجة في الشات) */}
-          <button
-            type="button"
-            onClick={() => setIsAcademicModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition cursor-pointer active:scale-95 shadow-sm"
-            title={language === 'ar' ? 'المكتبة والأكاديمية المدمجة في الشات' : 'Integrated Academic & Library Hub'}
-          >
-            <GraduationCap size={14} className="text-indigo-400" />
-            <span className="hidden sm:inline">{language === 'ar' ? 'المكتبة والأكاديمية' : 'Academic Hub'}</span>
-          </button>
-
-          {/* Side Panel Trigger Button (الزر الجانبي للجلسات والذاكرة) */}
-          <button
-            type="button"
-            onClick={() => {
-              setMemoryStats(getInfiniteMemoryStats());
-              setIsSessionDrawerOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition cursor-pointer active:scale-95 shadow-sm"
-            title={language === 'ar' ? 'إدارة الجلسات والذاكرة والسجل' : 'Manage Sessions & Memory'}
-          >
-            <SlidersHorizontal size={13} className="text-[var(--accent)]" />
-            <span className="hidden sm:inline">{language === 'ar' ? 'الجلسات والذاكرة' : 'Sessions & Memory'}</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-[var(--accent-subtle)] text-[var(--accent)] text-[10px] font-mono font-bold">
-              {conversations.length}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Omnipresent Background Engine Hub (يعمل باستمرار في خلفية المحادثة) */}
-      <ChatBackgroundHub
-        language={language}
-        onExecutePrompt={send}
-        onNavigateView={onNavigateView || (() => {})}
-        onOpenAcademicModal={() => setIsAcademicModalOpen(true)}
-      />
-
       <div className="chat-scroll">
         {proactiveAlerts.length > 0 && (
           <div className="proactive-banner" role="status" aria-live="polite">
@@ -569,87 +534,55 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="max-w-3xl mx-auto px-4 py-8 sm:py-14 text-center flex flex-col items-center gap-5 animate-fadeIn select-none">
-            {/* Ambient Multi-layer Glowing Brand Emblem */}
-            <div className="relative group mb-1">
-              <div className="absolute -inset-2 bg-gradient-to-r from-[var(--accent)] via-teal-400 to-[var(--accent-hover)] rounded-3xl opacity-30 blur-xl group-hover:opacity-60 transition duration-700 animate-pulse" />
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-[var(--surface)] via-[var(--surface-2)] to-[var(--surface)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-2xl backdrop-blur-xl">
-                <Sparkles size={34} className="animate-spin-slow drop-shadow-[0_0_12px_var(--accent)]" />
+          <div className="max-w-2xl mx-auto px-4 py-12 sm:py-16 text-center flex flex-col items-center gap-6 animate-fadeIn select-none">
+            {/* Ambient Minimalist Brand Mark */}
+            <div className="relative group">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
+                <Sparkles size={28} className="drop-shadow-[0_0_10px_var(--accent)]" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--surface)]/80 border border-[var(--border)] text-[var(--accent)] text-xs font-bold font-mono shadow-sm backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] animate-ping" />
-                <span>ADEM • EXECUTIVE AUTONOMOUS CORE v2.5</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text)] tracking-tight leading-tight">
-                {language === 'ar' ? `كيف يمكنني إنجاز وتسريع أعمالك اليوم؟` : `How can I accelerate your mission today?`}
+              <h1 className="text-2xl sm:text-3xl font-black text-[var(--text)] tracking-tight">
+                {language === 'ar' ? 'مرحباً، كيف يمكنني مساعدتك اليوم؟' : 'Hello, how can I help you today?'}
               </h1>
-              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-lg mx-auto leading-relaxed font-normal">
+              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto leading-relaxed">
                 {language === 'ar'
-                  ? `منظومة آدم التنفيذية جاهزة للبرمجة المتقدمة، إدارة السيرفرات، الإدراك البصري، وهندسة النظم الفائقة.`
-                  : `Executive autonomous AI engineered for full-stack software, Linux systems, multimodal vision, and deep analytics.`}
+                  ? 'منظومة ذكاء اصطناعي شاملة للبرمجة، التحليل، الإدراك البصري، وإدارة المشاريع.'
+                  : 'Executive AI for full-stack engineering, vision perception, and system intelligence.'}
               </p>
             </div>
 
-            {/* 4 Luxury Architectural Showcase Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full max-w-xl mt-3 text-start">
+            {/* 4 Clean Minimal Prompt Pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg mt-2 text-start">
               {[
                 {
                   icon: Code,
-                  titleAr: 'كتابة وتصحيح الأكواد الفائقة',
-                  titleEn: 'Full-Stack Code Engineering',
-                  descAr: 'بناء تطبيقات متكاملة، حل مشاكل وأخطاء الـ Backend والـ Frontend',
-                  descEn: 'Architect full applications & eliminate complex bugs',
-                  promptAr: 'برمج لي تطبيق ويب متجاوب وحديث بالكامل بنسبة 100% مع واجهة فاخرة',
+                  titleAr: 'برمجة وتطوير تطبيق ويب كامل',
+                  titleEn: 'Architect full web application',
+                  promptAr: 'برمج لي تطبيق ويب متجاوب وحديث بالكامل بنسبة 100% مع واجهة أنيقة',
                   promptEn: 'Write a complete responsive production-ready web application',
-                  tagAr: 'برمجة 100%',
-                  tagEn: '100% Code',
-                },
-                {
-                  icon: Terminal,
-                  titleAr: 'أوامر وهندسة لينكس والسيرفرات',
-                  titleEn: 'Linux, Termux & Cloud Ops',
-                  descAr: 'أتمتة Bash، إدارة الحاويات Docker، وتوجيه الأنظمة السحابية',
-                  descEn: 'Bash scripting, Docker containers & system diagnostics',
-                  promptAr: 'ما هي أفضل سكربتات وأوامر فحص وإدارة سيرفرات لينكس بأمان؟',
-                  promptEn: 'Provide advanced Linux server audit & automation scripts',
-                  tagAr: 'أنظمة وأوامر',
-                  tagEn: 'Terminal',
                 },
                 {
                   icon: Sparkles,
-                  titleAr: 'استوديو الإدراك والتوليد 8K',
-                  titleEn: 'Multimodal 8K Vision Studio',
-                  descAr: 'تحليل الصور والمستندات بدقة متناهية وتوليد صور سينمائية',
-                  descEn: 'Precise visual OCR auditing & cinematic 8K rendering',
-                  promptAr: 'أنشئ لي فكرة وتفاصيل برومبت سينمائي فائق الدقة 8K مع توزيع إضاءة هوليوودي',
+                  titleAr: 'توليد أفكار أو صور سينمائية 8K',
+                  titleEn: 'Cinematic 8K image prompt',
+                  promptAr: 'أنشئ لي فكرة وتفاصيل برومبت سينمائي فائق الدقة 8K مع توزيع إضاءة احترافي',
                   promptEn: 'Generate an 8K cinematic visual concept with studio lighting',
-                  tagAr: 'إدراك بصري',
-                  tagEn: 'Vision & 8K',
                 },
                 {
-                  icon: Clock,
-                  titleAr: 'إدارة الإنتاجية والخطط التنفيذية',
-                  titleEn: 'Strategic Executive Planning',
-                  descAr: 'هيكلة أهداف العمل، تلخيص الدراسات والأبحاث التقنية المعقدة',
-                  descEn: 'Autonomous workflow planning & research synthesis',
-                  promptAr: 'أنشئ لي خطة عمل استراتيجية محكمة لتطوير وإطلاق مشروعي التقني',
-                  promptEn: 'Build a rigorous executive execution plan for my tech project',
-                  tagAr: 'خطط تنفيذية',
-                  tagEn: 'Productivity',
+                  icon: Terminal,
+                  titleAr: 'أوامر وإدارة أنظمة لينكس والسيرفرات',
+                  titleEn: 'Linux commands & system automation',
+                  promptAr: 'ما هي أفضل سكربتات وأوامر فحص وإدارة سيرفرات لينكس بأمان؟',
+                  promptEn: 'Provide advanced Linux server audit & automation scripts',
                 },
                 {
                   icon: GraduationCap,
-                  titleAr: 'المرافق الأكاديمي الشامل لجميع الأطوار',
-                  titleEn: '24/7 Academic Student Companion',
-                  descAr: 'حل المسائل، كناش القوانين، عيادة تصحيح الأخطاء، وبومودورو دراسي',
-                  descEn: 'All-tier problem solving, formula sheets, exam clinic & study plans',
-                  promptAr: 'اشرح لي قانون نيوتن الثاني مع مثال تطبيقي، وفخاخ الامتحانات، وشفرة ذهبية لتذكره',
-                  promptEn: 'Explain Newton’s Second Law with a worked example, common exam traps, and memory anchor',
-                  tagAr: 'تعليم وأكاديميا',
-                  tagEn: 'Academic AI',
+                  titleAr: 'شرح أكاديمي وحل مسائل تخصصية',
+                  titleEn: 'Academic study & problem solving',
+                  promptAr: 'اشرح لي مفهوماً علمياً مع أمثلة عملية ونصائح لتثبيت الفهم',
+                  promptEn: 'Explain a core scientific concept with practical examples and study tips',
                 },
               ].map((card, idx) => {
                 const Icon = card.icon;
@@ -658,25 +591,14 @@ export function Chat({
                     key={idx}
                     type="button"
                     onClick={() => send(language === 'ar' ? card.promptAr : card.promptEn)}
-                    className="relative group p-4 rounded-2xl bg-[var(--surface)]/90 hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 flex items-start gap-3.5 text-start cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[var(--accent-glow)] overflow-hidden active:scale-[0.98]"
+                    className="group p-3 sm:p-3.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-3 text-start cursor-pointer shadow-sm active:scale-[0.99]"
                   >
-                    <div className="absolute top-0 right-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
-                    <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors shadow-inner">
-                      <Icon size={20} />
+                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors">
+                      <Icon size={16} />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate">
-                          {language === 'ar' ? card.titleAr : card.titleEn}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[var(--surface-2)] text-[var(--muted)] group-hover:text-[var(--accent)] group-hover:bg-[var(--accent-subtle)] transition">
-                          {language === 'ar' ? card.tagAr : card.tagEn}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-[var(--muted)] leading-relaxed block">
-                        {language === 'ar' ? card.descAr : card.descEn}
-                      </span>
-                    </div>
+                    <span className="text-xs font-semibold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate flex-1">
+                      {language === 'ar' ? card.titleAr : card.titleEn}
+                    </span>
                   </button>
                 );
               })}

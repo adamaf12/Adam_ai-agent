@@ -914,6 +914,38 @@ input, textarea {
   transition: all 0.18s ease;
 }
 
+.settings-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  transition: all 0.18s ease;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.settings-nav-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.settings-nav-btn--active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
 .header-action-btn:hover {
   background: var(--surface-3);
   border-color: var(--accent);

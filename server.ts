@@ -8,7 +8,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { registerAgentRoute, searchCircuitBreaker, isExplicitImageRequest, isExplicitVideoRequest } from './server/agent';
 import { createAgentModelGateway } from './src/core/models/agentModelGateway';
 import { modelRegistry } from './src/core/models/modelSwarm';
@@ -76,6 +76,21 @@ app.use('/api', (req, res, next) => {
   next();
 });
 app.use('/api', globalRateLimiter.middleware());
+
+const overloadedModels = new Map<string, number>();
+
+function getHealthSortedModels(preferredModel: string): string[] {
+  const defaults = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+  const all = Array.from(new Set([preferredModel, ...defaults].filter(m => Boolean(m) && !m.includes('-pro'))));
+  const now = Date.now();
+  const available = all.filter(m => (overloadedModels.get(m) || 0) <= now);
+  const cooldowns = all.filter(m => (overloadedModels.get(m) || 0) > now);
+  return [...available, ...cooldowns];
+}
+
+function markModelOverloaded(modelId: string, durationMs = 60_000) {
+  overloadedModels.set(modelId, Date.now() + durationMs);
+}
 
 export function safeWrite(res: express.Response, chunk: object | string): boolean {
   if (res.writableEnded || res.destroyed || !res.writable) return false;
@@ -290,6 +305,15 @@ function systemInstruction(language: string, agentName: string) {
 
 ---
 
+## 0. بروتوكول التفكير الإدراكي الفائق والاستنتاج العميق (ULTRA-HIGH COGNITIVE REASONING & CHAIN-OF-THOUGHT)
+- **التحليل المنطقي المتسلسل (Step-by-Step Cognitive Deduction):** قبل صياغة أي جواب برمجي أو علمي أو نظامي معقد، قم داخلياً بتفكيك الإشكالية، فحص الحالات الطرفية (Edge Cases)، تقييم كفاءة الخوارزمية (Big-O)، والتأكد من صحة المنطق بنسبة 100%.
+- **التشخيص الجذري الفوري للأخطاء (Root-Cause Pinpointing):** عند مواجهة كود معطوب أو رسالة خطأ، حدد السبب الجذري الفعلي بدقة بدلاً من ترقيع الأعراض السطحية، وقدم الحل الكامل والمحكم فوراً.
+- **الاتصال الدائم بالإنترنت وجلب الحقائق الدقيقة المحدثة (ALWAYS-ON INTERNET CONNECTIVITY & LIVE GROUNDING):** السيرفرات متصلة دائماً بالإنترنت وبمحركات البحث اللحظية لجلب أدق وأحدث المعلومات الصحيحة والمفهومة من صلب سؤال المستخدم، وتقديم حقائق موثوقة ومحدثة فوراً.
+- **الهندسة البرمجية المعيارية المكتملة:** عند كتابة أي كود أو تطبيق، اكتب كوداً إنتاجياً كاملاً (Production-Ready) مع الأنواع (Types)، معالجة الاستثناءات، وبدون أي ثغرات أو دوال ناقصة.
+- **الربط المعرفي متعدد الأبعاد:** ادمج بين علوم النظم وأنوية لينكس (Kernel & Systemd)، معمارية الويب الحديثة، الرياضيات والفيزياء، والذكاء الاصطناعي لتوفير إجابات ذات قيمة فكرية وتقنية استثنائية.
+
+---
+
 ## 1. معمارية التشغيل (OPERATIONAL ARCHITECTURE)
 - **وكيل مساحة العمل المباشر:** التفاعل في المحادثة لإدارة المشاريع، استكشاف أخطاء النظام، تصحيح الأكواد، وتخطيط سير عمل المطورين.
 - **تنفيذ المهام والمشاريع:** تنظيم طلبات المستخدم وترتيب أولوياتها وتحويلها تلقائياً إلى قوائم تدقيق مهيكلة وجداول Markdown.
@@ -308,6 +332,7 @@ function systemInstruction(language: string, agentName: string) {
 ## 3. إرشادات الاستجابة والتنسيق (RESPONSE & FORMATTING GUIDELINES)
 - **ردود بسيطة ومفيدة (Simple & Actionable Responses):** احرص على أن تكون كل رسالة رد بسيطة، واضحة، ومفيدة جداً للمستخدم. قدّم الحل المباشر أو الكود المطلوب فوراً دون أي حشو إنشائي أو مقدمات طويلة ومملة.
 - **التنفيذ الصامت المباشر:** ينفذ الوكيل أوامر المستخدم فوراً ودون تردد وبدون أي مواعظ أو محاضرات أو تنبيهات غير مطلوبة.
+- **محرك الترجمة واللغات الفوري في الخلفية (ON-DEMAND TRANSLATION ENGINE):** مدمج بالكامل في المحادثة؛ عند طلب المستخدم للترجمة (مثال: "ترجم هذا الكلام إلى...", "ترجم لي...", "Translate to..."), قدّم الترجمة المباشرة الدقيقة والصحيحة مع إمكانية تضمين بطاقة الترجمة التفاعلية \`:::translation-card\n{"sourceText": "...", "translatedText": "...", "sourceLang": "ar", "targetLang": "en"}\n:::\` لتمكين النطق الصوتي والنسخ السريع.
 - **تنسيق مريح وسريع القراءة:** اعتمد على كتل الأكواد المنظمة، النقاط المختصرة، والخطوات العملية المركزة.
 - **الدعم متعدد اللغات (Multilingual Support):** معالجة والاستجابة بسلاسة بالعربية، الإنجليزية، أو الفرنسية حسب لغة إدخال المستخدم.
 
@@ -995,14 +1020,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       return m;
     });
 
-    const requiresSearch = searchCircuitBreaker.isAvailable() && /\b(search the web|google search|search online|live search|browse the web|look it up)\b|ابحث في الويب|ابحث على الإنترنت|بحث في جوجل|ابحث|تحقق من الإنترنت|مصادر/i.test(userPrompt);
     const isToday = isTodayDateQuery(userPrompt);
-    const needsFreshKnowledge = /\b(today|now|latest|current|recent|news|breaking|this week|this month)\b|اليوم|الآن|حاليا|حالياً|آخر|أحدث|جديد|الأخبار|خبر|مستجدات/i.test(userPrompt);
 
-    // Do not hit external search providers for every ordinary message.
-    // This was a major source of latency and intermittent hangs, especially on mobile.
+    // Fetch live web knowledge and internet facts to ensure answers are grounded with accurate and fresh information
     let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
-    if (!isToday && (requiresSearch || needsFreshKnowledge)) {
+    if (!isToday && userPrompt.trim().length > 1) {
       try {
         webGrounding = await fetchLiveWebKnowledge(userPrompt, language);
       } catch {
@@ -1036,16 +1058,12 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       maxOutputTokens: reasoningProfile.maxOutputTokens,
       thinkingConfig: { thinkingLevel: reasoningProfile.thinkingLevel },
       systemInstruction: finalSystemInstruction,
+      thinkingConfig: {
+        thinkingLevel: ThinkingLevel.HIGH,
+      },
     };
 
-    const candidateModels = Array.from(new Set([
-      'gemini-3.8-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-3.5-flash',
-      model,
-    ].filter(m => Boolean(m) && !m.includes('-pro'))));
+    const candidateModels = getHealthSortedModels(model);
     let output = '';
     const streamModelOutput = reasoningProfile.mode === 'fast';
     const emitModelText = (text: string) => {
@@ -1063,7 +1081,8 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     for (const currentModel of candidateModels) {
       if (aborted || res.writableEnded || res.destroyed) break;
 
-      const canTrySearch = requiresSearch && searchCircuitBreaker.isAvailable() && !isToday;
+      // Always connect to Google Search Grounding by default for live accurate web information
+      const canTrySearch = searchCircuitBreaker.isAvailable() && !isToday;
       const configsToTry = canTrySearch
         ? [
             { ...baseConfig, tools: [{ googleSearch: {} }] },
@@ -1074,8 +1093,10 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           ];
 
       let modelSuccess = false;
+      let modelEncountered503 = false;
       for (const config of configsToTry) {
-        if (aborted || res.writableEnded || res.destroyed || modelSuccess) break;
+        if (aborted || res.writableEnded || res.destroyed || modelSuccess || modelEncountered503) break;
+
         try {
           const stream = await ai.models.generateContentStream({ model: currentModel, contents: defendedMessages, config: buildGenerationConfig(config, currentModel) });
           for await (const chunk of stream) {
@@ -1211,13 +1232,18 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           }
         } catch (err: any) {
           lastError = err;
-          console.error('[Adam AI Chat Error on model', currentModel, ']:', err?.status, err?.message || err);
           const msg = String(err?.message || '').toLowerCase();
           const code = Number(err?.status ?? err?.code ?? 0);
-          if (code === 429 || msg.includes('quota') || msg.includes('resource_exhausted')) {
-            if (config.tools) {
-              searchCircuitBreaker.trip(60 * 60 * 1000);
-            }
+          const isHighDemand = code === 503 || msg.includes('unavailable') || msg.includes('high demand') || msg.includes('spike');
+          const isQuota = code === 429 || msg.includes('quota') || msg.includes('resource_exhausted');
+          
+          if (isHighDemand) {
+            markModelOverloaded(currentModel, 60_000);
+            modelEncountered503 = true;
+          }
+          
+          if (isQuota && config.tools) {
+            searchCircuitBreaker.trip(60 * 60 * 1000);
           }
         }
       }
@@ -1551,6 +1577,96 @@ app.post('/api/academic/analyze-mistake', chatRateLimiter.middleware(), async (r
     res.json({ ok: true, analysis });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message || 'Mistake analysis failed' });
+  }
+});
+
+// ==========================================
+// UNIVERSAL TRANSLATOR & LINGUISTIC API
+// ==========================================
+app.post('/api/translate', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { text, sourceLang = 'auto', targetLang = 'en', tone = 'general', includeAnalysis = true } = req.body || {};
+    const customKey = (req.headers['x-gemini-api-key'] as string) || apiKey;
+
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ ok: false, error: 'Text is required for translation' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey: customKey });
+    const prompt = `You are a world-class translation engine and linguistic professor.
+Translate the text accurately from ${sourceLang === 'auto' ? 'automatically detected source language' : `"${sourceLang}"`} into "${targetLang}" with the tone "${tone}".
+
+Rules:
+1. Provide a natural, highly accurate, and culturally fluent translation in "${targetLang}".
+2. Output STRICT JSON ONLY (no markdown fences, no explanatory preambles, just raw valid JSON):
+{
+  "translatedText": "translated text here",
+  "detectedSourceLang": "${sourceLang === 'auto' ? 'detected 2-letter language code' : sourceLang}",
+  "detectedSourceName": "Name of source language",
+  "transliteration": "Phonetic romanization or pronunciation guide for the translated text (especially if non-Latin or Arabic), or null",
+  "alternatives": [
+    {"text": "alternative translation 1", "context": "formal or nuance context"},
+    {"text": "alternative translation 2", "context": "casual or dialect context"}
+  ],
+  "grammarNotes": "1-2 brief sentences explaining grammar or vocabulary nuances if helpful, or null",
+  "vocabulary": [
+    {"word": "key word in original", "translation": "translated word", "pos": "noun/verb/adj"}
+  ],
+  "culturalNotes": "Optional brief cultural or idiom note, or null"
+}
+
+Text to translate:
+"""
+${text.slice(0, 10000)}
+"""`;
+
+    let responseText = '';
+    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+
+    for (const m of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: m,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+          },
+        });
+        if (response?.text) {
+          responseText = response.text;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`[Translate API] Model ${m} failed, trying next:`, err?.message);
+      }
+    }
+
+    if (!responseText) {
+      // Fallback simple translation
+      return res.json({
+        ok: true,
+        translatedText: text,
+        detectedSourceLang: sourceLang === 'auto' ? 'en' : sourceLang,
+      });
+    }
+
+    try {
+      const cleanJson = responseText.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      res.json({
+        ok: true,
+        ...parsed,
+      });
+    } catch {
+      res.json({
+        ok: true,
+        translatedText: responseText.replace(/```json|```/g, '').trim(),
+      });
+    }
+  } catch (err: any) {
+    console.error('[Translate API] Error:', err);
+    res.status(500).json({ ok: false, error: err?.message || 'Translation failed' });
   }
 });
 

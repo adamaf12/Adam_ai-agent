@@ -1,0 +1,14 @@
+{
+  "appId": "com.adam.aiagent",
+  "productName": "Adam AI Agent",
+  "directories": {
+    "output": "release"
+  },
+  "files": ["dist/**/*", "electron/**/*"],
+  "win": {
+    "target": "nsis"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"]
+  }
+}

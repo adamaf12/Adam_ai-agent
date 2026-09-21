@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bot, Check, Code2, Copy, Gamepad2, Play, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bot, Check, Code2, Copy, Gamepad2, Languages, Play, User, Volume2, VolumeX, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,6 +17,8 @@ import { MediaStudioCard, type MediaCardPayload } from './MediaStudioCard';
 import { CognitiveIqCard, type CognitiveIqCardPayload } from './CognitiveIqCard';
 import { GeospatialCard, type GeospatialCardPayload } from './GeospatialCard';
 import { InteractiveTaskCard, type TaskCardPayload } from './InteractiveTaskCard';
+import { TranslationCard, type TranslationCardPayload } from './TranslationCard';
+import { requestTranslation } from '../translation/translationApi';
 
 function extractPromptFromUrl(src: string): string {
   try {
@@ -132,8 +134,22 @@ export function MessageBubble({
     } catch {}
   }
 
+  // Check if message contains structured translation card payload
+  const translationMatch = message.content.match(/:::translation-card\s*([\s\S]*?)\s*:::/i);
+  let translationData: TranslationCardPayload | null = null;
+  if (translationMatch) {
+    try {
+      translationData = JSON.parse(translationMatch[1]);
+    } catch {}
+  }
+
   // Check if message contains runnable app/game code
   const appData = assistant ? extractAppCode(message.content) : null;
+
+  // Inline dynamic translation state
+  const [inlineTranslation, setInlineTranslation] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showInlineTranslation, setShowInlineTranslation] = useState(false);
 
   // Clean raw image card or grounding or app launcher or agent action or academic card tags from display markdown
   let displayMarkdown = message.content;
@@ -167,8 +183,94 @@ export function MessageBubble({
   if (taskMatch) {
     displayMarkdown = displayMarkdown.replace(/:::task-card\s*[\s\S]*?\s*:::/gi, '').trim();
   }
+  if (translationMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::translation-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
 
   const copy = () => navigator.clipboard?.writeText(displayMarkdown || message.content);
+
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const toggleSpeak = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    // Clean text from code blocks, markdown symbols, cards, and metadata
+    const cleanText = (displayMarkdown || message.content)
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+      .replace(/[#*_~>]/g, '')
+      .replace(/:::[^:]+:::/g, '')
+      .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    // Smart multi-language and multi-dialect detection
+    const isArabic = /[\u0600-\u06FF]/.test(cleanText);
+    const isFrench = /[àâäéèêëîïôöùûüç]/i.test(cleanText) && !isArabic;
+    const isSpanish = /[áéíóúüñ¿¡]/i.test(cleanText) && !isArabic;
+    const isGerman = /[äöüß]/i.test(cleanText) && !isArabic;
+    const isItalian = /[àèéìíîòóùú]/i.test(cleanText) && !isArabic && !isFrench && !isSpanish;
+    const isJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(cleanText);
+    const isChinese = /[\u4e00-\u9fff]/.test(cleanText) && !isJapanese;
+    const isKorean = /[\uac00-\ud7af\u1100-\u11ff]/.test(cleanText);
+    const isRussian = /[\u0400-\u04FF]/.test(cleanText);
+    const isTurkish = /[ğüşöçıİĞÜŞÖÇ]/.test(cleanText) && !isArabic;
+    const isHindi = /[\u0900-\u097F]/.test(cleanText);
+    const isPersian = /[\u067E\u0686\u0698\u06AF]/.test(cleanText);
+    const isUrdu = /[\u0679\u0688\u0691\u06BA\u06D2]/.test(cleanText);
+
+    let targetLang = 'en-US';
+    if (isPersian) targetLang = 'fa-IR';
+    else if (isUrdu) targetLang = 'ur-PK';
+    else if (isArabic) targetLang = 'ar-SA';
+    else if (isFrench) targetLang = 'fr-FR';
+    else if (isSpanish) targetLang = 'es-ES';
+    else if (isGerman) targetLang = 'de-DE';
+    else if (isItalian) targetLang = 'it-IT';
+    else if (isJapanese) targetLang = 'ja-JP';
+    else if (isChinese) targetLang = 'zh-CN';
+    else if (isKorean) targetLang = 'ko-KR';
+    else if (isRussian) targetLang = 'ru-RU';
+    else if (isTurkish) targetLang = 'tr-TR';
+    else if (isHindi) targetLang = 'hi-IN';
+    else if (language === 'ar') targetLang = 'ar-SA';
+
+    utterance.lang = targetLang;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const exactVoice = voices.find(v => v.lang.toLowerCase() === targetLang.toLowerCase());
+    const matchingVoice = exactVoice || voices.find(v => v.lang.toLowerCase().startsWith(targetLang.slice(0, 2).toLowerCase()));
+    if (matchingVoice) {
+      utterance.voice = matchingVoice;
+    }
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleLaunchSandbox = () => {
     if (!appData) return;
@@ -231,37 +333,28 @@ export function MessageBubble({
 
         {/* User Attached Images Gallery */}
         {message.images && message.images.length > 0 && (
-          <div className="my-2 flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>{language === 'ar' ? '⚡ تم الفحص والإدراك البصري التلقائي للمكونات' : '⚡ Auto-Perception & Instant Vision Active'}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {message.images.map((imgUrl, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() =>
-                    setSelectedImage({
-                      url: imgUrl,
-                      alt: language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`,
-                    })
-                  }
-                  className="group relative block overflow-hidden rounded-xl border border-slate-700/80 hover:border-emerald-500/80 bg-slate-900/90 shadow-md transition-all duration-200 hover:scale-[1.02] cursor-pointer"
-                  title={language === 'ar' ? 'انقر لتكبير وعرض الصورة' : 'Click to expand image'}
-                >
-                  <img
-                    src={imgUrl}
-                    alt={language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`}
-                    className="max-h-52 max-w-xs object-cover rounded-xl"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2 text-xs text-white font-medium">
-                    <span>{language === 'ar' ? '🔍 تكبير' : '🔍 Expand'}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <div className="my-2 flex flex-wrap gap-2">
+            {message.images.map((imgUrl, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() =>
+                  setSelectedImage({
+                    url: imgUrl,
+                    alt: language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`,
+                  })
+                }
+                className="group relative block overflow-hidden rounded-xl border border-[var(--border)] hover:border-[var(--accent)] bg-[var(--surface-2)] shadow-sm transition-all duration-200 hover:scale-[1.01] cursor-pointer"
+                title={language === 'ar' ? 'انقر لعرض الصورة' : 'Click to view image'}
+              >
+                <img
+                  src={imgUrl}
+                  alt={language === 'ar' ? `صورة مرفقة ${idx + 1}` : `Attached Image ${idx + 1}`}
+                  className="max-h-52 max-w-xs object-cover rounded-xl"
+                  loading="lazy"
+                />
+              </button>
+            ))}
           </div>
         )}
 
@@ -351,6 +444,14 @@ export function MessageBubble({
             payload={taskData}
             language={language}
             onNavigateView={onNavigateView}
+          />
+        )}
+
+        {/* Dedicated Universal Translation Card */}
+        {translationData && (
+          <TranslationCard
+            data={translationData}
+            language={language}
           />
         )}
 
@@ -497,10 +598,83 @@ export function MessageBubble({
             />
           )}
 
+        {/* Inline Live Translation Container */}
+        {showInlineTranslation && (
+          <div className="mt-2.5 p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-slate-100 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-emerald-500/20 text-[11px] font-bold text-emerald-400">
+              <span className="flex items-center gap-1">
+                <Languages size={13} />
+                <span>{language === 'ar' ? 'الترجمة الفورية المباشرة:' : 'Instant Translation:'}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowInlineTranslation(false)}
+                className="hover:text-slate-200 text-slate-400 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+            {isTranslating ? (
+              <div className="flex items-center gap-2 text-slate-400 py-1">
+                <Loader2 size={13} className="animate-spin text-emerald-400" />
+                <span>{language === 'ar' ? 'جاري الترجمة...' : 'Translating message...'}</span>
+              </div>
+            ) : (
+              <div className="leading-relaxed select-text whitespace-pre-wrap font-normal">
+                {inlineTranslation}
+              </div>
+            )}
+          </div>
+        )}
+
         {assistant && message.content && (
-          <button className="message-action" onClick={copy} aria-label="Copy">
-            <Copy size={13} />
-          </button>
+          <div className="flex items-center gap-1.5 mt-2">
+            <button
+              type="button"
+              className={`message-action ${isSpeaking ? 'text-amber-400 bg-amber-400/10 ring-1 ring-amber-400/30' : ''}`}
+              onClick={toggleSpeak}
+              aria-label={isSpeaking ? (language === 'ar' ? 'إيقاف القراءة الصوتية' : 'Stop speaking') : (language === 'ar' ? 'استماع بصوت فائق الدقة' : 'Read aloud')}
+              title={isSpeaking ? (language === 'ar' ? 'إيقاف القراءة الصوتية' : 'Stop speaking') : (language === 'ar' ? 'قراءة صوتية ذكية متقنة لكافة اللغات واللهجات' : 'Read aloud with native accent')}
+            >
+              {isSpeaking ? <VolumeX size={13} className="text-amber-400 animate-pulse" /> : <Volume2 size={13} />}
+            </button>
+            <button className="message-action" onClick={copy} aria-label="Copy" title={language === 'ar' ? 'نسخ النص' : 'Copy'}>
+              <Copy size={13} />
+            </button>
+            <button
+              type="button"
+              className={`message-action ${showInlineTranslation ? 'text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/30' : ''}`}
+              onClick={async () => {
+                if (showInlineTranslation) {
+                  setShowInlineTranslation(false);
+                  return;
+                }
+                setShowInlineTranslation(true);
+                if (!inlineTranslation) {
+                  setIsTranslating(true);
+                  try {
+                    const cleanText = (displayMarkdown || message.content).replace(/```[\s\S]*?```/g, '').trim();
+                    const targetLang = language === 'ar' ? 'en' : 'ar';
+                    const res = await requestTranslation({
+                      text: cleanText.slice(0, 3000),
+                      sourceLang: 'auto',
+                      targetLang,
+                      tone: 'general',
+                    });
+                    setInlineTranslation(res.translatedText);
+                  } catch {
+                    setInlineTranslation(language === 'ar' ? 'تعذرت الترجمة مؤقتاً' : 'Translation failed temporarily');
+                  } finally {
+                    setIsTranslating(false);
+                  }
+                }
+              }}
+              aria-label="Translate"
+              title={language === 'ar' ? 'ترجمة الرسالة فورياً' : 'Instant translate message'}
+            >
+              <Languages size={13} />
+            </button>
+          </div>
         )}
       </div>
 

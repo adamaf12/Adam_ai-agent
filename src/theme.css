@@ -591,6 +591,410 @@ html[data-theme='game-of-thrones'] {
   --shadow: 0 24px 80px rgba(9, 10, 13, 0.95);
 }
 
+/* 24. Tokyo Night Cyber */
+:root[data-theme='tokyo-night'],
+:root[data-resolved-theme='tokyo-night'],
+html[data-theme='tokyo-night'] {
+  --bg: #1a1b26;
+  --bg-gradient: radial-gradient(circle at 18% 12%, rgba(122, 162, 247, 0.18), transparent 45%),
+                 radial-gradient(circle at 82% 28%, rgba(187, 154, 247, 0.18), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(125, 207, 255, 0.12), transparent 55%),
+                 #1a1b26;
+  --surface: #24283b;
+  --surface-2: #2f3549;
+  --surface-hover: #3b4261;
+  --border: rgba(122, 162, 247, 0.22);
+  --border-strong: rgba(122, 162, 247, 0.45);
+  --text: #c0caf5;
+  --text-secondary: #9aa5ce;
+  --muted: #565f89;
+  --accent: #7aa2f7;
+  --accent-hover: #bb9af7;
+  --accent-glow: rgba(122, 162, 247, 0.35);
+  --accent-subtle: rgba(122, 162, 247, 0.14);
+  --glass-bg: rgba(36, 40, 59, 0.9);
+  --glass-border: rgba(122, 162, 247, 0.2);
+  --glass-blur: 24px;
+  --shadow: 0 20px 60px rgba(15, 16, 25, 0.85);
+}
+
+/* 25. Catppuccin Mocha */
+:root[data-theme='catppuccin-mocha'],
+:root[data-resolved-theme='catppuccin-mocha'],
+html[data-theme='catppuccin-mocha'] {
+  --bg: #1e1e2e;
+  --bg-gradient: radial-gradient(circle at 20% 15%, rgba(203, 166, 247, 0.18), transparent 45%),
+                 radial-gradient(circle at 80% 25%, rgba(137, 180, 250, 0.16), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(166, 227, 161, 0.12), transparent 55%),
+                 #1e1e2e;
+  --surface: #262638;
+  --surface-2: #313244;
+  --surface-hover: #3d3e56;
+  --border: rgba(203, 166, 247, 0.2);
+  --border-strong: rgba(203, 166, 247, 0.4);
+  --text: #cdd6f4;
+  --text-secondary: #bac2de;
+  --muted: #7f849c;
+  --accent: #cba6f7;
+  --accent-hover: #f5c2e7;
+  --accent-glow: rgba(203, 166, 247, 0.35);
+  --accent-subtle: rgba(203, 166, 247, 0.14);
+  --glass-bg: rgba(38, 38, 56, 0.9);
+  --glass-border: rgba(203, 166, 247, 0.18);
+  --glass-blur: 24px;
+  --shadow: 0 20px 60px rgba(17, 17, 27, 0.9);
+}
+
+/* 26. Monokai Pro Elite */
+:root[data-theme='monokai-pro'],
+:root[data-resolved-theme='monokai-pro'],
+html[data-theme='monokai-pro'] {
+  --bg: #19181a;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(255, 216, 102, 0.15), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(255, 97, 136, 0.16), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(120, 220, 232, 0.12), transparent 55%),
+                 #19181a;
+  --surface: #221f22;
+  --surface-2: #2d2a2e;
+  --surface-hover: #3a363b;
+  --border: rgba(255, 216, 102, 0.2);
+  --border-strong: rgba(255, 216, 102, 0.45);
+  --text: #fcfcfa;
+  --text-secondary: #c1c0c0;
+  --muted: #727072;
+  --accent: #ffd866;
+  --accent-hover: #ff6188;
+  --accent-glow: rgba(255, 216, 102, 0.35);
+  --accent-subtle: rgba(255, 216, 102, 0.14);
+  --glass-bg: rgba(34, 31, 34, 0.92);
+  --glass-border: rgba(255, 216, 102, 0.18);
+  --glass-blur: 24px;
+  --shadow: 0 20px 60px rgba(13, 12, 14, 0.92);
+}
+
+/* 27. Gruvbox Retro Dark */
+:root[data-theme='gruvbox-dark'],
+:root[data-resolved-theme='gruvbox-dark'],
+html[data-theme='gruvbox-dark'] {
+  --bg: #1d2021;
+  --bg-gradient: radial-gradient(circle at 18% 15%, rgba(254, 128, 25, 0.16), transparent 45%),
+                 radial-gradient(circle at 82% 25%, rgba(184, 187, 38, 0.16), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(250, 189, 47, 0.12), transparent 55%),
+                 #1d2021;
+  --surface: #282828;
+  --surface-2: #32302f;
+  --surface-hover: #3c3836;
+  --border: rgba(254, 128, 25, 0.22);
+  --border-strong: rgba(254, 128, 25, 0.45);
+  --text: #fbf1c7;
+  --text-secondary: #ebdbb2;
+  --muted: #928374;
+  --accent: #fe8019;
+  --accent-hover: #fabd2f;
+  --accent-glow: rgba(254, 128, 25, 0.35);
+  --accent-subtle: rgba(254, 128, 25, 0.14);
+  --glass-bg: rgba(40, 40, 40, 0.92);
+  --glass-border: rgba(254, 128, 25, 0.18);
+  --glass-blur: 24px;
+  --shadow: 0 20px 60px rgba(15, 17, 18, 0.92);
+}
+
+/* 28. Miami Vice Sunset */
+:root[data-theme='sunset-miami'],
+:root[data-resolved-theme='sunset-miami'],
+html[data-theme='sunset-miami'] {
+  --bg: #0d0a1a;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(244, 63, 154, 0.25), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(6, 182, 212, 0.22), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(245, 158, 11, 0.15), transparent 55%),
+                 #0d0a1a;
+  --surface: #17122b;
+  --surface-2: #231b40;
+  --surface-hover: #2f2457;
+  --border: rgba(244, 63, 154, 0.28);
+  --border-strong: rgba(6, 182, 212, 0.55);
+  --text: #fdf2f8;
+  --text-secondary: #fbcfe8;
+  --muted: #9d8ba9;
+  --accent: #f43f9a;
+  --accent-hover: #06b6d4;
+  --accent-glow: rgba(244, 63, 154, 0.45);
+  --accent-subtle: rgba(244, 63, 154, 0.16);
+  --glass-bg: rgba(23, 18, 43, 0.9);
+  --glass-border: rgba(244, 63, 154, 0.24);
+  --glass-blur: 24px;
+  --shadow: 0 24px 75px rgba(8, 6, 16, 0.95);
+}
+
+/* 29. Deep Space Nebula */
+:root[data-theme='deep-space'],
+:root[data-resolved-theme='deep-space'],
+html[data-theme='deep-space'] {
+  --bg: #03040c;
+  --bg-gradient: radial-gradient(circle at 18% 15%, rgba(99, 102, 241, 0.22), transparent 45%),
+                 radial-gradient(circle at 82% 28%, rgba(168, 85, 247, 0.2), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(14, 165, 233, 0.16), transparent 55%),
+                 #03040c;
+  --surface: #0a0d1f;
+  --surface-2: #101533;
+  --surface-hover: #19204a;
+  --border: rgba(99, 102, 241, 0.25);
+  --border-strong: rgba(168, 85, 247, 0.5);
+  --text: #e0e7ff;
+  --text-secondary: #a5b4fc;
+  --muted: #6366f1;
+  --accent: #818cf8;
+  --accent-hover: #c084fc;
+  --accent-glow: rgba(129, 140, 248, 0.45);
+  --accent-subtle: rgba(129, 140, 248, 0.15);
+  --glass-bg: rgba(10, 13, 31, 0.92);
+  --glass-border: rgba(99, 102, 241, 0.2);
+  --glass-blur: 26px;
+  --shadow: 0 24px 80px rgba(2, 3, 8, 0.95);
+}
+
+/* 30. Emerald Velvet Luxury */
+:root[data-theme='emerald-luxury'],
+:root[data-resolved-theme='emerald-luxury'],
+html[data-theme='emerald-luxury'] {
+  --bg: #04120a;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(16, 185, 129, 0.25), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(234, 179, 8, 0.18), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(5, 150, 105, 0.15), transparent 55%),
+                 #04120a;
+  --surface: #0a2013;
+  --surface-2: #102e1c;
+  --surface-hover: #183e27;
+  --border: rgba(234, 179, 8, 0.28);
+  --border-strong: rgba(234, 179, 8, 0.6);
+  --text: #ecfdf5;
+  --text-secondary: #a7f3d0;
+  --muted: #6ee7b7;
+  --accent: #10b981;
+  --accent-hover: #eab308;
+  --accent-glow: rgba(16, 185, 129, 0.4);
+  --accent-subtle: rgba(16, 185, 129, 0.16);
+  --glass-bg: rgba(10, 32, 19, 0.92);
+  --glass-border: rgba(234, 179, 8, 0.22);
+  --glass-blur: 24px;
+  --shadow: 0 24px 75px rgba(2, 10, 5, 0.95);
+}
+
+/* 31. Minimal Paper Clean (Light Theme) */
+:root[data-theme='paper-clean'],
+:root[data-resolved-theme='paper-clean'],
+html[data-theme='paper-clean'] {
+  --bg: #faf7f2;
+  --bg-gradient: radial-gradient(circle at 15% 10%, rgba(0, 0, 0, 0.03), transparent 38%),
+                 radial-gradient(circle at 85% 20%, rgba(217, 119, 6, 0.04), transparent 45%),
+                 #faf7f2;
+  --surface: #ffffff;
+  --surface-2: #f3efe6;
+  --surface-hover: #e8e2d5;
+  --border: rgba(40, 35, 30, 0.12);
+  --border-strong: rgba(40, 35, 30, 0.35);
+  --text: #1a1816;
+  --text-secondary: #4a453e;
+  --muted: #7d7569;
+  --accent: #292524;
+  --accent-hover: #44403c;
+  --accent-glow: rgba(41, 37, 36, 0.2);
+  --accent-subtle: rgba(41, 37, 36, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(40, 35, 30, 0.1);
+  --glass-blur: 24px;
+  --shadow: 0 16px 36px rgba(40, 35, 30, 0.07);
+  --shadow-sm: 0 4px 12px rgba(40, 35, 30, 0.04);
+}
+
+/* 32. Peaky Blinders Garrison */
+:root[data-theme='peaky-blinders'],
+:root[data-resolved-theme='peaky-blinders'],
+html[data-theme='peaky-blinders'] {
+  --bg: #0f0c0a;
+  --bg-gradient: radial-gradient(circle at 20% 15%, rgba(180, 83, 9, 0.2), transparent 45%),
+                 radial-gradient(circle at 80% 30%, rgba(120, 53, 15, 0.22), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(68, 64, 60, 0.2), transparent 55%),
+                 #0f0c0a;
+  --surface: #1a1613;
+  --surface-2: #27211d;
+  --surface-hover: #352d27;
+  --border: rgba(180, 83, 9, 0.3);
+  --border-strong: rgba(217, 119, 6, 0.6);
+  --text: #fef3c7;
+  --text-secondary: #fde68a;
+  --muted: #a89f91;
+  --accent: #d97706;
+  --accent-hover: #92400e;
+  --accent-glow: rgba(217, 119, 6, 0.45);
+  --accent-subtle: rgba(217, 119, 6, 0.16);
+  --glass-bg: rgba(26, 22, 19, 0.92);
+  --glass-border: rgba(180, 83, 9, 0.24);
+  --glass-blur: 24px;
+  --shadow: 0 24px 80px rgba(10, 8, 6, 0.95);
+}
+
+/* 33. Breaking Bad Heisenberg */
+:root[data-theme='breaking-bad'],
+:root[data-resolved-theme='breaking-bad'],
+html[data-theme='breaking-bad'] {
+  --bg: #0a0d0a;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(14, 165, 233, 0.24), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(234, 179, 8, 0.2), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(34, 197, 94, 0.16), transparent 55%),
+                 #0a0d0a;
+  --surface: #111712;
+  --surface-2: #19221a;
+  --surface-hover: #222e23;
+  --border: rgba(14, 165, 233, 0.3);
+  --border-strong: rgba(234, 179, 8, 0.6);
+  --text: #f0fdf4;
+  --text-secondary: #bae6fd;
+  --muted: #86efac;
+  --accent: #0ea5e9;
+  --accent-hover: #eab308;
+  --accent-glow: rgba(14, 165, 233, 0.45);
+  --accent-subtle: rgba(14, 165, 233, 0.16);
+  --glass-bg: rgba(17, 23, 18, 0.92);
+  --glass-border: rgba(14, 165, 233, 0.25);
+  --glass-blur: 24px;
+  --shadow: 0 24px 80px rgba(5, 8, 5, 0.95);
+}
+
+/* 34. Interstellar Gargantua */
+:root[data-theme='interstellar'],
+:root[data-resolved-theme='interstellar'],
+html[data-theme='interstellar'] {
+  --bg: #020204;
+  --bg-gradient: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.28), transparent 48%),
+                 radial-gradient(circle at 80% 30%, rgba(217, 119, 6, 0.18), transparent 50%),
+                 radial-gradient(circle at 20% 85%, rgba(30, 41, 59, 0.25), transparent 55%),
+                 #020204;
+  --surface: #09090e;
+  --surface-2: #12121c;
+  --surface-hover: #1c1c2b;
+  --border: rgba(245, 158, 11, 0.3);
+  --border-strong: rgba(245, 158, 11, 0.65);
+  --text: #fffbeb;
+  --text-secondary: #fde68a;
+  --muted: #94a3b8;
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-glow: rgba(245, 158, 11, 0.5);
+  --accent-subtle: rgba(245, 158, 11, 0.16);
+  --glass-bg: rgba(9, 9, 14, 0.94);
+  --glass-border: rgba(245, 158, 11, 0.25);
+  --glass-blur: 26px;
+  --shadow: 0 24px 90px rgba(0, 0, 0, 0.98);
+}
+
+/* 35. Batman Gotham Knight */
+:root[data-theme='batman-gotham'],
+:root[data-resolved-theme='batman-gotham'],
+html[data-theme='batman-gotham'] {
+  --bg: #060709;
+  --bg-gradient: radial-gradient(circle at 50% 12%, rgba(250, 204, 21, 0.2), transparent 45%),
+                 radial-gradient(circle at 80% 30%, rgba(71, 85, 105, 0.2), transparent 50%),
+                 #060709;
+  --surface: #0e1117;
+  --surface-2: #161b24;
+  --surface-hover: #1e2532;
+  --border: rgba(250, 204, 21, 0.25);
+  --border-strong: rgba(250, 204, 21, 0.6);
+  --text: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --muted: #64748b;
+  --accent: #facc15;
+  --accent-hover: #eab308;
+  --accent-glow: rgba(250, 204, 21, 0.45);
+  --accent-subtle: rgba(250, 204, 21, 0.15);
+  --glass-bg: rgba(14, 17, 23, 0.92);
+  --glass-border: rgba(250, 204, 21, 0.2);
+  --glass-blur: 24px;
+  --shadow: 0 24px 80px rgba(3, 4, 6, 0.96);
+}
+
+/* 36. Cyber Samurai Katana */
+:root[data-theme='cyber-samurai'],
+:root[data-resolved-theme='cyber-samurai'],
+html[data-theme='cyber-samurai'] {
+  --bg: #0a0406;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(225, 29, 72, 0.25), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(244, 63, 94, 0.18), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(148, 163, 184, 0.15), transparent 55%),
+                 #0a0406;
+  --surface: #17090f;
+  --surface-2: #240e18;
+  --surface-hover: #321422;
+  --border: rgba(225, 29, 72, 0.3);
+  --border-strong: rgba(225, 29, 72, 0.65);
+  --text: #fff1f2;
+  --text-secondary: #fecdd3;
+  --muted: #9f1239;
+  --accent: #e11d48;
+  --accent-hover: #fda4af;
+  --accent-glow: rgba(225, 29, 72, 0.45);
+  --accent-subtle: rgba(225, 29, 72, 0.16);
+  --glass-bg: rgba(23, 9, 15, 0.92);
+  --glass-border: rgba(225, 29, 72, 0.25);
+  --glass-blur: 24px;
+  --shadow: 0 24px 80px rgba(6, 2, 4, 0.96);
+}
+
+/* 37. Cherry Blossom Sakura */
+:root[data-theme='cherry-blossom'],
+:root[data-resolved-theme='cherry-blossom'],
+html[data-theme='cherry-blossom'] {
+  --bg: #140a10;
+  --bg-gradient: radial-gradient(circle at 20% 15%, rgba(244, 114, 182, 0.24), transparent 45%),
+                 radial-gradient(circle at 80% 30%, rgba(251, 113, 133, 0.2), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(244, 63, 94, 0.12), transparent 55%),
+                 #140a10;
+  --surface: #20101a;
+  --surface-2: #2d1725;
+  --surface-hover: #3b1f31;
+  --border: rgba(244, 114, 182, 0.28);
+  --border-strong: rgba(244, 114, 182, 0.6);
+  --text: #fdf2f8;
+  --text-secondary: #fbcfe8;
+  --muted: #db2777;
+  --accent: #f472b6;
+  --accent-hover: #fb7185;
+  --accent-glow: rgba(244, 114, 182, 0.45);
+  --accent-subtle: rgba(244, 114, 182, 0.16);
+  --glass-bg: rgba(32, 16, 26, 0.9);
+  --glass-border: rgba(244, 114, 182, 0.24);
+  --glass-blur: 24px;
+  --shadow: 0 24px 75px rgba(12, 6, 10, 0.95);
+}
+
+/* 38. Polar Iceberg Glaze */
+:root[data-theme='iceberg-polar'],
+:root[data-resolved-theme='iceberg-polar'],
+html[data-theme='iceberg-polar'] {
+  --bg: #061118;
+  --bg-gradient: radial-gradient(circle at 20% 12%, rgba(56, 189, 248, 0.25), transparent 45%),
+                 radial-gradient(circle at 80% 28%, rgba(14, 165, 233, 0.2), transparent 50%),
+                 radial-gradient(circle at 50% 85%, rgba(186, 230, 253, 0.15), transparent 55%),
+                 #061118;
+  --surface: #0b1c26;
+  --surface-2: #112836;
+  --surface-hover: #183547;
+  --border: rgba(56, 189, 248, 0.28);
+  --border-strong: rgba(56, 189, 248, 0.6);
+  --text: #f0f9ff;
+  --text-secondary: #bae6fd;
+  --muted: #38bdf8;
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-glow: rgba(56, 189, 248, 0.45);
+  --accent-subtle: rgba(56, 189, 248, 0.16);
+  --glass-bg: rgba(11, 28, 38, 0.9);
+  --glass-border: rgba(56, 189, 248, 0.24);
+  --glass-blur: 24px;
+  --shadow: 0 24px 75px rgba(3, 10, 14, 0.95);
+}
+
 /* --------------------------------------------------------------------------
    2. HIGH-COMPATIBILITY UI HARMONIZATION (ALL COMPONENTS)
    -------------------------------------------------------------------------- */
@@ -858,6 +1262,96 @@ html[data-theme='game-of-thrones'] {
   color: #fef3c7 !important;
 }
 
+:root[data-theme='tokyo-night'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #3d59a1, #2e3c64) !important;
+  border-color: rgba(122, 162, 247, 0.55) !important;
+  color: #c0caf5 !important;
+}
+
+:root[data-theme='catppuccin-mocha'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #725399, #473264) !important;
+  border-color: rgba(203, 166, 247, 0.5) !important;
+  color: #f5e0dc !important;
+}
+
+:root[data-theme='monokai-pro'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #b07d04, #664800) !important;
+  border-color: rgba(255, 216, 102, 0.6) !important;
+  color: #fffbe6 !important;
+}
+
+:root[data-theme='gruvbox-dark'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #af3a03, #722702) !important;
+  border-color: rgba(254, 128, 25, 0.55) !important;
+  color: #fbf1c7 !important;
+}
+
+:root[data-theme='sunset-miami'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #db2777, #0891b2) !important;
+  border-color: rgba(244, 63, 154, 0.6) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='deep-space'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #4338ca, #6b21a8) !important;
+  border-color: rgba(129, 140, 248, 0.55) !important;
+  color: #e0e7ff !important;
+}
+
+:root[data-theme='emerald-luxury'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #047857, #854d0e) !important;
+  border-color: rgba(234, 179, 8, 0.6) !important;
+  color: #ecfdf5 !important;
+}
+
+:root[data-theme='paper-clean'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #292524, #1c1917) !important;
+  border-color: rgba(41, 37, 36, 0.5) !important;
+  color: #fafaf9 !important;
+}
+
+:root[data-theme='peaky-blinders'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #78350f, #451a03) !important;
+  border-color: rgba(217, 119, 6, 0.6) !important;
+  color: #fef3c7 !important;
+}
+
+:root[data-theme='breaking-bad'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #0284c7, #15803d) !important;
+  border-color: rgba(14, 165, 233, 0.6) !important;
+  color: #f0fdf4 !important;
+}
+
+:root[data-theme='interstellar'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #b45309, #451a03) !important;
+  border-color: rgba(245, 158, 11, 0.65) !important;
+  color: #fffbeb !important;
+}
+
+:root[data-theme='batman-gotham'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #334155, #0f172a) !important;
+  border-color: rgba(250, 204, 21, 0.6) !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme='cyber-samurai'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #be123c, #4c0519) !important;
+  border-color: rgba(225, 29, 72, 0.65) !important;
+  color: #fff1f2 !important;
+}
+
+:root[data-theme='cherry-blossom'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #db2777, #831843) !important;
+  border-color: rgba(244, 114, 182, 0.6) !important;
+  color: #fdf2f8 !important;
+}
+
+:root[data-theme='iceberg-polar'] .message-row--user .message-content {
+  background: linear-gradient(135deg, #0284c7, #075985) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  color: #f0f9ff !important;
+}
+
 :root[data-theme='light'] .message-row--user .message-content,
 :root[data-theme='glass'] .message-row--user .message-content,
 :root[data-resolved-theme='light'] .message-row--user .message-content {
@@ -892,6 +1386,21 @@ html[data-theme='game-of-thrones'] {
 .theme-preview--stranger-things { background: linear-gradient(145deg, #ff1744 0%, #3b0764 55%, #0b050d 100%); border: 1px solid rgba(255, 23, 68, 0.5); }
 .theme-preview--outer-banks { background: linear-gradient(135deg, #f97316 0%, #f59e0b 35%, #14b8a6 70%, #0c0e12 100%); border: 1px solid rgba(249, 115, 22, 0.45); }
 .theme-preview--game-of-thrones { background: linear-gradient(145deg, #d97706 0%, #b91c1c 40%, #1a1d26 75%, #090a0d 100%); border: 1px solid rgba(217, 119, 6, 0.45); }
+.theme-preview--tokyo-night { background: linear-gradient(145deg, #7aa2f7, #bb9af7, #1a1b26); border: 1px solid rgba(122, 162, 247, 0.45); }
+.theme-preview--catppuccin-mocha { background: linear-gradient(145deg, #cba6f7, #f5c2e7, #1e1e2e); border: 1px solid rgba(203, 166, 247, 0.45); }
+.theme-preview--monokai-pro { background: linear-gradient(145deg, #ffd866, #ff6188, #19181a); border: 1px solid rgba(255, 216, 102, 0.45); }
+.theme-preview--gruvbox-dark { background: linear-gradient(145deg, #fe8019, #b8bb26, #1d2021); border: 1px solid rgba(254, 128, 25, 0.45); }
+.theme-preview--sunset-miami { background: linear-gradient(135deg, #f43f9a 0%, #06b6d4 50%, #0d0a1a 100%); border: 1px solid rgba(244, 63, 154, 0.5); }
+.theme-preview--deep-space { background: radial-gradient(circle at 30% 20%, #818cf8, transparent 50%), radial-gradient(circle at 80% 40%, #c084fc, transparent 50%), #03040c; border: 1px solid rgba(129, 140, 248, 0.45); }
+.theme-preview--emerald-luxury { background: linear-gradient(145deg, #10b981, #eab308, #04120a); border: 1px solid rgba(234, 179, 8, 0.45); }
+.theme-preview--paper-clean { background: linear-gradient(145deg, #ffffff, #f3efe6, #faf7f2); border: 1px solid rgba(40, 35, 30, 0.25); }
+.theme-preview--peaky-blinders { background: linear-gradient(145deg, #d97706 0%, #78350f 45%, #0f0c0a 100%); border: 1px solid rgba(217, 119, 6, 0.5); }
+.theme-preview--breaking-bad { background: linear-gradient(135deg, #0ea5e9 0%, #eab308 40%, #0a0d0a 100%); border: 1px solid rgba(14, 165, 233, 0.5); }
+.theme-preview--interstellar { background: radial-gradient(circle at 50% 25%, #f59e0b, #d97706 40%, #020204 80%); border: 1px solid rgba(245, 158, 11, 0.55); }
+.theme-preview--batman-gotham { background: linear-gradient(145deg, #facc15 0%, #334155 35%, #060709 100%); border: 1px solid rgba(250, 204, 21, 0.45); }
+.theme-preview--cyber-samurai { background: linear-gradient(145deg, #e11d48 0%, #4c0519 45%, #0a0406 100%); border: 1px solid rgba(225, 29, 72, 0.55); }
+.theme-preview--cherry-blossom { background: linear-gradient(145deg, #f472b6, #fb7185, #140a10); border: 1px solid rgba(244, 114, 182, 0.45); }
+.theme-preview--iceberg-polar { background: linear-gradient(145deg, #38bdf8, #0ea5e9, #061118); border: 1px solid rgba(56, 189, 248, 0.45); }
 
 /* Global Smooth Transitions for Theme Switching */
 html, body, .app-shell, .navbar, .sidebar, .glass-panel, .composer, .message-content, .settings-card {

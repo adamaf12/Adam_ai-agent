@@ -71,16 +71,6 @@ export function InteractiveTaskCard({
             </div>
           </div>
         </div>
-
-        {onNavigateView && (
-          <button
-            type="button"
-            onClick={() => onNavigateView('tasks')}
-            className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-all cursor-pointer"
-          >
-            {isAr ? 'عرض المهام الشاملة ↗' : 'View Full Planner ↗'}
-          </button>
-        )}
       </div>
 
       <div className="p-4 space-y-3">

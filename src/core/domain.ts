@@ -22,8 +22,23 @@ export type Theme =
   | 'rose'
   | 'stranger-things'
   | 'outer-banks'
-  | 'game-of-thrones';
-export type ViewId = 'chat' | 'tasks' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings' | 'iq' | 'academic';
+  | 'game-of-thrones'
+  | 'tokyo-night'
+  | 'catppuccin-mocha'
+  | 'monokai-pro'
+  | 'gruvbox-dark'
+  | 'sunset-miami'
+  | 'deep-space'
+  | 'emerald-luxury'
+  | 'paper-clean'
+  | 'peaky-blinders'
+  | 'breaking-bad'
+  | 'interstellar'
+  | 'batman-gotham'
+  | 'cyber-samurai'
+  | 'cherry-blossom'
+  | 'iceberg-polar';
+export type ViewId = 'chat' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings' | 'iq' | 'academic' | 'translate';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type MemoryCategory = 'preference' | 'fact' | 'goal' | 'instruction';
