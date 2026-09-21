@@ -26,6 +26,7 @@ import { redactSecrets } from './security/secrets';
 import { systemMonitor } from './security/monitoring';
 import { chatRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
+import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -841,7 +842,10 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const explicitWebSearch = /\b(search the web|google search|search online|search the live web)\b|ابحث في الويب|بحث في جوجل/i.test(latestPrompt);
       const useSearch = searchCircuitBreaker.isAvailable() && (explicitWebSearch || requestContract.executionRoute === 'web_research');
       const remoteGateway = createAgentModelGateway();
-      const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language) + formatRequestContract(requestContract, language);
+      const executionPlan = buildExecutionPlan(requestContract);
+      const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
+        + formatRequestContract(requestContract, language)
+        + formatExecutionPlan(executionPlan, language);
       const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch);
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
