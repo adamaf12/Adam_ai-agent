@@ -248,6 +248,35 @@ export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
 
 export const GENERATE_IMAGE_TOOL = GENERATE_SPECIALIZED_IMAGE_TOOL;
 
+function buildIntentProtocol(prompt: string, history: Array<any>, language: 'ar' | 'en'): string {
+  const recent = history.slice(-8).map((m: any) => {
+    const role = m.role === 'user' ? 'USER' : 'ASSISTANT';
+    const text = Array.isArray(m.parts) ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ') : '';
+    return text ? `${role}: ${text.slice(0, 5000)}` : '';
+  }).filter(Boolean).join('\n');
+  return language === 'ar'
+    ? `\n\n=== بروتوكول الفهم الدقيق ===
+كوّن داخلياً عقداً للطلب قبل الإجابة: الهدف النهائي، نوع المهمة، القيود الصريحة، ما يجب ألا يتغير، المتطلبات الضرورية فقط، النتيجة المتوقعة، والأسماء/الإصدارات/الملفات/الأرقام الدقيقة.
+لا تستبدل المطلوب بمهمة أسهل أو قريبة منه. حافظ على كل قيد ذكره المستخدم. افهم "نعم/واصل/كمل/نفسه/هذا" على أنه استمرار لآخر مهمة غير مكتملة. لا تسأل عما هو موجود في السياق. لا تخترع متطلبات أو نتائج. فرّق بين الشرح والتنفيذ، وبين الافتراض والحقيقة. إذا كان الطلب واضحاً نفذه مباشرة، وإذا كانت معلومة واحدة فقط تمنع التنفيذ فاسأل عنها فقط. قبل الإخراج، تحقق أن النتيجة تطابق الهدف والقيود.
+
+الطلب الحالي:
+USER: ${prompt.slice(0, 12000)}
+
+السياق القريب:
+${recent}
+=== نهاية البروتوكول ===`
+    : `\n\n=== PRECISE REQUEST UNDERSTANDING ===
+Before answering, internally derive the user's goal, task type, explicit constraints, non-change requirements, necessary assumptions, expected deliverable, and exact names/versions/paths/numbers.
+Never replace the requested task with an easier adjacent task. Preserve explicit constraints. Interpret short confirmations as continuation of the last unfinished task. Do not ask for information already in context. Do not invent requirements or results. Distinguish execution from explanation and facts from assumptions. If clear, act directly; if one fact truly blocks execution, ask only for that fact. Verify the final result against the goal and constraints.
+
+CURRENT REQUEST:
+USER: ${prompt.slice(0, 12000)}
+
+RECENT CONTEXT:
+${recent}
+=== END PROTOCOL ===`;
+}
+
 function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
   // Gemini 3.8 Flash rejects legacy temperature/topP generation fields.
   if (modelId === 'gemini-3.8-flash') {
@@ -489,6 +518,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
     }
 
     let augmentedSystem = systemInstruction(language, agentName);
+    augmentedSystem += buildIntentProtocol(promptText, history, language);
     if (isToday) {
       const now = new Date();
       const arDate = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
