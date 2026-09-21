@@ -20,6 +20,8 @@ export interface RequestContract {
   needsExecution: boolean;
   needsClarification: boolean;
   continuation: boolean;
+  executionRoute: 'answer' | 'web_research' | 'agent_plan' | 'external_execution';
+  recommendedModelDepth: 'fast' | 'reasoning' | 'deep';
 }
 
 const TYPE_PATTERNS: Array<[RequestTaskType, RegExp]> = [
@@ -77,6 +79,22 @@ export function buildRequestContract(
     && taskType === 'unknown'
     && context.trim().length === 0;
 
+  const executionRoute =
+    needsFreshKnowledge || taskType === 'research'
+      ? 'web_research'
+      : needsExecution
+        ? 'external_execution'
+        : ['create', 'modify', 'debug', 'plan', 'execute', 'continue'].includes(taskType)
+          ? 'agent_plan'
+          : 'answer';
+
+  const recommendedModelDepth =
+    clean.length > 2200 || ['debug', 'research', 'compare', 'plan', 'execute'].includes(taskType)
+      ? 'deep'
+      : clean.length > 700 || ['create', 'modify', 'solve', 'continue'].includes(taskType)
+        ? 'reasoning'
+        : 'fast';
+
   return {
     taskType,
     goal: continuation
@@ -88,6 +106,8 @@ export function buildRequestContract(
     needsExecution,
     needsClarification,
     continuation,
+    executionRoute,
+    recommendedModelDepth,
   };
 }
 
@@ -101,6 +121,8 @@ export function formatRequestContract(contract: RequestContract, language: 'ar' 
 معلومة حديثة مطلوبة: ${contract.needsFreshKnowledge ? 'نعم' : 'لا'}
 تنفيذ فعلي مطلوب: ${contract.needsExecution ? 'نعم' : 'لا'}
 هذه الرسالة استمرار لمهمة سابقة: ${contract.continuation ? 'نعم' : 'لا'}
+مسار التنفيذ المقترح: ${contract.executionRoute}
+عمق النموذج المقترح: ${contract.recommendedModelDepth}
 قاعدة القرار: لا تستبدل المهمة. نفذ المطلوب فقط، واحترم القيود، ولا تدّع تنفيذ شيء لم يتم تنفيذه بأداة فعلية.
 === نهاية عقد الطلب ===`;
   }
@@ -113,6 +135,8 @@ Protected exact items: ${contract.protectedItems.join(' | ') || 'none'}
 Fresh knowledge required: ${contract.needsFreshKnowledge ? 'yes' : 'no'}
 Actual execution requested: ${contract.needsExecution ? 'yes' : 'no'}
 Continuation of previous task: ${contract.continuation ? 'yes' : 'no'}
+Recommended execution route: ${contract.executionRoute}
+Recommended model depth: ${contract.recommendedModelDepth}
 Decision rule: do not substitute the task; preserve constraints; never claim execution that was not performed by a real tool.
 === END REQUEST CONTRACT ===`;
 }
