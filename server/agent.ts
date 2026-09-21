@@ -120,7 +120,22 @@ function normalizeMessages(input: unknown): Array<{ role: 'user' | 'model'; part
       normalized.push({ role, parts });
     }
   }
-  return normalized;
+  // Keep the first few turns for task identity and the newest turns for active state.
+  // Enforce a bounded character budget so long conversations stay responsive.
+  const selected = normalized.length <= 36
+    ? normalized
+    : [...normalized.slice(0, 4), ...normalized.slice(-32)];
+  const MAX_CONTEXT_CHARS = 120_000;
+  const compacted: typeof selected = [];
+  let usedChars = 0;
+  for (let i = selected.length - 1; i >= 0; i -= 1) {
+    const item = selected[i];
+    const size = item.parts.reduce((sum: number, part: any) => sum + (typeof part.text === 'string' ? part.text.length : 0), 0);
+    if (compacted.length > 0 && usedChars + size > MAX_CONTEXT_CHARS) break;
+    compacted.unshift(item);
+    usedChars += size;
+  }
+  return compacted;
 }
 
 function getLanguage(input: unknown): 'ar' | 'en' {
@@ -232,6 +247,15 @@ export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
 };
 
 export const GENERATE_IMAGE_TOOL = GENERATE_SPECIALIZED_IMAGE_TOOL;
+
+function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
+  // Gemini 3.8 Flash rejects legacy temperature/topP generation fields.
+  if (modelId === 'gemini-3.8-flash') {
+    const { temperature: _temperature, topP: _topP, ...compatible } = baseConfig;
+    return compatible;
+  }
+  return baseConfig;
+}
 
 function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: string): string {
   const dynamicContext = getDynamicSystemContext(language);
