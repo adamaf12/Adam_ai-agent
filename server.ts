@@ -28,6 +28,8 @@ import { BetterMemoryEngine } from './server/security/betterMemory';
 import { backgroundTaskQueue } from './server/security/taskQueue';
 import { systemMonitor } from './server/security/monitoring';
 import { AcademicEngine } from './server/academicEngine';
+import { buildRequestContract, formatRequestContract } from './src/core/agent/requestUnderstanding';
+import { buildExecutionPlan, formatExecutionPlan } from './src/core/agent/executionPlanner';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -890,6 +892,14 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
   const query = userPrompt.toLowerCase();
   const reasoningProfile = getReasoningProfile(userPrompt, messages.length);
+  const requestContract = buildRequestContract(
+    userPrompt,
+    messages.slice(-8).map((m: any) => ({
+      role: m.role,
+      text: Array.isArray(m.parts) ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ') : '',
+    })),
+  );
+  const executionPlan = buildExecutionPlan(requestContract);
 
   // P2 Cost Control Budget Check
   const budgetCheck = costControlManager.checkBudget(req.user?.uid, false);
@@ -1034,6 +1044,8 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
     let finalSystemInstruction = hermesAugmentedInstruction;
     finalSystemInstruction += buildIntentProtocol(userPrompt, messages, language);
+    finalSystemInstruction += formatRequestContract(requestContract, language);
+    finalSystemInstruction += formatExecutionPlan(executionPlan, language);
     finalSystemInstruction += reasoningProfile.mode === 'fast'
       ? '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply. Do not over-explain unless asked.'
       : reasoningProfile.mode === 'reasoning'
