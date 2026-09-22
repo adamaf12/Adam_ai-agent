@@ -9,7 +9,10 @@ export type AgentToolId =
   | 'execute_code'
   | 'read_file'
   | 'write_file'
-  | 'call_external_api';
+  | 'call_external_api'
+  | 'create_task'
+  | 'query_memory'
+  | 'save_memory';
 
 export interface AgentPermissionPolicy {
   allowedTools: AgentToolId[];
@@ -26,7 +29,7 @@ const DEFAULT_GUEST_POLICY: AgentPermissionPolicy = {
 };
 
 const DEFAULT_USER_POLICY: AgentPermissionPolicy = {
-  allowedTools: ['generate_image', 'generate_specialized_image', 'generate_video', 'google_search', 'execute_code'],
+  allowedTools: ['generate_image', 'generate_specialized_image', 'generate_video', 'google_search', 'execute_code', 'create_task', 'query_memory', 'save_memory'],
   maxDailyToolCalls: 200,
   requireApprovalForDestructive: true,
   safeModeOnly: false,
@@ -42,6 +45,9 @@ const DEFAULT_ADMIN_POLICY: AgentPermissionPolicy = {
     'read_file',
     'write_file',
     'call_external_api',
+    'create_task',
+    'query_memory',
+    'save_memory',
   ],
   maxDailyToolCalls: 10000,
   requireApprovalForDestructive: false,
