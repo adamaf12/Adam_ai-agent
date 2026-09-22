@@ -61,8 +61,8 @@ export function buildRequestContract(prompt: string, recentMessages: Array<{ rol
 
   const executionRoute =
     needsFreshKnowledge || taskType === 'research' ? 'web_research' :
-    needsExecution ? 'external_execution' :
-    ['create','modify','debug','plan','execute','continue'].includes(taskType) ? 'agent_plan' : 'answer';
+    continuation || ['create','modify','debug','plan','execute'].includes(taskType) ? 'agent_plan' :
+    needsExecution ? 'external_execution' : 'answer';
 
   const recommendedModelDepth =
     clean.length > 2200 || ['debug','research','compare','plan','execute'].includes(taskType) ? 'deep' :
