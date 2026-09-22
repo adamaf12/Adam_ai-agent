@@ -27,6 +27,7 @@ import { systemMonitor } from './security/monitoring';
 import { chatRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
 import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
+import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -502,7 +503,7 @@ class SearchCircuitBreaker {
 
 export const searchCircuitBreaker = new SearchCircuitBreaker();
 
-function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, useSearch: boolean) {
+function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, useSearch: boolean, userId: string) {
   const ai = new GoogleGenAI({ apiKey });
   return async (modelDesc: ModelDescriptor, req: ModelRequest): Promise<string> => {
     const promptText = req.prompt;
@@ -568,17 +569,42 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
     for (const modelId of uniqueModels) {
       // Try with search if available and requested, then fallback to tool-free
       const canTryNativeSearch = useSearch && searchCircuitBreaker.isAvailable() && !isToday;
+      const toolConfig = { tools: AGENT_ACTION_TOOLS };
       const configsToTry = canTryNativeSearch
         ? [
-            { ...baseConfig, tools: [{ googleSearch: {} }] },
-            baseConfig,
+            { ...baseConfig, tools: [{ googleSearch: {} }, ...AGENT_ACTION_TOOLS] },
+            { ...baseConfig, ...toolConfig },
           ]
-        : [baseConfig];
+        : [{ ...baseConfig, ...toolConfig }];
 
       for (const config of configsToTry) {
         try {
-          const response = await ai.models.generateContent({ model: modelId, contents, config });
+          let response = await ai.models.generateContent({ model: modelId, contents, config });
           let textResult = response.text || '';
+
+          // Real tool loop: execute declared actions and feed verified results back to Gemini.
+          for (let toolRound = 0; toolRound < 3; toolRound += 1) {
+            const fnCalls = (response as any).functionCalls || (response as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
+            if (!fnCalls || !fnCalls.length) break;
+            const actionParts: any[] = [];
+            for (const fn of fnCalls) {
+              if (fn.name === 'create_task' || fn.name === 'query_memory' || fn.name === 'save_memory') {
+                const permission = AgentPermissionGuard.canExecuteTool(fn.name, undefined, { resource: fn.name });
+                if (!permission.allowed && userId) {
+                  actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: 'PERMISSION_DENIED' } } });
+                  continue;
+                }
+                const result = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, userId);
+                actionParts.push({ functionResponse: { name: fn.name, response: result } });
+              }
+            }
+            if (!actionParts.length) break;
+            const modelContent = (response as any).candidates?.[0]?.content;
+            if (!modelContent) break;
+            contents = [...contents, modelContent, { role: 'user' as const, parts: actionParts }];
+            response = await ai.models.generateContent({ model: modelId, contents, config: { ...config, tools: AGENT_ACTION_TOOLS } });
+            textResult = response.text || '';
+          }
 
           // Check for function calls
           const fnCalls = (response as any).functionCalls || (response as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
@@ -852,7 +878,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
         + formatRequestContract(requestContract, language)
         + formatExecutionPlan(executionPlan, language);
-      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch);
+      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '');
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
