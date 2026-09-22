@@ -16,15 +16,15 @@ export interface RequestContract {
 }
 
 const TYPE_PATTERNS: Array<[RequestTaskType, RegExp]> = [
-  ['debug', /\b(debug|fix|error|bug|broken|issue|مشكل|خطأ|صلح|حل المشكلة|لا يعمل)\b/i],
-  ['create', /\b(create|build|make|develop|generate|implement|أنشئ|اصنع|ابني|طور|صمم|اعمل)\b/i],
-  ['modify', /\b(change|modify|edit|update|improve|upgrade|عدّل|غير|غيّر|عدل|طور|حسّن|طوّر)\b/i],
-  ['research', /\b(search|research|find|latest|current|ابحث|بحث|تعمق|آخر|حالي|جديد)\b/i],
-  ['compare', /\b(compare|difference|vs|versus|قارن|الفرق|مقارنة)\b/i],
-  ['solve', /\b(solve|calculate|حل|احسب|استخرج|برهن)\b/i],
-  ['explain', /\b(explain|what is|how does|اشرح|ما هو|كيف يعمل|لماذا)\b/i],
-  ['execute', /\b(run|execute|install|deploy|push|commit|شغل|نفذ|ثبت|انشر|ارفع)\b/i],
-  ['plan', /\b(plan|roadmap|steps|خطة|مخطط|خطوات)\b/i],
+  ['debug', /(?:\b(debug|fix|error|bug|broken|issue)\b|مشكل|خطأ|صلح|حل المشكلة|لا يعمل)/i],
+  ['create', /(?:\b(create|build|make|develop|generate|implement)\b|أنشئ|اصنع|ابني|طور|صمم|اعمل)/i],
+  ['modify', /(?:\b(change|modify|edit|update|improve|upgrade)\b|عدّل|غير|غيّر|عدل|طور|حسّن|طوّر)/i],
+  ['research', /(?:\b(search|research|find|latest|current)\b|ابحث|بحث|تعمق|آخر|حالي|جديد)/i],
+  ['compare', /(?:\b(compare|difference|vs|versus)\b|قارن|الفرق|مقارنة)/i],
+  ['solve', /(?:\b(solve|calculate)\b|حل|احسب|استخرج|برهن)/i],
+  ['explain', /(?:\b(explain|what is|how does)\b|اشرح|ما هو|كيف يعمل|لماذا)/i],
+  ['execute', /(?:\b(run|execute|install|deploy|push|commit)\b|شغل|نفذ|ثبت|انشر|ارفع)/i],
+  ['plan', /(?:\b(plan|roadmap|steps)\b|خطة|مخطط|خطوات)/i],
 ];
 
 const CONTINUATION = /^(yes|yeah|ok|okay|continue|go on|proceed|do it|same|this one|نعم|اي|أيوه|واصل|كمل|تابع|ابدأ|نفذ|نفسه|هذا|هكذا|تمام|اكمل)\s*[.!؟…]*$/i;
