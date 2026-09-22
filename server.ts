@@ -8,7 +8,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { registerAgentRoute, searchCircuitBreaker, isExplicitImageRequest, isExplicitVideoRequest } from './server/agent';
 import { createAgentModelGateway } from './src/core/models/agentModelGateway';
 import { modelRegistry } from './src/core/models/modelSwarm';
