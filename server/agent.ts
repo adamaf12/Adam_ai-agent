@@ -553,7 +553,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       ),
     };
 
-    const contents = history.length > 0
+    let contents = history.length > 0
       ? [...history.slice(0, -1), { role: 'user' as const, parts: [{ text: promptText }] }]
       : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
