@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from 'express';
+import type { AuthenticatedUser } from './security/auth';
 import dns from 'node:dns';
 try {
   dns.setDefaultResultOrder('ipv4first');
@@ -503,7 +504,7 @@ class SearchCircuitBreaker {
 
 export const searchCircuitBreaker = new SearchCircuitBreaker();
 
-function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, useSearch: boolean, userId: string) {
+function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: string, history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>, useSearch: boolean, userId: string, user?: AuthenticatedUser) {
   const ai = new GoogleGenAI({ apiKey });
   return async (modelDesc: ModelDescriptor, req: ModelRequest): Promise<string> => {
     const promptText = req.prompt;
@@ -589,7 +590,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
             const actionParts: any[] = [];
             for (const fn of fnCalls) {
               if (fn.name === 'create_task' || fn.name === 'query_memory' || fn.name === 'save_memory') {
-                const permission = AgentPermissionGuard.canExecuteTool(fn.name, undefined, { resource: fn.name });
+                const permission = AgentPermissionGuard.canExecuteTool(fn.name, user, { resource: fn.name });
                 if (!permission.allowed && userId) {
                   actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: 'PERMISSION_DENIED' } } });
                   continue;
@@ -878,7 +879,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
         + formatRequestContract(requestContract, language)
         + formatExecutionPlan(executionPlan, language);
-      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '');
+      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '', user);
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
