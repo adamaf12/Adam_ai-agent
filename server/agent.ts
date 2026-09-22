@@ -25,6 +25,8 @@ import { costControlManager } from './security/costControl';
 import { redactSecrets } from './security/secrets';
 import { systemMonitor } from './security/monitoring';
 import { chatRateLimiter } from './security/rateLimiter';
+import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
+import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -813,7 +815,22 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         return;
       }
 
-      const requestedMaxModels = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels) ? Math.max(1, Math.min(MAX_SWARM_MODELS, Math.floor(body.maxModels))) : 1;
+      const recentForContract = messages.slice(-8).map((m: any) => ({
+        role: m.role,
+        text: Array.isArray(m.parts) ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ') : '',
+      }));
+      const requestContract = buildRequestContract(latestPrompt, recentForContract);
+      const executionPlan = buildExecutionPlan(requestContract);
+
+      const requestedMaxModelsRaw = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels)
+        ? Math.max(1, Math.min(MAX_SWARM_MODELS, Math.floor(body.maxModels)))
+        : 1;
+      const requestedMaxModels = requestContract.recommendedModelDepth === 'deep'
+        ? Math.max(requestedMaxModelsRaw, Math.min(MAX_SWARM_MODELS, 3))
+        : requestContract.recommendedModelDepth === 'reasoning'
+          ? Math.max(requestedMaxModelsRaw, Math.min(MAX_SWARM_MODELS, 2))
+          : requestedMaxModelsRaw;
+
       let mission: any;
       let swarmPlan: any;
       try {
@@ -829,9 +846,12 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])].slice(0, MAX_SWARM_MODELS);
       if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
 
-      const useSearch = searchCircuitBreaker.isAvailable() && /\b(search the web|google search|search online|search the live web)\b|ابحث في الويب|بحث في جوجل/i.test(latestPrompt);
+      const explicitWebSearch = /\b(search the web|google search|search online|search the live web)\b|ابحث في الويب|بحث في جوجل/i.test(latestPrompt);
+      const useSearch = searchCircuitBreaker.isAvailable() && (explicitWebSearch || requestContract.executionRoute === 'web_research');
       const remoteGateway = createAgentModelGateway();
-      const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language);
+      const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
+        + formatRequestContract(requestContract, language)
+        + formatExecutionPlan(executionPlan, language);
       const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch);
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
