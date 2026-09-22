@@ -591,8 +591,8 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
             for (const fn of fnCalls) {
               if (fn.name === 'create_task' || fn.name === 'query_memory' || fn.name === 'save_memory') {
                 const permission = AgentPermissionGuard.canExecuteTool(fn.name, user, { resource: fn.name });
-                if (!permission.allowed && userId) {
-                  actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: 'PERMISSION_DENIED' } } });
+                if (!permission.allowed || !userId) {
+                  actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: permission.allowed ? 'AUTH_REQUIRED' : 'PERMISSION_DENIED' } } });
                   continue;
                 }
                 const result = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, userId);
@@ -603,7 +603,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
             const modelContent = (response as any).candidates?.[0]?.content;
             if (!modelContent) break;
             contents = [...contents, modelContent, { role: 'user' as const, parts: actionParts }];
-            response = await ai.models.generateContent({ model: modelId, contents, config: { ...config, tools: AGENT_ACTION_TOOLS } });
+            response = await ai.models.generateContent({ model: modelId, contents, config: buildGenerationConfig({ ...config, tools: AGENT_ACTION_TOOLS }, modelId) });
             textResult = response.text || '';
           }
 
@@ -665,7 +665,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       const resp = await ai.models.generateContent({
         model: 'gemini-3.6-flash',
         contents: promptText,
-        config: baseConfig,
+        config: buildGenerationConfig(baseConfig, 'gemini-3.6-flash'),
       });
       if (resp.text?.trim()) return resp.text.trim();
     } catch (e) {
