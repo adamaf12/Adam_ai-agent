@@ -54,8 +54,8 @@ export function buildRequestContract(prompt: string, recentMessages: Array<{ rol
     ...clean.match(/(?:gemini-[0-9.]+-[a-z-]+|Android|GitHub|Linux|Windows|macOS|iOS|Stremio)/gi) || [],
   ]).slice(0, 12);
 
-  const needsFreshKnowledge = /\b(latest|today|now|current|recent|newest|آخر|اليوم|الآن|حالي|حديث|جديد|ابحث|بحث)\b/i.test(clean);
-  const needsExecution = /\b(run|execute|install|deploy|push|commit|build|fix it|نفذ|شغل|ثبت|انشر|ارفع|صلح|عدّل الملف|غيّر الملف)\b/i.test(clean);
+  const needsFreshKnowledge = /(?:\b(latest|today|now|current|recent|newest)\b|آخر|اليوم|الآن|حالي|حديث|جديد|ابحث|بحث)/i.test(clean);
+  const needsExecution = /(?:\b(run|execute|install|deploy|push|commit|build|fix it)\b|نفذ|شغل|ثبت|انشر|ارفع|صلح|عدّل الملف|غيّر الملف)/i.test(clean);
 
   const needsClarification = clean.length > 0 && !continuation && clean.length < 8 && taskType === 'unknown' && context.trim().length === 0;
 
