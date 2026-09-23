@@ -580,7 +580,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
 
       for (const config of configsToTry) {
         try {
-          let response = await ai.models.generateContent({ model: modelId, contents, config });
+          let response = await ai.models.generateContent({ model: modelId, contents, config: buildGenerationConfig(config, modelId) });
           let textResult = response.text || '';
 
           // Real tool loop: execute declared actions and feed verified results back to Gemini.
