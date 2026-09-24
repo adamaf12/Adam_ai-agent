@@ -4,7 +4,6 @@ import { ChatError, type ChatClient, type ChatRequest } from './types';
 import { parseStreamLines, type StreamEvent } from './streamParser';
 import { classifyChatError, toUserFacingChatError } from './errors';
 import { getRetryDelayMs, shouldRetryChatError } from './retry';
-import { generateLocalFallbackResponse } from './localFallback';
 import {
   hasDirectClientAi,
   getClientGeminiApiKey,
@@ -13,35 +12,69 @@ import {
   executeDirectHuggingFace,
 } from './directAiClient';
 
-function isNativeApp(): boolean {
+/**
+ * Detects if the app is running in a Native Android APK, Capacitor, Cordova, or WebView environment
+ */
+export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
   const cap = (window as any).Capacitor;
-  if (cap?.isNativePlatform?.() || cap?.getPlatform?.() === 'android') return true;
+  if (cap?.isNativePlatform?.() || cap?.getPlatform?.() === 'android' || cap?.getPlatform?.() === 'ios') return true;
+  const isAndroidApp = Boolean((window as any).AndroidApp || (window as any).Android);
   const origin = window.location.origin || '';
-  return origin === 'https://localhost' || origin.startsWith('capacitor://') || origin.startsWith('ionic://');
+  const isLocalOrigin = origin === 'https://localhost' || origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('file://');
+  const isAndroidWebView = /Android.*(wv|\.0\.0\.0|Version\/[\d.]+\s+Chrome\/)/i.test(navigator.userAgent || '');
+  return isAndroidApp || isLocalOrigin || isAndroidWebView;
 }
 
-function getResolvedApiBase(): string {
-  if (typeof window === 'undefined') return '';
+/**
+ * Returns prioritized live server endpoints for native APK and web environments
+ */
+export function getLiveServerEndpoints(): string[] {
+  const endpoints: string[] = [];
 
-  // Explicit endpoint remains supported for self-hosted deployments.
-  const customUrl = localStorage.getItem('adam_custom_api_url')?.trim();
+  // 1. Explicit user-configured custom endpoint (Settings / LocalStorage)
+  const customUrl = typeof window !== 'undefined' ? localStorage.getItem('adam_custom_api_url')?.trim() : '';
   if (customUrl && /^https?:\/\//i.test(customUrl)) {
-    const isLegacyCloudRun = /\.run\.app\/?$/i.test(customUrl);
-    if (!(isNativeApp() && isLegacyCloudRun)) return customUrl.replace(/\/$/, '');
-    localStorage.removeItem('adam_custom_api_url');
+    endpoints.push(customUrl.replace(/\/$/, ''));
   }
 
-  // Build-time endpoint.
+  // 2. Build-time environment endpoint
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
-  if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl.replace(/\/$/, '');
+  if (envUrl && /^https?:\/\//i.test(envUrl)) {
+    endpoints.push(envUrl.replace(/\/$/, ''));
+  }
 
-  // IMPORTANT: Capacitor APKs do not have the Express server running at
-  // https://localhost. Use the same production API as the working browser.
-  if (isNativeApp()) return 'https://adam-ai-agent.vercel.app';
+  // 3. Web same-origin (if hosted online and not local file/capacitor)
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin || '';
+    if (origin && !origin.includes('localhost') && !origin.startsWith('file:') && !origin.startsWith('capacitor:')) {
+      endpoints.push(origin);
+    }
+  }
 
-  // Browser deployment is same-origin.
+  // 4. Guaranteed Production Cloud Endpoints for Android APK & GitHub builds
+  endpoints.push('https://adam-ai-agent.vercel.app');
+
+  return Array.from(new Set(endpoints.filter(Boolean)));
+}
+
+export function getResolvedApiBase(): string {
+  const endpoints = getLiveServerEndpoints();
+  if (endpoints.length > 0) {
+    if (!isNativeApp() && typeof window !== 'undefined' && !window.location.origin.includes('localhost') && !window.location.origin.startsWith('file:')) {
+      return ''; // Browser deployment uses same-origin relative paths
+    }
+    return endpoints[0];
+  }
   return '';
+}
+
+/**
+ * Checks if device is strictly connected to the internet
+ */
+export function checkIsOnline(): boolean {
+  if (typeof window === 'undefined') return true;
+  return navigator.onLine !== false;
 }
 
 const wait = (ms: number, signal: AbortSignal) =>
@@ -177,9 +210,18 @@ async function streamRequest(
   signal: AbortSignal,
   onDelta: (text: string) => void
 ): Promise<Message> {
+  const isArabic = request.language === 'ar';
   const userPrompt = request.messages[request.messages.length - 1]?.content || '';
 
-  // 1. Direct Client AI (Gemini or Hugging Face)
+  // 1. STRICT INTERNET REQUIREMENT CHECK (تطبيق يعمل فقط بالإنترنت لضمان صحة المعلومات)
+  if (!checkIsOnline()) {
+    const offlineMsg = isArabic
+      ? `⚠️ **يلزم وجود اتصال بالإنترنت:**\n\nيعمل تطبيق **ADEM** حصرياً بالاتصال المباشر بالإنترنت ومحركات البحث الحيّة لضمان استرجاع معلومات دقيقة ومحدثة وصحيحة 100%.\n\nيرجى التأكد من اتصال هاتفك بشبكة Wi-Fi أو بيانات الهاتف ثم إعادة المحاولة.`
+      : `⚠️ **Active Internet Connection Required:**\n\n**ADEM** operates exclusively with a live internet connection and real-time grounding to guarantee 100% verified, accurate, and up-to-date information.\n\nPlease connect to Wi-Fi or cellular data and retry.`;
+    throw new ChatError('NO_INTERNET', offlineMsg);
+  }
+
+  // 2. Direct Client AI (Gemini or Hugging Face) if configured with internet
   if (hasDirectClientAi()) {
     try {
       if (getClientGeminiApiKey()) {
@@ -206,48 +248,46 @@ async function streamRequest(
         return createAssistantMessage(text) as Message;
       }
     } catch (directAiErr) {
-      console.warn('[Adam Client] Direct AI failed, attempting server or fallback:', directAiErr);
+      console.warn('[Adam Client] Direct AI failed, attempting live server endpoint:', directAiErr);
     }
   }
 
-  // 2. HTTP Server Endpoint
-  const apiBase = getResolvedApiBase();
-  const primaryUrl = `${apiBase}${path}`;
+  // 3. Multi-Server Resilient Failover for APK and Web
+  const candidateEndpoints = isNativeApp()
+    ? getLiveServerEndpoints()
+    : [getResolvedApiBase(), ...getLiveServerEndpoints()];
 
-  for (let retryCount = 0; retryCount < 2; retryCount += 1) {
-    try {
-      return await streamRequestOnce(primaryUrl, request, signal, onDelta);
-    } catch (error) {
-      if (signal.aborted) throw error;
-      const kind = classifyChatError(error);
-      const canRetry =
-        shouldRetryChatError(kind, retryCount) &&
-        !(error instanceof ChatError && error.status === undefined && kind === 'unknown');
+  let lastError: unknown = null;
 
-      if (!canRetry) {
-        break;
+  for (const base of candidateEndpoints) {
+    const fullUrl = `${base}${path}`;
+    for (let retryCount = 0; retryCount < 2; retryCount += 1) {
+      try {
+        return await streamRequestOnce(fullUrl, request, signal, onDelta);
+      } catch (error) {
+        if (signal.aborted) throw error;
+        lastError = error;
+        const kind = classifyChatError(error);
+        const canRetry =
+          shouldRetryChatError(kind, retryCount) &&
+          !(error instanceof ChatError && error.status === undefined && kind === 'unknown');
+
+        if (!canRetry) {
+          break;
+        }
+
+        await wait(getRetryDelayMs(retryCount), signal);
       }
-
-      await wait(getRetryDelayMs(retryCount), signal);
     }
   }
 
-  // 3. Intelligent Local Cognitive Fallback
-  const fallback = generateLocalFallbackResponse({
-    prompt: userPrompt,
-    language: request.language,
-    agentName: request.agentName || 'Adam',
-    messages: request.messages,
-  });
+  // 4. If all live servers were unreachable, require internet connection rather than hallucinating
+  const errDetail = lastError instanceof Error ? lastError.message : '';
+  const serverErrMsg = isArabic
+    ? `⚠️ **تعذر الاتصال بسيرفر الإنترنت الحي:**\n\nتطبيق ADEM يتطلب اتصالاً مباشراً بسيرفر الذكاء الاصطناعي على الإنترنت لجلب معلومات حية ودقيقة.\n\nيرجى التأكد من اتصال الإنترنت ثم الضغط على **إعادة المحاولة**.\n\n*(التفاصيل: ${errDetail || 'Server unreachable'})*`
+    : `⚠️ **Unable to connect to the live online AI server:**\n\nADEM requires a live internet connection to retrieve verified, grounded, and accurate real-time data.\n\nPlease check your internet connection and tap **Retry**.\n\n*(Details: ${errDetail || 'Server unreachable'})*`;
 
-  // Brief natural streaming effect
-  for (let i = 1; i <= fallback.length; i += 8) {
-    if (signal.aborted) break;
-    onDelta(fallback.slice(0, i));
-    await new Promise((r) => setTimeout(r, 12));
-  }
-  onDelta(fallback);
-  return createAssistantMessage(fallback) as Message;
+  throw new ChatError('SERVER_UNREACHABLE', serverErrMsg);
 }
 
 export const httpChatClient: ChatClient = {
@@ -265,4 +305,3 @@ export const httpAgentClient: ChatClient = {
     }
   },
 };
-

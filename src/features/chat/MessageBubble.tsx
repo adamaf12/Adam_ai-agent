@@ -18,6 +18,10 @@ import { CognitiveIqCard, type CognitiveIqCardPayload } from './CognitiveIqCard'
 import { GeospatialCard, type GeospatialCardPayload } from './GeospatialCard';
 import { InteractiveTaskCard, type TaskCardPayload } from './InteractiveTaskCard';
 import { TranslationCard, type TranslationCardPayload } from './TranslationCard';
+import { GoogleAdkCard } from './GoogleAdkCard';
+import { AdkOrchestratorCard } from './AdkOrchestratorCard';
+import type { GoogleAdkCardPayload } from '../../core/adk/adkProtocol';
+import type { MultiAgentExecutionPlan } from '../../core/adk-agent/adkTypes';
 import { requestTranslation } from '../translation/translationApi';
 
 function extractPromptFromUrl(src: string): string {
@@ -143,6 +147,24 @@ export function MessageBubble({
     } catch {}
   }
 
+  // Check if message contains structured Google ADK card payload
+  const adkMatch = message.content.match(/:::(?:google-adk-card|adk-card)\s*([\s\S]*?)\s*:::/i);
+  let adkData: GoogleAdkCardPayload | null = null;
+  if (adkMatch) {
+    try {
+      adkData = JSON.parse(adkMatch[1]);
+    } catch {}
+  }
+
+  // Check if message contains structured Google ADK Multi-Agent Orchestration plan
+  const adkPlanMatch = message.content.match(/:::(?:adk-orchestrator|adk-plan)\s*([\s\S]*?)\s*:::/i);
+  let adkPlanData: MultiAgentExecutionPlan | null = null;
+  if (adkPlanMatch) {
+    try {
+      adkPlanData = JSON.parse(adkPlanMatch[1]);
+    } catch {}
+  }
+
   // Check if message contains runnable app/game code
   const appData = assistant ? extractAppCode(message.content) : null;
 
@@ -185,6 +207,12 @@ export function MessageBubble({
   }
   if (translationMatch) {
     displayMarkdown = displayMarkdown.replace(/:::translation-card\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (adkMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::(?:google-adk-card|adk-card)\s*[\s\S]*?\s*:::/gi, '').trim();
+  }
+  if (adkPlanMatch) {
+    displayMarkdown = displayMarkdown.replace(/:::(?:adk-orchestrator|adk-plan)\s*[\s\S]*?\s*:::/gi, '').trim();
   }
 
   const copy = () => navigator.clipboard?.writeText(displayMarkdown || message.content);
@@ -358,6 +386,14 @@ export function MessageBubble({
           </div>
         )}
 
+        {/* Dedicated Google ADK Multi-Agent Orchestration Plan */}
+        {adkPlanData && (
+          <AdkOrchestratorCard
+            plan={adkPlanData}
+            language={language}
+          />
+        )}
+
         {/* Dedicated Image Card if Structured Function Call Payload exists */}
         {imageCardData && (
           <ImageCard
@@ -451,6 +487,14 @@ export function MessageBubble({
         {translationData && (
           <TranslationCard
             data={translationData}
+            language={language}
+          />
+        )}
+
+        {/* Dedicated Google ADK Hardware & Robotics Card */}
+        {adkData && (
+          <GoogleAdkCard
+            data={adkData}
             language={language}
           />
         )}

@@ -23,5 +23,11 @@ export function selectModels(task: RoutingTask): SelectionResult {
 export function isModelRunnable(model: ModelDescriptor, configuredProviders: Set<string>): boolean {
   if (!model.enabled) return false;
   if (model.provider === 'local' || model.provider === 'openai-compatible') return Boolean(model.endpoint);
+  if (model.provider === 'ADEM-G') {
+    return configuredProviders.has('ADEM-G') || configuredProviders.has('gemini');
+  }
+  if (model.provider === 'gemini') {
+    return configuredProviders.has('gemini') || configuredProviders.has('ADEM-G');
+  }
   return configuredProviders.has(model.provider);
 }

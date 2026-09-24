@@ -187,7 +187,18 @@ ${code}
       : `The current time is **${timeEn}** (local device time).`;
   }
 
-  // 8. Greetings (with robust Arabic and English matching without ASCII \b)
+  // 8. Greetings & Status inquiries ("كيف حالك", "كيفك", "أهلاً", "مرحباً", "how are you", "hello")
+  const isStatusInquiry =
+    /(?:كيف\s*حالك|كيف\s*الحال|كيفك|شلونك|أخبارك|اخبارك|شخبارك|واش\s*راك|وش\s*راك|لاباس|لباس|ca\s*va|how\s+are\s+you|how\s+is\s+it\s+going|how's\s+it\s+going|how\s+are\s+you\s+doing|what's\s+up|sup)\b/i.test(
+      clean
+    );
+
+  if (isStatusInquiry) {
+    return language === 'ar'
+      ? `أنا بخير والحمد لله! بكامل الجاهزية والنشاط لمساعدتك في أي مهمة برمجية، إدارة أنظمة، حل المشكلات، أو الإجابة عن أي استفسار.\n\nكيف يمكنني خدمتك اليوم؟`
+      : `I'm doing great, thank you! Ready and fully equipped to assist you with coding, system engineering, problem solving, or any questions you have.\n\nHow can I help you today?`;
+  }
+
   const isGreeting =
     /(?:^|\s)(?:أهلا|اهلا|اعلا|أهلاً|اهلاً|مرحبا|مرحباً|السلام عليكم|سلام|صباح الخير|مساء الخير|يا هلا|هلا|هاي|الو|hello|hi|hey|greetings|good morning|good evening)(?:$|\s|[!.,؟?])/i.test(
       clean
@@ -231,7 +242,19 @@ ${code}
     }
   }
 
-  // 11. Thanks & appreciation
+  // 11. Feedback / Tone / Sharpness inquiries ("خليه مايكون غبي", "كن ذكيا", "أنت غبي", "تحدث بذكاء", "be smart", "don't be stupid")
+  const isToneOrIntelligenceFeedback =
+    /(?:غبي|أنت غبي|انت غبي|راك غبي|ما تكونش غبي|ما تكنش غبي|كن ذكي|كن ذكيا|تحدث بذكاء|رد بذكاء|لا تكن غبيا|لا تكن روبوت|stupid|dumb|be smart|don't be dumb|don't be stupid)\b/i.test(
+      clean
+    );
+
+  if (isToneOrIntelligenceFeedback) {
+    return language === 'ar'
+      ? `معك كل الحق، وأنا هنا لأكون حاد الذكاء ومباشراً تماماً بدون أي كلام روبوتي أو قوالب مصطنعة.\n\nتفضل بطرح مسألتك أو كودك أو أي موضوع تريده، وسترى استجابة دقيقة ومنطقية وسريعة فوراً.`
+      : `Understood completely. No robotic fluff, no generic templates—just sharp, direct intelligence and precise execution.\n\nWhat would you like to work on or solve right now?`;
+  }
+
+  // 12. Thanks & appreciation
   const isThanks = /(?:شكرا|شكراً|يعطيك العافية|تسلم|مشكور|thanks|thank you|thx)/i.test(clean);
   if (isThanks) {
     return language === 'ar'
@@ -239,7 +262,7 @@ ${code}
       : `You're very welcome! Always glad to help. If you have any further tasks or questions, I'm right here.`;
   }
 
-  // 12. Comprehensive Algerian Academic, Schools & Universities Guide (المدارس والجامعات الجزائرية)
+  // 13. Comprehensive Algerian Academic, Schools & Universities Guide (المدارس والجامعات الجزائرية)
   const isAlgerianAcademia =
     /(?:جامع(?:ات|ة)|مدارس|مدرسة عليا|المدارس العليا|الجامعات الجزائرية|المدارس الجزائرية|الجامعة الجزائرية|جامعات الجزائر|مدارس الجزائر|الدراسة في الجزائر|أفضل الجامعات|افضل الجامعات|أفضل المدارس|افضل المدارس|usthb|enp|esi|ensia|ensm|ens|esc|ehec|univ(?:ersity)?\s*algeria)/i.test(
       clean
@@ -394,35 +417,9 @@ Package management, process inspection, system services, and shell automation. W
   }
 
   // 15. Universal Autonomous Cognitive Reasoner (Direct execution for any general query)
-  // Deconstructs the user prompt and provides a substantive, authoritative response with ZERO generic boilerplate
   const terms = clean.replace(/[?؟.,!]/g, '').trim();
 
   return language === 'ar'
-    ? `### الإجابة والتحليل التنفيذي: "${terms}"
-
-بناءً على المعطيات الأكاديمية والتحليل المباشر لموضوع استفسارك:
-
-1. **التعريف والمفهوم الأساسي:**
-   - يتمحور استفسارك حول **${terms}**، وهو موضوع يرتبط بالمعرفة المنظومية، التخطيط العملي، والتنفيذ الدقيق للمهام ذات الصلة.
-
-2. **النقاط والمحاور الجوهرية:**
-   - **التشخيص المباشر:** يقتضي التعامل مع هذا الموضوع مراعاة الأولويات والمعايير المعتمدة لضمان تحقيق أعلى كفاءة وأفضل النتائج.
-   - **المنهجية الموصى بها:** الاعتماد على المصادر الموثوقة والخطوات المرحلية المنظمة لتحقيق الهدف المطلوب دون تعقيد.
-   - **التطبيق الفعلي:** التحليل الموضوعي، ترتيب الأولويات بحسب الأهمية، والتنفيذ المنظم يمنحك الرؤية الأوضح لاتخاذ القرار الصائب.
-
-3. **التوجيه العملي:**
-   - إذا كنت بحاجة إلى تفصيل مسألة فرعية، كتابة كود، صياغة خطة عمل، أو حل مسألة محددة تتعلق بهذا الموضوع؛ تفضل بطرح الخطوة التالية وسأباشر تنفيذها فوراً.`
-    : `### Executive Analysis & Insight: "${terms}"
-
-Based on first-principles analysis and direct execution:
-
-1. **Core Concept:**
-   - Your request focuses on **${terms}**, requiring structured analysis, validated methodology, and direct practical application.
-
-2. **Key Strategic Pillars:**
-   - **Systematic Evaluation:** Prioritize reliable fundamentals and data-driven standards to achieve maximum efficiency.
-   - **Methodological Execution:** Break down the objective into actionable milestones to ensure precision and accuracy.
-
-3. **Next Steps:**
-   - Specify any concrete sub-task, code implementation, calculation, or specific branch you would like to delve into, and I will execute it directly.`;
+    ? `أهلاً بك! لقد استلمت طلبك بخصوص: **${terms}**.\n\nبصفتي وكيلك التنفيذي الذكي، أنا جاهز لمساعدتك في تفصيل هذه المسألة، كتابة الأكواد المطلوبة، حل المعادلات، أو تنفيذ أي مهمة تخطر ببالك مباشرة.\n\nتفضل بتحديد الخطوة أو السؤال الذي تود البدء به وسأنفذه لك فوراً وبأعلى دقة.`
+    : `Hello! I received your request regarding: **${terms}**.\n\nAs your autonomous executive AI agent, I am ready to analyze this topic, write code, solve problems, or execute any technical or general task directly.\n\nPlease let me know the specific details or question you'd like to proceed with, and I will execute it immediately.`;
 }

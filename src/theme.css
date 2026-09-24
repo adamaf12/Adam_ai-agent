@@ -1,10 +1,19 @@
 /* ==========================================================================
-   ADAM AI — ULTRA-COMPATIBLE MULTI-THEME ENGINE (23 LUXURY & CINEMATIC THEMES)
-   Engineered for seamless harmony across all views, components, and platforms
+   ADAM AI — QUICKLIQUID GLASS THEME ENGINE (amarnath3003/quickLiquid on GitHub)
+   Engineered for optical backdrop refraction, convex rim lighting, and fluid physics
    ========================================================================== */
 
+:root {
+  --liquid-blur: 28px;
+  --liquid-saturation: 180%;
+  --liquid-rim: rgba(255, 255, 255, 0.22);
+  --liquid-bezel: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  --liquid-caustic: rgba(255, 255, 255, 0.06);
+  --liquid-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 /* --------------------------------------------------------------------------
-   1. BASE & ROOT TOKENS FOR ALL 23 THEMES
+   1. BASE & ROOT TOKENS FOR ALL 38 THEMES (ENHANCED WITH QUICKLIQUID GLASS)
    -------------------------------------------------------------------------- */
 
 /* 1. Emerald Dark (Default Carbon & Emerald) */

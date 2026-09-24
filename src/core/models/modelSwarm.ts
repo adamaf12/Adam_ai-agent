@@ -1,4 +1,4 @@
-export type ModelProvider = 'gemini' | 'huggingface' | 'openai-compatible' | 'local' | 'pollinations';
+export type ModelProvider = 'ADEM-G' | 'gemini' | 'huggingface' | 'openai-compatible' | 'local' | 'pollinations';
 export type ModelCapability = 'general' | 'reasoning' | 'coding' | 'math' | 'vision' | 'search' | 'fast' | 'arabic';
 
 export interface ModelDescriptor { id: string; provider: ModelProvider; displayName: string; capabilities: readonly ModelCapability[]; contextLength?: number; quality: number; speed: number; cost: number; enabled: boolean; endpoint?: string; }
@@ -17,15 +17,40 @@ export class ModelRegistry {
   size() { return this.models.size; }
 }
 
+export function formatAdemModelName(modelIdOrName: string): string {
+  if (!modelIdOrName) return 'ADEM-G 3.8 Flash';
+  const clean = String(modelIdOrName).trim();
+  if (clean.startsWith('ADEM-G')) return clean;
+
+  const map: Record<string, string> = {
+    'gemini-3.8-flash': 'ADEM-G 3.8 Flash',
+    'gemini-3.1-flash-lite': 'ADEM-G 3.1 Flash Lite',
+    'gemini-flash-latest': 'ADEM-G Flash Latest',
+    'gemini-3.1-pro-preview': 'ADEM-G 3.1 Pro Preview',
+    'gemini-2.5-flash': 'ADEM-G 2.5 Flash',
+    'gemini-2.5-pro': 'ADEM-G 2.5 Pro',
+    'gemini-3.6-flash': 'ADEM-G 3.6 Flash',
+    'gemini-3.5-flash': 'ADEM-G 3.5 Flash',
+    'gemini-3.5-flash-lite': 'ADEM-G 3.5 Flash Lite',
+  };
+  if (map[clean.toLowerCase()]) return map[clean.toLowerCase()];
+
+  return clean
+    .replace(/^gemini[- ]?/i, 'ADEM-G ')
+    .replace(/gemini[- ]?/gi, 'ADEM-G ');
+}
+
 const builtInModels: ModelDescriptor[] = [
-  { id: 'gemini-3.8-flash', provider: 'gemini', displayName: 'Gemini 3.8 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.8, cost: 1, enabled: true },
-  { id: 'gemini-3.1-flash-lite', provider: 'gemini', displayName: 'Gemini 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.5, speed: 9.9, cost: 1, enabled: true },
-  { id: 'gemini-flash-latest', provider: 'gemini', displayName: 'Gemini Flash Latest', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-3.8-flash', provider: 'ADEM-G', displayName: 'ADEM-G 3.8 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-3.1-flash-lite', provider: 'ADEM-G', displayName: 'ADEM-G 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.5, speed: 9.9, cost: 1, enabled: true },
+  { id: 'gemini-flash-latest', provider: 'ADEM-G', displayName: 'ADEM-G Flash Latest', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.8, cost: 1, enabled: true },
+  { id: 'gemini-2.5-flash', provider: 'ADEM-G', displayName: 'ADEM-G 2.5 Flash', capabilities: ['general','fast','coding','reasoning','arabic'], quality: 9.6, speed: 9.7, cost: 1, enabled: true },
+  { id: 'gemini-2.5-pro', provider: 'ADEM-G', displayName: 'ADEM-G 2.5 Pro', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.0, cost: 2, enabled: true },
   { id: 'deepseek-ai/DeepSeek-R1', provider: 'huggingface', displayName: 'DeepSeek-R1 (Hugging Face Reasoning)', capabilities: ['reasoning','coding','math','general','arabic'], quality: 9.9, speed: 8.8, cost: 1, enabled: true, endpoint: 'https://router.huggingface.co/v1/chat/completions' },
   { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', provider: 'huggingface', displayName: 'Qwen 2.5 Coder 32B (Hugging Face Code)', capabilities: ['coding','reasoning','fast','general','arabic'], quality: 9.8, speed: 9.5, cost: 1, enabled: true, endpoint: 'https://router.huggingface.co/v1/chat/completions' },
   { id: 'meta-llama/Llama-3.3-70B-Instruct', provider: 'huggingface', displayName: 'Llama 3.3 70B (Hugging Face Intelligence)', capabilities: ['general','reasoning','coding','arabic','math'], quality: 9.7, speed: 9.0, cost: 1, enabled: true, endpoint: 'https://router.huggingface.co/v1/chat/completions' },
   { id: 'mistralai/Mistral-Small-24B-Instruct-2501', provider: 'huggingface', displayName: 'Mistral Small 24B (Hugging Face Fast)', capabilities: ['general','fast','coding','arabic'], quality: 9.4, speed: 9.8, cost: 1, enabled: true, endpoint: 'https://router.huggingface.co/v1/chat/completions' },
-  { id: 'gemini-3.1-pro-preview', provider: 'gemini', displayName: 'Gemini 3.1 Pro Preview', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.2, cost: 2, enabled: false },
+  { id: 'gemini-3.1-pro-preview', provider: 'ADEM-G', displayName: 'ADEM-G 3.1 Pro Preview', capabilities: ['general','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.2, cost: 2, enabled: false },
 ];
 export const modelRegistry = new ModelRegistry();
 modelRegistry.registerMany(builtInModels);

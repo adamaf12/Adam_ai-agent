@@ -31,6 +31,11 @@ import { AcademicEngine } from './server/academicEngine';
 import { verifyAndCorrectResponse } from './src/core/agent/deterministicVerifier';
 import { buildRequestContract, formatRequestContract } from './src/core/agent/requestUnderstanding';
 import { buildExecutionPlan, formatExecutionPlan } from './src/core/agent/executionPlanner';
+import { sandboxRouter } from './server/sandbox/sandboxRoutes';
+import { dockerSandboxService } from './server/sandbox/dockerSandboxService';
+import { speedTestRouter } from './server/diagnostics/speedTestRoutes';
+import { geminiMultimodalRouter } from './server/features/geminiMultimodalRoutes';
+import { setupLiveApiWebSocket } from './server/features/liveApiBridge';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -1351,40 +1356,56 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   }
 });
 
-// Direct Terminal Execution Sandbox API
+// Docker Sandbox Container Execution API for AppSandboxStudio
+app.use('/api/sandbox/docker', sandboxRouter);
+app.use('/api/sandbox', sandboxRouter);
+
+// LLM Speed Test & Tokens-Per-Second Diagnostic API
+app.use('/api/diagnostics/speed-test', speedTestRouter);
+app.use('/api/speed-test', speedTestRouter);
+
+// Gemini Multimodal Engine (Veo 3 Video, Audio Transcription, Image Generation/Edit, Search & Maps Grounding)
+app.use('/api', geminiMultimodalRouter);
+
+// Direct Terminal Execution Sandbox API (enhanced with Docker sandbox service)
 app.post('/api/terminal-sandbox', authenticateSession, async (req: express.Request, res: express.Response) => {
   try {
-    const { code, language = 'javascript', command } = req.body || {};
+    const { code, language = 'javascript', command, limits } = req.body || {};
 
     if (command) {
-      const { exec } = await import('node:child_process');
-      exec(command, { timeout: 10000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-        res.json({
-          success: !error,
-          stdout: stdout || '',
-          stderr: stderr || (error ? error.message : ''),
-          exitCode: error ? (error.code || 1) : 0,
-        });
+      const result = await dockerSandboxService.execute({
+        code: command,
+        language: 'bash',
+        limits: limits || { timeoutMs: 10000 },
+      });
+      res.json({
+        success: result.ok,
+        stdout: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.exitCode,
+        durationMs: result.durationMs,
+        engine: result.engine,
       });
       return;
     }
 
-    if (code && (language === 'javascript' || language === 'js' || language === 'ts')) {
-      try {
-        const vm = await import('node:vm');
-        new vm.Script(code);
-        res.json({
-          success: true,
-          syntaxValid: true,
-          message: 'Syntax check passed successfully. Ready for browser execution.'
-        });
-      } catch (syntaxErr: any) {
-        res.json({
-          success: false,
-          syntaxValid: false,
-          error: syntaxErr.message
-        });
-      }
+    if (code) {
+      const lang = (language === 'js' || language === 'ts' ? 'javascript' : language) as any;
+      const result = await dockerSandboxService.execute({
+        code,
+        language: lang,
+        limits,
+      });
+      res.json({
+        success: result.ok,
+        syntaxValid: result.ok,
+        stdout: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.exitCode,
+        durationMs: result.durationMs,
+        engine: result.engine,
+        containerId: result.containerId,
+      });
       return;
     }
 
@@ -1731,6 +1752,8 @@ async function startServer() {
       server.on('error', (err: any) => {
         console.error('[Adam Server] HTTP Server error:', err);
       });
+      // Attach Gemini 3.8 Live API WebSocket Bridge
+      setupLiveApiWebSocket(server);
       return server;
     } catch (err) {
       console.error('[Adam Server] Failed to listen:', err);

@@ -4,12 +4,18 @@ import {
   Languages,
   Plus,
   Settings2,
+  Gauge,
+  Radio,
+  Film,
 } from 'lucide-react';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { copy } from '../core/i18n';
+import { SpeedTestDiagnosticModal } from '../features/diagnostics/SpeedTestDiagnosticModal';
+import { getSpeedTestHistory } from '../features/diagnostics/speedTestClient';
+import { LiveVoiceModal } from '../features/live/LiveVoiceModal';
 
 interface AppShellProps {
   activeView: ViewId;
@@ -37,8 +43,26 @@ export function AppShell({
   onOpenSessionDrawer,
 }: AppShellProps) {
   const t = copy(language);
+  const [isSpeedTestOpen, setIsSpeedTestOpen] = useState(false);
+  const [isLiveVoiceOpen, setIsLiveVoiceOpen] = useState(false);
+  const [lastSpeedTps, setLastSpeedTps] = useState<number | null>(() => {
+    const history = getSpeedTestHistory();
+    return history.length > 0 ? history[0].averageTps : null;
+  });
 
-  // Keyboard shortcut listener: Alt+1 / Alt+2 for fast navigation
+  // Listen for custom events
+  useEffect(() => {
+    const handleOpenSpeedTest = () => setIsSpeedTestOpen(true);
+    const handleOpenLiveVoice = () => setIsLiveVoiceOpen(true);
+    window.addEventListener('adam:open-speed-test' as any, handleOpenSpeedTest);
+    window.addEventListener('adam:open-live-voice' as any, handleOpenLiveVoice);
+    return () => {
+      window.removeEventListener('adam:open-speed-test' as any, handleOpenSpeedTest);
+      window.removeEventListener('adam:open-live-voice' as any, handleOpenLiveVoice);
+    };
+  }, []);
+
+  // Keyboard shortcut listener: Alt+1 / Alt+2 for fast navigation, Alt+S for speed test
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -52,13 +76,16 @@ export function AppShell({
       }
 
       if (e.altKey && !e.shiftKey) {
-        const num = parseInt(e.key, 10);
-        if (num === 1) {
+        const key = e.key.toLowerCase();
+        if (key === '1') {
           e.preventDefault();
           onViewChange('chat');
-        } else if (num === 2) {
+        } else if (key === '2') {
           e.preventDefault();
           onViewChange('settings');
+        } else if (key === 's') {
+          e.preventDefault();
+          setIsSpeedTestOpen((prev) => !prev);
         }
       }
     };
@@ -87,6 +114,48 @@ export function AppShell({
             <i />
             <span>{t.online}</span>
           </div>
+
+          {/* Real-time LLM Speed Test & Diagnostic Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsSpeedTestOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer shadow-sm active:scale-95"
+            title={language === 'ar' ? 'فحص سرعة النموذج والرموز في الثانية (Alt+S)' : 'LLM Speed Test & Tokens/sec Diagnostic (Alt+S)'}
+            aria-label="Speed Test"
+          >
+            <Gauge size={13} className="text-cyan-400 animate-pulse" />
+            <span className="hidden md:inline">
+              {lastSpeedTps ? `${lastSpeedTps} T/s` : (language === 'ar' ? 'فحص السرعة' : 'Speed Test')}
+            </span>
+          </button>
+
+          {/* Multimodal Live API Trigger (WebSockets - ADEM-G 3.8 Live) */}
+          <button
+            type="button"
+            onClick={() => setIsLiveVoiceOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-purple-500/40 bg-purple-500/15 text-purple-200 hover:bg-purple-500/25 hover:border-purple-400/60 transition-all cursor-pointer shadow-sm active:scale-95"
+            title={language === 'ar' ? 'Multimodal Live API: صوت وكاميرا وشاشة عبر WebSockets فائقة السرعة' : 'Multimodal Live API: Real-time Audio & Vision via WebSockets'}
+            aria-label="Multimodal Live API"
+          >
+            <Radio size={13} className="text-purple-400 animate-pulse" />
+            <span className="hidden sm:inline">{language === 'ar' ? 'Multimodal Live' : 'Multimodal Live'}</span>
+          </button>
+
+          {/* Media Studio Trigger (Veo 3 & Gemini Image) */}
+          <button
+            type="button"
+            onClick={() => onViewChange(activeView === 'media' ? 'chat' : 'media')}
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-sm active:scale-95 ${
+              activeView === 'media'
+                ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-emerald-950/40'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-slate-300 border-slate-700/60'
+            }`}
+            title={language === 'ar' ? 'استوديو الفيديو والصور (Veo 3 & Gemini Image)' : 'Veo 3 & Image Studio'}
+            aria-label="Media Studio"
+          >
+            <Film size={13} className="text-emerald-400" />
+            <span>{language === 'ar' ? 'استوديو الفيديو' : 'Veo 3 Studio'}</span>
+          </button>
         </div>
 
         {/* Center: Clean layout space */}
@@ -169,6 +238,26 @@ export function AppShell({
 
       {/* Main Workspace Area */}
       <main className="main-content">{children}</main>
+
+      {/* Global LLM Speed Test & Tokens-Per-Second Diagnostic Panel */}
+      <SpeedTestDiagnosticModal
+        isOpen={isSpeedTestOpen}
+        onClose={() => {
+          setIsSpeedTestOpen(false);
+          const history = getSpeedTestHistory();
+          if (history.length > 0) {
+            setLastSpeedTps(history[0].averageTps);
+          }
+        }}
+        language={language}
+      />
+
+      {/* Real-time Voice Stream Modal (gemini-3.8-live) */}
+      <LiveVoiceModal
+        isOpen={isLiveVoiceOpen}
+        onClose={() => setIsLiveVoiceOpen(false)}
+        language={language}
+      />
     </div>
   );
 }

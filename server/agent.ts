@@ -253,32 +253,20 @@ export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
 export const GENERATE_IMAGE_TOOL = GENERATE_SPECIALIZED_IMAGE_TOOL;
 
 function buildIntentProtocol(prompt: string, history: Array<any>, language: 'ar' | 'en'): string {
-  const recent = history.slice(-8).map((m: any) => {
-    const role = m.role === 'user' ? 'USER' : 'ASSISTANT';
-    const text = Array.isArray(m.parts) ? m.parts.filter((p: any) => typeof p.text === 'string').map((p: any) => p.text).join(' ') : '';
-    return text ? `${role}: ${text.slice(0, 5000)}` : '';
-  }).filter(Boolean).join('\n');
+  const isCasual = prompt.trim().length < 40 && /(?:أهلا|اهلا|مرحبا|مرحباً|سلام|كيف\s*حالك|كيفك|شلونك|واش\s*راك|وش\s*راك|لباس|لاباس|شكرا|شكراً|hello|hi|hey|how are you|thanks)/i.test(prompt);
+  if (isCasual) {
+    return '';
+  }
+
   return language === 'ar'
-    ? `\n\n=== بروتوكول الفهم الدقيق ===
-كوّن داخلياً عقداً للطلب قبل الإجابة: الهدف النهائي، نوع المهمة، القيود الصريحة، ما يجب ألا يتغير، المتطلبات الضرورية فقط، النتيجة المتوقعة، والأسماء/الإصدارات/الملفات/الأرقام الدقيقة.
-لا تستبدل المطلوب بمهمة أسهل أو قريبة منه. حافظ على كل قيد ذكره المستخدم. افهم "نعم/واصل/كمل/نفسه/هذا" على أنه استمرار لآخر مهمة غير مكتملة. لا تسأل عما هو موجود في السياق. لا تخترع متطلبات أو نتائج. فرّق بين الشرح والتنفيذ، وبين الافتراض والحقيقة. إذا كان الطلب واضحاً نفذه مباشرة، وإذا كانت معلومة واحدة فقط تمنع التنفيذ فاسأل عنها فقط. قبل الإخراج، تحقق أن النتيجة تطابق الهدف والقيود.
-
-الطلب الحالي:
-USER: ${prompt.slice(0, 12000)}
-
-السياق القريب:
-${recent}
-=== نهاية البروتوكول ===`
-    : `\n\n=== PRECISE REQUEST UNDERSTANDING ===
-Before answering, internally derive the user's goal, task type, explicit constraints, non-change requirements, necessary assumptions, expected deliverable, and exact names/versions/paths/numbers.
-Never replace the requested task with an easier adjacent task. Preserve explicit constraints. Interpret short confirmations as continuation of the last unfinished task. Do not ask for information already in context. Do not invent requirements or results. Distinguish execution from explanation and facts from assumptions. If clear, act directly; if one fact truly blocks execution, ask only for that fact. Verify the final result against the goal and constraints.
-
-CURRENT REQUEST:
-USER: ${prompt.slice(0, 12000)}
-
-RECENT CONTEXT:
-${recent}
-=== END PROTOCOL ===`;
+    ? `\n\n[إرشادات الفهم الذكي والاستجابة]:
+- افهم القصد الحقيقي وراء كلام المستخدم بذكاء وبصيرة من سياق المحادثة.
+- تحدث بأسلوب طبيعي، واثق، وحاد الذكاء دون أي قوالب آلية مصطنعة أو عبارات روتينية مكررة.
+- قدم الحلول والأكواد والمهام البرمجية بشكل مباشر وعملي ومنتج 100%.`
+    : `\n\n[Smart Comprehension Directives]:
+- Infer user intent naturally with sharp reasoning from the dialogue context.
+- Respond with human-like fluency, high intelligence, and zero mechanical boilerplate.
+- Deliver code, system solutions, and answers directly and completely.`;
 }
 
 function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
@@ -353,7 +341,73 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 
 ---
 
-## 9. معايير هندسة وبرمجة التطبيقات التفاعلية الكاملة (100% WORKING APPS & ZERO-MOCK MANDATE)
+## 9. معمارية GOOGLE AGENT DEVELOPMENT KIT (ADK.DEV) والوكلاء المتعددين (MULTI-AGENT ORCHESTRATION)
+يعمل نظام ADEM وفق معايير **Google ADK (adk.dev)** لأحدث أنظمة الوكلاء المتعددين (Multi-Agent Systems - MAS):
+- **الوكيل المنسق (Architect Agent):** التخطيط الاستراتيجي وتفكيك الأهداف المعقدة.
+- **وكيل البرمجة التنفيذي (CodeMaster Agent):** توليد تطبيقات وأكواد برمجية كاملة 100% بدون أي محاكاة وهمية.
+- **حارس الأمان (Security Sentinel Agent):** التدقيق الأمني وفحص الثغرات وعزل المفاتيح والبيئات.
+- **كشاف الأبحاث (Research Scout Agent):** التحقق الميداني والبحث المباشر عبر Google Grounding.
+- **حلقة التقييم الذاتي (Evaluator-Optimizer Loop):** التحقق الرياضي والمنطقي التكراري قبل تسليم المخرجات.
+- عند المهام البرمجية أو الهندسية أو البحثية المعقدة، يمكنك تضمين مخطط التنسيق التفاعلي للوكلاء عبر:
+  :::adk-orchestrator
+  {
+    "planId": "adk_plan_master",
+    "goal": "عنوان المهمة",
+    "mode": "parallel",
+    "agentsInvolved": [
+      { "name": "ADEM-Architect", "role": "orchestrator", "responsibility": "تفكيك وتخطيط المسار" },
+      { "name": "ADEM-CodeMaster", "role": "coder", "responsibility": "هندسة الأكواد المستقلة 100%" },
+      { "name": "ADEM-SecuritySentinel", "role": "security", "responsibility": "فحص الأمان والـ CVE" },
+      { "name": "ADEM-EvaluatorOptimizer", "role": "evaluator", "responsibility": "التحقق والضبط الذاتي" }
+    ],
+    "steps": [
+      { "stepNumber": 1, "description": "تخطيط المعمارية وتحديد الأدوات", "assignedAgent": "ADEM-Architect" },
+      { "stepNumber": 2, "description": "توليد الكود التنفيذي وفحص الأمان تزامناً", "assignedAgent": "ADEM-Parallel-Swarm" },
+      { "stepNumber": 3, "description": "حلقة التقييم والتصحيح الذاتي", "assignedAgent": "ADEM-EvaluatorOptimizer" }
+    ]
+  }
+  :::
+
+---
+
+## 10. بروتوكول محرك GOOGLE ADK وعالم الهاردوير والروبوتات (GOOGLE ADK HARDWARE & ROBOTICS ENGINE)
+يمتلك نظام ADEM دعماً أصيلاً لبروتوكول **Google ADK (Android Open Accessory - AOA 2.0)** والتحكم الكامل في وحدات التحكم المصغرة (Arduino Mega ADK, ESP32-S3, STM32, Raspberry Pi):
+- عند طلب المستخدم التحكم بالعتاد، قيادة روبوت، قراءة حساسات، أو كتابة فيرموير لبوردة Google ADK / Arduino / ESP32:
+  قم بتضمين بطاقة التحكم التفاعلية المباشرة عبر الوسم:
+  :::google-adk-card
+  {
+    "title": "وحدة تحكم Google ADK الذكية",
+    "boardType": "Arduino Mega ADK",
+    "connectionStatus": "connected",
+    "pins": [
+      { "pin": 2, "label": "D2 (PWM)", "mode": "PWM", "value": 128 },
+      { "pin": 3, "label": "D3 (LED)", "mode": "OUTPUT", "value": 1 },
+      { "pin": 5, "label": "D5 (Servo)", "mode": "SERVO", "value": 90 },
+      { "pin": 13, "label": "D13 (Builtin)", "mode": "OUTPUT", "value": 1 }
+    ],
+    "sensors": [
+      { "id": "temp", "name": "الحرارة", "unit": "°C", "value": 24.5, "min": 0, "max": 60, "history": [24.1, 24.5], "color": "#f59e0b" },
+      { "id": "light", "name": "الإضاءة LDR", "unit": "Lux", "value": 720, "min": 0, "max": 1024, "history": [680, 720], "color": "#38bdf8" },
+      { "id": "sonar", "name": "المسافة Sonar", "unit": "cm", "value": 45, "min": 2, "max": 400, "history": [50, 45], "color": "#10b981" }
+    ],
+    "robot": {
+      "motorLeftSpeed": 0,
+      "motorRightSpeed": 0,
+      "armBaseAngle": 90,
+      "armShoulderAngle": 60,
+      "armElbowAngle": 110,
+      "armGripperAngle": 50,
+      "ultrasonicDistanceCm": 45,
+      "batteryMillivolts": 7400
+    },
+    "notes": "تم تفعيل واجهة Google ADK AOA 2.0 وتوليد شفرات C++ لربط الهاتف بالبوردة عبر USB."
+  }
+  :::
+- تقديم شفرات الفيرموير C++ الكاملة الجاهزة للحرق فورياً.
+
+---
+
+## 10. معايير هندسة وبرمجة التطبيقات التفاعلية الكاملة (100% WORKING APPS & ZERO-MOCK MANDATE)
 عندما يطلب المستخدم إنشاء أو برمجة أي تطبيق أو أداة أو لعبة تفاعلية (مثل: آلة حاسبة، قائمة مهام، مؤقت وساعة إيقاف، محول وحدات أو عملات، لوحة رسم، تطبيق طقس، مفكرة وملاحظات، مسابقة، أو لعبة كانفاس):
 1. **حظر كامل للواجهات الصورية والوهمية (STRICTLY NO MOCK / NO SKELETON UI):**
    - يُمنع منعاً باتاً كتابة مجرد واجهة بصرية دون منطق تشغيلي داخلي!
@@ -869,7 +923,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       }
       const capabilities = inferCapabilities(latestPrompt);
       const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
-      const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini');
+      const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini' || candidate.provider === 'ADEM-G');
       const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])].slice(0, MAX_SWARM_MODELS);
       if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
 
@@ -880,7 +934,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         + formatRequestContract(requestContract, language)
         + formatExecutionPlan(executionPlan, language);
       const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '', user);
-      const invoke = async (selected: ModelDescriptor, request: ModelRequest) => selected.provider === 'gemini' ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
+      const invoke = async (selected: ModelDescriptor, request: ModelRequest) => (selected.provider === 'gemini' || selected.provider === 'ADEM-G') ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
       res.setHeader('X-Adam-Swarm-Concurrency', String(SWARM_CONCURRENCY));
@@ -905,7 +959,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
         // Try any non-gemini fallback in registry
         try {
-          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini');
+          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini' && m.provider !== 'ADEM-G');
           for (const fb of fallbackCandidates) {
             try {
               const resText = await remoteGateway.gateway.invokeSelected(fb, { prompt: latestPrompt, system: hermesSystem, temperature: 0.35, maxTokens: 4096 });

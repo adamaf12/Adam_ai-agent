@@ -76,6 +76,15 @@ export function isTodayDateQuery(prompt: string): boolean {
 }
 
 /**
+ * Detects casual conversational greetings, small talk, and status inquiries to bypass heavy web scraping.
+ */
+export function isConversationalQuery(prompt: string): boolean {
+  const p = String(prompt || '').toLowerCase().trim();
+  if (p.length > 60) return false;
+  return /(?:^|\s)(?:أهلا|اهلا|مرحبا|مرحباً|سلام|السلام عليكم|كيف\s*حالك|كيفك|شلونك|أخبارك|اخبارك|شخبارك|واش\s*راك|وش\s*راك|لباس|لاباس|ca\s*va|صباح الخير|مساء الخير|شكرا|شكراً|تسلم|يعطيك العافية|من أنت|من انت|ما اسمك|who are you|hello|hi|hey|how are you|how's it going|thank you|thanks)(?:$|\s|[!.,؟?])/i.test(p);
+}
+
+/**
  * Generates dynamic current date & time instruction for the system prompt.
  * Evaluated freshly on every request to inject the live system clock.
  */

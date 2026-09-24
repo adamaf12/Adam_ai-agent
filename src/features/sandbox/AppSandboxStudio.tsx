@@ -20,7 +20,8 @@ import {
   SlidersHorizontal,
   Flame,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Boxes
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
 import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
@@ -31,6 +32,7 @@ import {
   type SandboxApp
 } from '../../core/appSandboxStorage';
 import { getSmartCalculatorAppCode } from '../../core/agent/interactiveAppTemplates';
+import { DockerSandboxRunner } from './DockerSandboxRunner';
 
 interface AppSandboxStudioProps {
   language: Language;
@@ -939,7 +941,7 @@ export function AppSandboxStudio({
     return initialAppId || CURATED_MODELS[0].id;
   });
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'docker'>('preview');
   const [deviceMode, setDeviceMode] = useState<'fluid' | 'mobile'>('fluid');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'game' | 'app'>('all');
@@ -1234,6 +1236,18 @@ export function AppSandboxStudio({
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('docker')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'docker'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <Boxes size={13} className={activeTab === 'docker' ? 'text-white' : 'text-cyan-400'} />
+                <span>{isAr ? 'حاوية دوكر' : 'Docker Sandbox'}</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('code')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'code'
@@ -1328,18 +1342,37 @@ export function AppSandboxStudio({
                   sandbox="allow-scripts allow-same-origin allow-modals allow-forms"
                 />
               </div>
+            ) : activeTab === 'docker' ? (
+              <div className="w-full h-full rounded-2xl border border-[var(--border)] overflow-hidden shadow-lg bg-[var(--surface)]">
+                <DockerSandboxRunner
+                  language={language}
+                  initialCode={editableCode}
+                  initialLanguage={activeApp.category === 'app' ? 'javascript' : 'html'}
+                  onCodeChange={(newCode) => setEditableCode(newCode)}
+                />
+              </div>
             ) : (
               <div className="w-full h-full flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2 bg-[var(--surface-2)] border-b border-[var(--border)] text-xs">
-                  <span className="font-mono text-[var(--muted)]">{activeApp.title} (HTML5 Canvas)</span>
-                  <button
-                    type="button"
-                    onClick={handleSaveAndRun}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] font-bold shadow-sm hover:opacity-90 transition cursor-pointer"
-                  >
-                    <Play size={12} fill="currentColor" />
-                    <span>{isAr ? 'حفظ وتشغيل الكود' : 'Save & Run Live'}</span>
-                  </button>
+                  <span className="font-mono text-[var(--muted)]">{activeApp.title}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('docker')}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-sm hover:opacity-90 transition cursor-pointer"
+                    >
+                      <Boxes size={12} />
+                      <span>{isAr ? 'تشغيل في الحاوية' : 'Run in Container'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveAndRun}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] font-bold shadow-sm hover:opacity-90 transition cursor-pointer"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      <span>{isAr ? 'حفظ وتشغيل الكود' : 'Save & Run Live'}</span>
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={editableCode}

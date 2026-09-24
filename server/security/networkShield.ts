@@ -67,7 +67,7 @@ export function validateFileSecurity(file: { mimetype?: string; size?: number; o
 export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self), payment=(self), usb=()');
+  res.setHeader('Permissions-Policy', 'camera=*, microphone=*, display-capture=*, geolocation=*, payment=*, usb=()');
 
   // HSTS in production or HTTPS
   const isHttps = req.secure || req.header('x-forwarded-proto') === 'https';

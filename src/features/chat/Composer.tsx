@@ -9,6 +9,10 @@ import {
   Loader2,
   Mic,
   MicOff,
+  Radio,
+  FileAudio,
+  MapPin,
+  Search,
   Send,
   Sparkles,
   Square,
@@ -91,6 +95,15 @@ export function Composer({
   const [voiceDialect, setVoiceDialect] = useState<string>(() => {
     return localStorage.getItem('adam_voice_dialect') || (isAr ? 'ar-DZ' : 'en-US');
   });
+
+  // Audio Recording & Transcription (gemini-3.5-transcribe)
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerIntervalRef = useRef<any>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredDialects = useMemo(() => {
     return GLOBAL_DIALECTS.filter((d) => {
@@ -229,13 +242,92 @@ export function Composer({
     }
   };
 
-  const toggleListening = () => {
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
+  const sendAudioToTranscribeApi = async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        if (!base64Data) {
+          setIsTranscribing(false);
+          return;
+        }
 
+        const res = await fetch('/api/audio/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            audioBase64: base64Data,
+            mimeType: audioBlob.type || 'audio/webm',
+          }),
+        });
+
+        const data = await res.json();
+        if (data.ok && data.transcript) {
+          setDraft((prev) => (prev ? `${prev} ${data.transcript}` : data.transcript));
+        } else {
+          console.warn('Transcription returned no text or error:', data);
+        }
+        setIsTranscribing(false);
+      };
+    } catch (e) {
+      console.error('Audio transcription error:', e);
+      setIsTranscribing(false);
+    }
+  };
+
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorder.mimeType || 'audio/webm',
+        });
+        stream.getTracks().forEach((track) => track.stop());
+        clearInterval(timerIntervalRef.current);
+        setRecordSeconds(0);
+        setIsRecordingAudio(false);
+        sendAudioToTranscribeApi(audioBlob);
+      };
+
+      mediaRecorder.start(250);
+      setIsRecordingAudio(true);
+      setRecordSeconds(0);
+      timerIntervalRef.current = setInterval(() => {
+        setRecordSeconds((s) => s + 1);
+      }, 1000);
+    } catch (err) {
+      console.warn('Microphone stream error, falling back to browser speech recognition', err);
+      fallbackBrowserSpeech();
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const toggleVoiceRecording = () => {
+    if (isRecordingAudio) {
+      stopAudioRecording();
+    } else {
+      startAudioRecording();
+    }
+  };
+
+  const fallbackBrowserSpeech = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -271,6 +363,14 @@ export function Composer({
     } catch {
       setListening(false);
     }
+  };
+
+  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      sendAudioToTranscribeApi(file);
+    }
+    if (e.target) e.target.value = '';
   };
 
   const handleSelectDialect = (code: string) => {
@@ -385,6 +485,33 @@ export function Composer({
               {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.flag}{' '}
               {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.label.split(' ')[0] || (isAr ? 'اللهجة واللغة' : 'Dialect')}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? '🔍 ابحث في Google وقدم أحدث معلومات حية مع المصادر لـ: ' : '🔍 Search Google for real-time live sources about: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Google Search Grounding (gemini-3.5-flash)"
+          >
+            <Search size={13} className="text-cyan-400" />
+            <span>{isAr ? 'بحث حي Google 🔍' : 'Search Grounding 🔍'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? '📍 ابحث في خرائط Google عن أفضل الأماكن والتقييمات والروابط لـ: ' : '📍 Find Google Maps locations, ratings, and reviews for: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Google Maps Grounding (gemini-3.5-flash)"
+          >
+            <MapPin size={13} className="text-emerald-400" />
+            <span>{isAr ? 'خرائط Google 📍' : 'Maps Grounding 📍'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('adam:open-live-voice'))}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Multimodal Live API via WebSockets (ADEM-G 3.8 Live)"
+          >
+            <Radio size={13} className="text-purple-400 animate-pulse" />
+            <span>{isAr ? 'بث حي صوت ورؤية ⚡' : 'Multimodal Live ⚡'}</span>
           </button>
           <button
             type="button"
@@ -536,6 +663,44 @@ export function Composer({
         </div>
       )}
 
+      {/* Audio Recording / Transcription Status Pill (gemini-3.5-transcribe) */}
+      {(isRecordingAudio || isTranscribing) && (
+        <div className="flex items-center justify-between mb-2 px-3.5 py-2 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg text-xs animate-fadeIn">
+          <div className="flex items-center gap-2">
+            {isRecordingAudio ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                <span className="font-bold text-rose-400">
+                  {isAr ? `جاري التسجيل الصوتي (${recordSeconds}s)` : `Recording audio (${recordSeconds}s)`}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {isAr ? '• اضغط على الميكروفون للإنهاء والتفريغ' : '• Click mic to stop & transcribe'}
+                </span>
+              </>
+            ) : (
+              <>
+                <Loader2 size={13} className="animate-spin text-cyan-400" />
+                <span className="font-bold text-cyan-300">
+                  {isAr ? 'جاري التفريغ الصوتي الذكي...' : 'Transcribing audio...'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  gemini-3.5-transcribe
+                </span>
+              </>
+            )}
+          </div>
+          {isRecordingAudio && (
+            <button
+              type="button"
+              onClick={stopAudioRecording}
+              className="text-xs font-bold text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20 transition cursor-pointer"
+            >
+              {isAr ? 'إنهاء وتفريغ' : 'Stop & Done'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Main Luxury Composer Box */}
       <div className="composer flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)]">
         {/* Quick Power Tools Toggle */}
@@ -619,19 +784,58 @@ export function Composer({
           className="flex-1 bg-transparent border-0 outline-none text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 sm:py-2 px-1 min-h-[26px] max-h-[160px] font-normal leading-relaxed"
         />
 
-        {/* Voice Input Microphone */}
+        {/* Hidden Audio File Input for gemini-3.5-transcribe */}
+        <input
+          ref={audioFileInputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={handleAudioFileUpload}
+        />
+
+        {/* Audio File Upload for gemini-3.5-transcribe */}
+        <button
+          type="button"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
+          onClick={() => audioFileInputRef.current?.click()}
+          aria-label={isAr ? 'تفريغ ملف صوتي (gemini-3.5-transcribe)' : 'Transcribe Audio File (gemini-3.5-transcribe)'}
+          title={isAr ? 'رفع وتفريغ ملف صوتي بالذكاء الاصطناعي' : 'Upload & Transcribe Audio'}
+          disabled={isTranscribing}
+        >
+          {isTranscribing ? (
+            <Loader2 size={16} className="animate-spin text-cyan-400" />
+          ) : (
+            <FileAudio size={16} />
+          )}
+        </button>
+
+        {/* Voice Input Microphone (gemini-3.5-transcribe) */}
         <button
           type="button"
           className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
-            listening
+            isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+              : listening
+              ? 'bg-amber-500/20 text-amber-400 animate-pulse border border-amber-500/40'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
-          onClick={toggleListening}
-          aria-label={isAr ? 'تسجيل صوتي' : 'Voice input'}
-          title={listening ? (isAr ? 'إيقاف التسجيل' : 'Stop voice') : (isAr ? 'إملاء صوتي' : 'Voice dictation')}
+          onClick={toggleVoiceRecording}
+          aria-label={isAr ? 'تسجيل وتفريغ صوتي (gemini-3.5-transcribe)' : 'Transcribe Voice (gemini-3.5-transcribe)'}
+          title={
+            isRecordingAudio
+              ? isAr
+                ? `إيقاف التسجيل وتفريغ الكلام (${recordSeconds}s)`
+                : `Stop & Transcribe (${recordSeconds}s)`
+              : isAr
+              ? 'تسجيل وتفريغ صوتي بدقة فائقة (gemini-3.5-transcribe)'
+              : 'Voice Recording & Transcription (gemini-3.5-transcribe)'
+          }
         >
-          {listening ? <MicOff size={16} className="text-rose-400" /> : <Mic size={16} />}
+          {isRecordingAudio ? (
+            <MicOff size={16} className="text-rose-400" />
+          ) : (
+            <Mic size={16} />
+          )}
         </button>
 
         {/* Send / Stop Action Button */}

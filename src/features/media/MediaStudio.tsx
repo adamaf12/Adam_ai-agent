@@ -264,16 +264,17 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
       };
 
       if (activeTab === 'video') {
-        endpoint = '/api/media/generate-video';
+        endpoint = '/api/media/veo-generate';
         payload = {
           prompt,
-          style: selectedStyle,
-          motion: selectedMotion,
-          aspectRatio: selectedAspect,
-          duration: 5,
-          fps: 60,
-          seed: seedNum,
+          aspectRatio: selectedAspect === '9:16' ? '9:16' : '16:9',
         };
+        if (isImg2Img && sourceImage) {
+          payload.image = {
+            imageBytes: sourceImage.replace(/^data:[a-zA-Z0-9/+-]+;base64,/, ''),
+            mimeType: 'image/png',
+          };
+        }
       } else if (isImg2Img && sourceImage) {
         endpoint = '/api/media/image-to-image';
         payload = {
@@ -288,10 +289,10 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
       setTimeout(() => {
         setGenerationStep(
           activeTab === 'video'
-            ? (isAr ? 'محاكاة حركة الكاميرا والعمق البصري 60fps…' : 'Synthesizing motion dynamics & 60fps frame interpolation…')
+            ? (isAr ? 'محاكاة اللقطات الحركية عبر محرك Veo 3 (veo-3.1-fast-generate-preview)…' : 'Synthesizing motion dynamics with Veo 3 (veo-3.1-fast-generate-preview)…')
             : isImg2Img
-            ? (isAr ? 'معالجة الصورة المرفوعة وتحويل نمطها بالذكاء الاصطناعي…' : 'Processing image-to-image transformation…')
-            : (isAr ? 'توليد البكسلات عالية الدقة وتوزيع الإضاءة الحجمية…' : 'Rendering high-resolution textures & volumetric lighting…')
+            ? (isAr ? 'معالجة الصورة المرفوعة وتحويلها بالذكاء الاصطناعي…' : 'Processing image-to-image transformation…')
+            : (isAr ? 'توليد الصورة بدقة فائقة عبر gemini-3.1-flash-image-preview…' : 'Rendering high-resolution textures with gemini-3.1-flash-image-preview…')
         );
       }, 1200);
 
@@ -302,7 +303,56 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
       });
 
       const data = await res.json();
-      if (data.ok && data.item) {
+
+      if (data.ok && data.operationName) {
+        setGenerationStep(isAr ? 'بدء محرك Veo 3 وتوليد الإطارات السينمائية…' : 'Rendering frames with Veo 3 engine…');
+        let isDone = false;
+        let attempts = 0;
+        while (!isDone && attempts < 30) {
+          attempts++;
+          await new Promise((r) => setTimeout(r, 4000));
+          setGenerationStep(
+            isAr
+              ? `معالجة اللقطات السينمائية بواسطة Veo 3 (${attempts * 4}s)…`
+              : `Rendering cinematic video with Veo 3 (${attempts * 4}s)…`
+          );
+
+          try {
+            const statusRes = await fetch('/api/media/veo-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ operationName: data.operationName }),
+            });
+            const statusData = await statusRes.json();
+            if (statusData.done) {
+              isDone = true;
+              if (statusData.error) {
+                console.warn('Veo error:', statusData.error);
+                break;
+              }
+              const videoAspect: AspectRatio = selectedAspect === '9:16' ? '9:16' : '16:9';
+              const videoItem: MediaItem = {
+                id: 'veo_' + Math.random().toString(36).substring(2, 9),
+                type: 'video',
+                title: prompt.slice(0, 30) || 'Veo 3 Video',
+                originalPrompt: prompt,
+                enhancedPrompt: prompt,
+                url: `/api/media/veo-download?operationName=${encodeURIComponent(data.operationName)}`,
+                style: selectedStyle,
+                aspectRatio: videoAspect,
+                width: videoAspect === '9:16' ? 720 : 1280,
+                height: videoAspect === '9:16' ? 1280 : 720,
+                seed: Math.floor(Math.random() * 999999),
+                createdAt: Date.now(),
+              };
+              setCurrentResult(videoItem);
+              fetchGallery();
+            }
+          } catch (pollErr) {
+            console.warn('Veo polling error:', pollErr);
+          }
+        }
+      } else if (data.ok && data.item) {
         setCurrentResult(data.item);
         fetchGallery();
       }

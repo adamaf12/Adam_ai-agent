@@ -1,6 +1,6 @@
 import type { ModelCapability, ModelDescriptor, ModelProvider } from './modelSwarm';
 
-const PROVIDERS: ModelProvider[] = ['gemini', 'huggingface', 'openai-compatible', 'local', 'pollinations'];
+const PROVIDERS: ModelProvider[] = ['ADEM-G', 'gemini', 'huggingface', 'openai-compatible', 'local', 'pollinations'];
 const CAPABILITIES: ModelCapability[] = ['general', 'reasoning', 'coding', 'math', 'vision', 'search', 'fast', 'arabic'];
 
 export type ModelCatalogEntry = Omit<ModelDescriptor, 'enabled'> & { enabled?: boolean };

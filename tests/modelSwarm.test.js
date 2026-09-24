@@ -7,7 +7,7 @@ test('model registry starts with usable built-in models', () => {
   assert.ok(snapshot.total >= 3);
   assert.ok(snapshot.enabled >= 3);
   assert.ok(snapshot.total >= snapshot.enabled);
-  assert.ok(snapshot.providers.includes('gemini'));
+  assert.ok(snapshot.providers.includes('ADEM-G') || snapshot.providers.includes('gemini'));
 });
 
 test('remote catalogs can add models without hardcoding their count', () => {

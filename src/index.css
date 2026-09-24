@@ -526,41 +526,163 @@ input, textarea {
 }
 
 /* ==========================================================================
-   AMBIENT GLASS ILLUMINATION (إضاءة هالات الزجاج البلورية العميقة)
+   QUICKLIQUID GLASS UI ENGINE (amarnath3003/quickLiquid on GitHub)
+   Optical Backdrop Refraction, Dynamic Caustics, Specular Rims & Spring Motion
    ========================================================================== */
 
-:root[data-theme='glass-dark'] body::before,
-:root[data-resolved-theme='glass-dark'] body::before {
-  content: '';
+.quick-liquid-ambient-mesh {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  overflow: hidden;
   opacity: 0.85;
-  background:
-    radial-gradient(circle at 10% 15%, rgba(39, 214, 155, 0.28) 0%, transparent 45%),
-    radial-gradient(circle at 88% 18%, rgba(56, 189, 248, 0.24) 0%, transparent 45%),
-    radial-gradient(circle at 75% 82%, rgba(168, 85, 247, 0.2) 0%, transparent 45%),
-    radial-gradient(circle at 18% 80%, rgba(16, 185, 129, 0.24) 0%, transparent 48%);
-  filter: blur(65px);
-  will-change: transform;
 }
 
-:root[data-theme='glass'] body::before,
-:root[data-resolved-theme='glass'] body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.65;
-  background:
-    radial-gradient(circle at 10% 15%, rgba(15, 159, 110, 0.26) 0%, transparent 45%),
-    radial-gradient(circle at 88% 18%, rgba(14, 165, 233, 0.22) 0%, transparent 45%),
-    radial-gradient(circle at 75% 82%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 18% 80%, rgba(16, 185, 129, 0.2) 0%, transparent 48%);
-  filter: blur(55px);
-  will-change: transform;
+.liquid-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  animation: liquidOrbFloat 22s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+:root[data-theme='light'] .liquid-orb,
+:root[data-resolved-theme='light'] .liquid-orb,
+:root[data-theme='paper-clean'] .liquid-orb,
+:root[data-theme='rose'] .liquid-orb {
+  mix-blend-mode: multiply;
+  opacity: 0.25;
+}
+
+.liquid-orb--1 {
+  top: -10%;
+  left: 10%;
+  width: 50vw;
+  height: 50vw;
+  max-width: 600px;
+  max-height: 600px;
+  background: radial-gradient(circle, var(--accent, #27d69b) 0%, transparent 70%);
+  animation-duration: 24s;
+}
+
+.liquid-orb--2 {
+  top: 40%;
+  right: -5%;
+  width: 45vw;
+  height: 45vw;
+  max-width: 550px;
+  max-height: 550px;
+  background: radial-gradient(circle, var(--accent-hover, #38bdf8) 0%, transparent 70%);
+  animation-duration: 28s;
+  animation-delay: -5s;
+}
+
+.liquid-orb--3 {
+  bottom: -10%;
+  left: 20%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 650px;
+  max-height: 650px;
+  background: radial-gradient(circle, var(--accent-glow, rgba(99, 102, 241, 0.4)) 0%, transparent 70%);
+  animation-duration: 32s;
+  animation-delay: -10s;
+}
+
+.liquid-orb--4 {
+  top: 20%;
+  right: 30%;
+  width: 35vw;
+  height: 35vw;
+  max-width: 400px;
+  max-height: 400px;
+  background: radial-gradient(circle, var(--border-strong, rgba(255, 255, 255, 0.2)) 0%, transparent 70%);
+  animation-duration: 20s;
+  animation-delay: -15s;
+}
+
+@keyframes liquidOrbFloat {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.12) rotate(45deg);
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.92) rotate(-30deg);
+  }
+  100% {
+    transform: translate(25px, -20px) scale(1.05) rotate(15deg);
+  }
+}
+
+/* QuickLiquid Glass Slab Base Utility */
+.quick-liquid-glass,
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--liquid-blur, 28px)) saturate(var(--liquid-saturation, 180%));
+  -webkit-backdrop-filter: blur(var(--liquid-blur, 28px)) saturate(var(--liquid-saturation, 180%));
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 var(--liquid-rim, rgba(255, 255, 255, 0.2)),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s var(--liquid-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease,
+              background-color 0.2s ease;
+}
+
+/* Tactile Spring Press Physics (QuickLiquid motion primitives) */
+.quick-liquid-btn,
+.new-chat-btn,
+.lang-toggle-btn,
+.settings-nav-btn,
+.chat-session-btn,
+.send-button {
+  transition: transform 0.16s var(--liquid-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)),
+              box-shadow 0.16s ease,
+              background-color 0.16s ease !important;
+}
+
+.quick-liquid-btn:active,
+.new-chat-btn:active,
+.lang-toggle-btn:active,
+.settings-nav-btn:active,
+.chat-session-btn:active,
+.send-button:active {
+  transform: scale(0.94) !important;
+}
+
+/* Universal Convex Liquid Rim Specular Lighting */
+.navbar {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4),
+              inset 0 -1px 0 var(--liquid-rim, rgba(255, 255, 255, 0.12)),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.composer {
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 var(--liquid-rim, rgba(255, 255, 255, 0.25)),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+              0 0 20px var(--accent-glow) !important;
+  backdrop-filter: blur(var(--liquid-blur, 30px)) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(var(--liquid-blur, 30px)) saturate(190%) !important;
+}
+
+.message-content {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.25),
+              inset 0 1px 0 var(--liquid-rim, rgba(255, 255, 255, 0.15)) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+}
+
+.message-row--user .message-content {
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.35),
+              0 0 18px var(--accent-glow) !important;
 }
 
 /* ==========================================================================

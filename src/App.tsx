@@ -7,7 +7,11 @@ import { Chat } from './features/chat/Chat';
 import { Settings } from './features/settings/Settings';
 import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
 import { TranslatorStudio } from './features/translation/TranslatorStudio';
+import { GoogleAdkStudio } from './features/adk/GoogleAdkStudio';
+import { MediaStudio } from './features/media/MediaStudio';
 import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
+import { QuickLiquidRefraction } from './components/QuickLiquidRefraction';
+import { NetworkSentinel } from './components/NetworkSentinel';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { InAppBrowserModal } from './components/InAppBrowserModal';
 import { AuthModal } from './components/AuthModal';
@@ -275,8 +279,33 @@ export default function App() {
               }}
             />
           )}
+
+          {activeView === 'adk' && (
+            <GoogleAdkStudio
+              language={preferences.language}
+              onNavigateToChat={(_prompt) => {
+                setActiveView('chat');
+              }}
+            />
+          )}
+
+          {activeView === 'media' && (
+            <MediaStudio
+              language={preferences.language}
+              onNavigate={setActiveView}
+              onRunPromptInChat={(_prompt) => {
+                setActiveView('chat');
+              }}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
+
+      {/* QuickLiquid Optical Refraction & Specular Lighting Engine (amarnath3003/quickLiquid) */}
+      <QuickLiquidRefraction />
+
+      {/* Real-time Network Sentinel for APK and Online Accuracy Guarantee */}
+      <NetworkSentinel language={preferences.language} />
 
       {/* Autonomous Background Security Sentinel (حارس الأمان النشط في الخلفية لحماية المستخدم) */}
       <BackgroundSecuritySentinel />

@@ -30,6 +30,21 @@ const THEMES: Theme[] = [
   'stranger-things',
   'outer-banks',
   'game-of-thrones',
+  'tokyo-night',
+  'catppuccin-mocha',
+  'monokai-pro',
+  'gruvbox-dark',
+  'sunset-miami',
+  'deep-space',
+  'emerald-luxury',
+  'paper-clean',
+  'peaky-blinders',
+  'breaking-bad',
+  'interstellar',
+  'batman-gotham',
+  'cyber-samurai',
+  'cherry-blossom',
+  'iceberg-polar',
 ];
 const STORAGE_VERSION = 1;
 const MAX_MESSAGES = 100;

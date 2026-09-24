@@ -472,6 +472,11 @@ class HermesSkillEngine {
   }
 
   public augmentSystemInstruction(baseInstruction: string, userPrompt: string, language: 'ar' | 'en'): string {
+    const isShortOrCasual = userPrompt.trim().length < 25 && /(?:أهلا|اهلا|مرحبا|مرحباً|سلام|كيف\s*حالك|كيفك|شلونك|واش\s*راك|وش\s*راك|لباس|لاباس|شكرا|شكراً|hello|hi|hey|how are you|thanks)/i.test(userPrompt);
+    if (isShortOrCasual) {
+      return baseInstruction;
+    }
+
     const matchedSkills = this.retrieveRelevantSkills(userPrompt, 2);
     this.totalExecutions += 1;
 
@@ -483,14 +488,14 @@ class HermesSkillEngine {
     this.saveSkills();
 
     const skillsContext = matchedSkills.map((s, idx) => {
-      return `[Hermes Skill #${idx + 1}: ${s.name} (Mastery Level: ${s.level}/10)]
-- Key Principles: ${s.proceduralSteps.join(' | ')}
+      return `[Skill #${idx + 1}: ${s.name}]
+- Principles: ${s.proceduralSteps.join(' | ')}
 - Best Practices: ${s.bestPractices.join(' | ')}`;
     }).join('\n\n');
 
     const hermesHeader = language === 'ar'
-      ? `\n\n[Hermes Autonomous Agent Engine Active]:\nلقد قمت بتحليل طلب المستخدم وتفعيل المهارات المعرفية التالية لضمان أعلى مستوى من الدقة والتطور الذاتي:\n${skillsContext}\nطبق هذه المهارات بصرامة وابتكار.`
-      : `\n\n[Hermes Autonomous Agent Engine Active]:\nThe following cognitive procedural skills have been dynamically retrieved and loaded for this task:\n${skillsContext}\nExecute with strict adherence to these principles and dynamic adaptation.`;
+      ? `\n\n[إرشادات الذكاء المتقدم والتنفيذ الذاتي]:\n${skillsContext}\nتحدث بأسلوب طبيعي وذكي، وتجنب القوالب الآلية المصطنعة والمقدمات الروتينية.`
+      : `\n\n[Advanced Cognitive Directives]:\n${skillsContext}\nRespond with natural human fluency, high intelligence, and zero robotic boilerplate.`;
 
     return `${baseInstruction}${hermesHeader}`;
   }
