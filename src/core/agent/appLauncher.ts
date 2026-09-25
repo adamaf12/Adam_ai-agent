@@ -32,22 +32,9 @@ export const REGISTERED_APPS: AppTarget[] = [
     descriptionEn: 'Standalone runner to play, inspect, and execute interactive web games and mini-apps.',
     iconName: 'Gamepad2',
     aliases: [
-      'العاب', 'ألعاب', 'الألعاب', 'العابي', 'ألعابي', 'لعبة', 'لعبه', 'اللعبة', 'اللعبه',
-      'تطبيقات', 'التطبيقات', 'تطبيق', 'التطبيق', 'تطبيقي', 'تطبيقاتي',
-      'الألعاب والتطبيقات', 'العاب وتطبيقات', 'تطبيقات والعاب', 'التطبيقات والألعاب',
-      'مشغل الألعاب', 'مشغل الالعاب', 'مشغل التطبيقات', 'مشغل ألعاب',
-      'استوديو الألعاب', 'استوديو الالعاب', 'استوديو التطبيقات', 'استوديو الألعاب والتطبيقات',
-      'صانع الألعاب', 'صانع الالعاب', 'صانع التطبيقات', 'مطور الألعاب', 'مطور الالعاب',
-      'تطوير الألعاب', 'تطوير العاب', 'برمجة الألعاب', 'برمجة العاب', 'برمجة لعبة',
-      'صنع لعبة', 'صنع العاب', 'إنشاء لعبة', 'انشاء لعبة', 'بناء لعبة',
-      'اصنع لعبة', 'اصنع لي لعبة', 'اصنعلي لعبة', 'طور لعبة', 'طور لي لعبة', 'طورلي لعبة',
-      'برمج لعبة', 'برمج لي لعبة', 'برمجلي لعبة', 'صمم لعبة', 'صمم لي لعبة', 'صمملي لعبة',
-      'اصنع تطبيق', 'اصنع لي تطبيق', 'اصنعلي تطبيق', 'طور تطبيق', 'برمج تطبيق',
-      'متجر التطبيقات', 'بيئة التطبيقات', 'بيئة الألعاب', 'ساندبوكس',
-      'apps', 'games', 'game', 'sandbox', 'game runner', 'arcade', 'play',
-      'game studio', 'app studio', 'create game', 'make game', 'build game',
-      'game maker', 'game builder', 'game dev', 'app maker', 'app builder',
-      'ue5', 'unreal engine'
+      'مشغل الألعاب والتطبيقات', 'مشغل الالعاب والتطبيقات', 'مشغل الألعاب', 'مشغل الالعاب', 'مشغل التطبيقات',
+      'استوديو الألعاب والتطبيقات', 'بيئة الألعاب والتطبيقات', 'ساندبوكس التطبيقات',
+      'apps & games', 'app sandbox', 'game runner', 'games sandbox'
     ],
   },
   {
@@ -454,43 +441,45 @@ export function matchAppTarget(rawText: string): AppTarget | null {
     };
   }
 
-  // 3. Extract the target phrase after command verbs
-  // Arabic trigger verbs: افتح، ادخل، شغل، وديني، روح، انتقل، توجه، العب، اصنع، انشئ، طور، برمج، صمم، ابني
-  const arCommandRegex = /^(?:أرجو أن |ممكن |لو سمحت |ياريت )?(?:افتح(?:لي| لي)?|ادخل(?:لي| لي)?(?: على| إلى| الى)?|شغل(?:لي| لي)?|وديني(?: لـ| ل| إلى| الى)?|روح(?: لـ| ل| إلى| الى)?|انتقل(?: إلى| الى)?|توجه(?: إلى| الى)?|العب(?: لعبة)?|أريد فتح|اريد فتح|افتح لي تطبيق|افتح تطبيق|ادخل على تطبيق|شغل تطبيق|اصنع(?:لي| لي)?|أنشئ(?:لي| لي)?|انشئ(?:لي| لي)?|اعمل(?:لي| لي)?|طور(?:لي| لي)?|برمج(?:لي| لي)?|صمم(?:لي| لي)?|ابني(?:لي| لي)?|بدي|عايز|اريد|أريد)\s+(?:تطبيق |مشغل |استوديو |لعبة |موقع )?(.*)$/i;
+  // If the query is an inquiry, question, analysis, game tactics, or normal discussion, DO NOT intercept!
+  const isConversationalQuestion = /(?:اقوى|أقوى|افضل|أفضل|تشكيلة|تشكيله|طاقات|تقييم|مقارنة|مقارنه|شرح|كيف|لماذا|ماذا|ماهو|ما هو|ماهي|ما هي|هل|مين|من هو|من هي|اين|أين|كم|fc|fifa|stats|rating|tactics|lineup|best|strongest|compare|how|what|why|which|explain)\b/i.test(rawText);
+  if (isConversationalQuestion) {
+    return null;
+  }
+
+  // 3. Extract the target phrase after explicit command verbs
+  // Arabic trigger verbs: افتح، ادخل على، شغل، انتقل إلى، توجه إلى
+  const arCommandRegex = /^(?:أرجو أن\s+|ممكن\s+|لو سمحت\s+|ياريت\s+)?(?:افتح(?:لي| لي)?|ادخل(?:لي| لي)?(?: على| إلى| الى)|شغل(?:لي| لي)?|انتقل(?: إلى| الى)?|توجه(?: إلى| الى)?)\s+(?:تطبيق |مشغل |استوديو |موقع )?([a-z0-9_\u0600-\u06FF\s\-]+)$/i;
   
-  // English trigger verbs: open, launch, go to, switch to, navigate to, run, start, play, create, make, build, develop, program, design
-  const enCommandRegex = /^(?:please\s+)?(?:open|launch|go to|switch to|navigate to|run|start|play|create|make|build|develop|program|design)\s+(?:me\s+)?(?:a\s+|an\s+|the\s+)?(?:app\s+|application\s+|game\s+|website\s+|studio\s+)?(.*)$/i;
+  // English trigger verbs: open, launch, go to, switch to, navigate to, run
+  const enCommandRegex = /^(?:please\s+)?(?:open|launch|go to|switch to|navigate to|run)\s+(?:me\s+)?(?:a\s+|an\s+|the\s+)?(?:app\s+|application\s+|website\s+|studio\s+)?([a-z0-9_\s\-]+)$/i;
 
   let query = text;
   const arMatch = rawText.match(arCommandRegex);
   if (arMatch && arMatch[1] !== undefined) {
-    const extracted = cleanQuery(arMatch[1]);
-    // If the user said "اصنعلي لعبة" and extracted is empty or just "لعبة", fall back to "لعبة"
-    query = extracted || (/(?:لعبة|العاب|ألعاب|game)/i.test(rawText) ? 'لعبة' : 'تطبيق');
+    query = cleanQuery(arMatch[1]);
   } else {
     const enMatch = rawText.match(enCommandRegex);
     if (enMatch && enMatch[1] !== undefined) {
-      const extracted = cleanQuery(enMatch[1]);
-      query = extracted || (/(?:game|games|play)/i.test(rawText) ? 'game' : 'app');
+      query = cleanQuery(enMatch[1]);
     }
   }
 
-  // 3. Exact alias match
+  if (!query) return null;
+
+  // 3. Exact alias or title match only
   for (const app of REGISTERED_APPS) {
-    if (app.aliases.some((alias) => alias === query || query === cleanQuery(app.titleAr) || query === cleanQuery(app.titleEn))) {
+    if (
+      app.aliases.some((alias) => alias === query || query === cleanQuery(alias)) ||
+      query === cleanQuery(app.titleAr) ||
+      query === cleanQuery(app.titleEn)
+    ) {
       return app;
     }
   }
 
-  // 4. Substring / Includes match
-  for (const app of REGISTERED_APPS) {
-    if (app.aliases.some((alias) => query.includes(alias) || alias.includes(query))) {
-      return app;
-    }
-  }
-
-  // 5. Fallback: Check if user mentions a known domain (e.g. "facebook.com", "linkedin.com", "netflix.com")
-  const domainMatch = query.match(/([a-z0-9-]+\.(?:com|org|net|io|co|ai|app|dev))/i);
+  // 4. Exact domain match (e.g. "facebook.com", "github.com")
+  const domainMatch = query.match(/^([a-z0-9-]+\.(?:com|org|net|io|co|ai|app|dev))$/i);
   if (domainMatch) {
     const fullUrl = `https://${domainMatch[1]}`;
     return {

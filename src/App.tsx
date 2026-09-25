@@ -239,6 +239,9 @@ export default function App() {
               agentName={preferences.agentName}
               copy={heroCopy}
               onNewChat={handleNewChat}
+              onToggleLanguage={() =>
+                updatePreferences({ language: preferences.language === 'ar' ? 'en' : 'ar' })
+              }
               onOpenSandbox={(appId) => {
                 setSelectedSandboxAppId(appId);
                 setActiveView('apps');

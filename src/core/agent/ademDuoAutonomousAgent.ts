@@ -507,8 +507,8 @@ export function checkAndExecuteDirectAutonomousCommand(
     };
   }
 
-  const snakeMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:لعبة\s+ثعبان|لعبة\s+السنيك|snake\s+game|لعبة)\b/i)
-    || clean.match(/^(?:لعبة\s+ثعبان|snake\s+game)$/i);
+  const snakeMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:لعبة\s+ثعبان|لعبة\s+السنيك|snake\s+game)\b/i)
+    || clean.match(/^(?:لعبة\s+ثعبان|لعبة\s+السنيك|snake\s+game)$/i);
   if (snakeMatch) {
     const code = getNeonSnakeGameCode();
     const result = createAgentSandboxApp(

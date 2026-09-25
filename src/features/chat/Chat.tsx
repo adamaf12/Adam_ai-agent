@@ -6,11 +6,16 @@ import {
   CheckCircle2,
   Clock,
   Code,
+  Cpu,
   Download,
   FileSearch,
+  Film,
+  Globe,
   GraduationCap,
+  LayoutGrid,
   Languages,
   Plus,
+  Radio,
   RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
@@ -98,6 +103,7 @@ export function Chat({
   agentName,
   copy: heroCopy,
   onNewChat,
+  onToggleLanguage,
   onOpenSandbox,
   onSessionMetaChange,
   onNavigateView,
@@ -106,6 +112,7 @@ export function Chat({
   agentName: string;
   copy: { title: string; subtitle: string };
   onNewChat?: () => void;
+  onToggleLanguage?: () => void;
   onOpenSandbox?: (appId: string) => void;
   onSessionMetaChange?: (meta: { title: string; count: number }) => void;
   onNavigateView?: (view: ViewId, extraParam?: string) => void;
@@ -534,7 +541,7 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="max-w-2xl mx-auto px-4 py-12 sm:py-16 text-center flex flex-col items-center gap-6 animate-fadeIn select-none">
+          <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 text-center flex flex-col items-center gap-6 animate-fadeIn select-none">
             {/* Ambient Minimalist Brand Mark */}
             <div className="relative group">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
@@ -542,7 +549,7 @@ export function Chat({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <h1 className="text-2xl sm:text-3xl font-black text-[var(--text)] tracking-tight">
                 {language === 'ar' ? 'مرحباً، كيف يمكنني مساعدتك اليوم؟' : 'Hello, how can I help you today?'}
               </h1>
@@ -554,7 +561,7 @@ export function Chat({
             </div>
 
             {/* 4 Clean Minimal Prompt Pills */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg mt-2 text-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg text-start">
               {[
                 {
                   icon: Code,

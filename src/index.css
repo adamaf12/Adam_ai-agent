@@ -913,24 +913,24 @@ input, textarea {
   border-radius: var(--radius-full);
   border: 1px solid transparent;
   background: transparent;
-  transition: color 0.16s ease, background-color 0.16s ease;
+  transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 @media (min-width: 821px) and (max-width: 1120px) {
   .nav-pill {
-    padding: 5px 8px;
+    padding: 5px 9px;
     font-size: 11px;
-    gap: 4px;
+    gap: 5px;
   }
 }
 
 .nav-pill:hover {
   color: var(--text);
-  background: var(--surface-hover);
 }
 
 .nav-pill-highlight {
@@ -941,6 +941,7 @@ input, textarea {
   border: 1px solid var(--border-strong);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
   pointer-events: none;
+  z-index: 0;
 }
 
 .nav-pill--active {
@@ -1383,8 +1384,28 @@ input, textarea {
     gap: 5px;
     flex-shrink: 0;
   }
+  .navbar-center-wrapper {
+    max-width: 100%;
+    overflow: hidden;
+  }
   .navbar-center {
-    display: none;
+    display: flex;
+    gap: 2px;
+    padding: 3px 4px;
+    max-width: 100%;
+  }
+  .nav-pill {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  @media (max-width: 640px) {
+    .nav-pill span {
+      display: none;
+    }
+    .nav-pill {
+      padding: 5px 8px;
+    }
   }
   .mobile-only {
     display: inline-flex;
