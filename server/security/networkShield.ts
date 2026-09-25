@@ -102,34 +102,15 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
 export function corsMiddleware(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
 
-  // Allowed origin checks
-  const isAllowed =
-    !origin ||
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('https://localhost:') ||
-    origin.startsWith('http://127.0.0.1:') ||
-    origin.startsWith('capacitor://') ||
-    origin.startsWith('ionic://') ||
-    origin === 'file://' ||
-    origin === 'null' ||
-    origin.includes('.run.app') ||
-    origin.includes('.vercel.app') ||
-    origin.includes('.google.com') ||
-    origin.includes('.googleusercontent.com') ||
-    origin.includes('ai.studio');
-
-  if (origin && isAllowed) {
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else if (!origin) {
-    // Same-origin request (direct browser navigation or curl)
   } else {
-    // Disallowed origin: do not set Allow-Origin header with credentials
-    res.setHeader('Access-Control-Allow-Origin', 'null');
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
 
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id, X-Session-Id, X-User-Uid, X-Admin-Key, Accept');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id, X-Session-Id, X-User-Uid, X-Admin-Key, Accept, Origin, X-Requested-With');
   res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') {

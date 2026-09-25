@@ -2030,7 +2030,7 @@ input, textarea {
 
 /* Composer */
 .composer-wrap {
-  padding: 8px 16px 14px;
+  padding: 8px 12px 14px;
   width: 100%;
   max-width: 860px;
   margin: 0 auto;
@@ -2038,9 +2038,9 @@ input, textarea {
 
 .composer {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px 10px;
   background: var(--surface);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
@@ -2048,6 +2048,7 @@ input, textarea {
   border-radius: 28px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 15px var(--accent-glow);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
 }
 
 :root[data-theme='light'] .composer {
@@ -2062,7 +2063,9 @@ input, textarea {
 }
 
 .composer textarea {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   background: transparent;
   border: none;
   outline: none;
@@ -2074,11 +2077,16 @@ input, textarea {
   padding: 6px 8px;
   font-family: inherit;
   display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .composer textarea::placeholder {
   color: var(--muted);
   opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .composer-icon {

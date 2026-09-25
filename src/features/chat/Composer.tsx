@@ -702,11 +702,11 @@ export function Composer({
       )}
 
       {/* Main Luxury Composer Box */}
-      <div className="composer flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)]">
+      <div className="composer flex items-end gap-1 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
         {/* Quick Power Tools Toggle */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             showQuickModes
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -721,7 +721,7 @@ export function Composer({
         {/* Attach Image Button */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -738,10 +738,10 @@ export function Composer({
           )}
         </button>
 
-        {/* Dedicated Instant Translation Trigger Button */}
+        {/* Dedicated Instant Translation Trigger Button (Desktop / Tablet) */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 ${
             showTranslateModal
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-emerald-400 hover:bg-[var(--surface-2)]'
@@ -753,36 +753,38 @@ export function Composer({
           <Languages size={16} />
         </button>
 
-        {/* Text Input Area */}
-        <textarea
-          ref={textareaRef}
-          dir={isAr ? 'rtl' : 'ltr'}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onPaste={handlePaste}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              submit();
+        {/* Flexible Text Input Wrapper */}
+        <div className="flex-1 min-w-0 w-full flex items-center">
+          <textarea
+            ref={textareaRef}
+            dir={isAr ? 'rtl' : 'ltr'}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onPaste={handlePaste}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder={
+              listening
+                ? isAr
+                  ? 'جاري الاستماع بدقة...'
+                  : 'Listening...'
+                : images.length > 0
+                ? isAr
+                  ? 'اكتب رسالتك حول الصورة...'
+                  : 'Ask about the attached image...'
+                : isAr
+                ? 'اكتب رسالتك هنا...'
+                : 'Type your message here...'
             }
-          }}
-          placeholder={
-            listening
-              ? isAr
-                ? 'جاري الاستماع بدقة...'
-                : 'Listening...'
-              : images.length > 0
-              ? isAr
-                ? 'اكتب رسالتك حول الصورة...'
-                : 'Ask about the attached image...'
-              : isAr
-              ? 'اكتب رسالتك هنا...'
-              : 'Type your message here...'
-          }
-          rows={1}
-          disabled={busy}
-          className="flex-1 bg-transparent border-0 outline-none text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 sm:py-2 px-1 min-h-[26px] max-h-[160px] font-normal leading-relaxed"
-        />
+            rows={1}
+            disabled={busy}
+            className="w-full bg-transparent border-0 outline-none text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] placeholder:truncate placeholder:whitespace-nowrap resize-none py-1.5 sm:py-2 px-1 min-h-[28px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
+          />
+        </div>
 
         {/* Hidden Audio File Input for gemini-3.5-transcribe */}
         <input
@@ -793,10 +795,10 @@ export function Composer({
           onChange={handleAudioFileUpload}
         />
 
-        {/* Audio File Upload for gemini-3.5-transcribe */}
+        {/* Audio File Upload for gemini-3.5-transcribe (Desktop / Tablet) */}
         <button
           type="button"
-          className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
+          className="hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
           onClick={() => audioFileInputRef.current?.click()}
           aria-label={isAr ? 'تفريغ ملف صوتي (gemini-3.5-transcribe)' : 'Transcribe Audio File (gemini-3.5-transcribe)'}
           title={isAr ? 'رفع وتفريغ ملف صوتي بالذكاء الاصطناعي' : 'Upload & Transcribe Audio'}
@@ -812,7 +814,7 @@ export function Composer({
         {/* Voice Input Microphone (gemini-3.5-transcribe) */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
@@ -841,7 +843,7 @@ export function Composer({
         {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 shadow-lg ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg ${
             busy
               ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
               : draft.trim() || images.length > 0
