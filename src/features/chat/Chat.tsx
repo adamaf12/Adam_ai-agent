@@ -190,9 +190,25 @@ export function Chat({
       setMemoryStats(getInfiniteMemoryStats());
       setIsSessionDrawerOpen(true);
     };
+    const handleSelectEvent = (e: CustomEvent<{ id: string }>) => {
+      if (e.detail?.id) {
+        handleSelectConversation(e.detail.id);
+      }
+    };
+    const handleNewChatEvent = () => {
+      handleStartNewChat();
+    };
+
     window.addEventListener('adam:open-session-drawer', openDrawer);
-    return () => window.removeEventListener('adam:open-session-drawer', openDrawer);
-  }, []);
+    window.addEventListener('adam:select-conversation' as any, handleSelectEvent);
+    window.addEventListener('adam:new-chat-triggered' as any, handleNewChatEvent);
+
+    return () => {
+      window.removeEventListener('adam:open-session-drawer', openDrawer);
+      window.removeEventListener('adam:select-conversation' as any, handleSelectEvent);
+      window.removeEventListener('adam:new-chat-triggered' as any, handleNewChatEvent);
+    };
+  }, [currentConversation, messages]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

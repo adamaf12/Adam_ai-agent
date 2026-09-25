@@ -1,12 +1,22 @@
 import {
-  Clock,
+  PanelLeft,
   Settings2,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
-import type { Language, ViewId } from '../core/domain';
+import { type ReactNode, useEffect, useState, useCallback } from 'react';
+import type { ChatConversation, Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
+import { Sidebar } from './Sidebar';
 import { copy } from '../core/i18n';
 import { LiveVoiceModal } from '../features/live/LiveVoiceModal';
+import {
+  loadAllConversations,
+  loadConversation,
+  deleteConversation,
+  renameConversation,
+  createNewConversation,
+  setActiveConversationId,
+} from '../core/storage';
+import { getInfiniteMemoryStats } from '../core/agent/infiniteMemory';
 
 interface AppShellProps {
   activeView: ViewId;
@@ -26,27 +36,76 @@ export function AppShell({
   language,
   agentName: _agentName,
   onViewChange,
-  onNewChat: _onNewChat,
+  onNewChat,
   onToggleLanguage: _onToggleLanguage,
   children,
   sessionTitle: _sessionTitle,
-  conversationCount,
-  onOpenSessionDrawer,
+  conversationCount: _conversationCount,
+  onOpenSessionDrawer: _onOpenSessionDrawer,
 }: AppShellProps) {
   const t = copy(language);
   const isAr = language === 'ar';
   const [isLiveVoiceOpen, setIsLiveVoiceOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [conversations, setConversations] = useState<ChatConversation[]>(() => loadAllConversations());
+  const [activeConvId, setActiveConvId] = useState<string>(() => loadConversation().id);
+  const [memoryStats, setMemoryStats] = useState(() => getInfiniteMemoryStats());
+
+  const refreshConversations = useCallback(() => {
+    setConversations(loadAllConversations());
+    setActiveConvId(loadConversation().id);
+    setMemoryStats(getInfiniteMemoryStats());
+  }, []);
 
   // Listen for custom events
   useEffect(() => {
     const handleOpenLiveVoice = () => setIsLiveVoiceOpen(true);
+    const handleOpenSidebar = () => setIsSidebarOpen(true);
+    const handleToggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+    const handleRefreshConversations = () => refreshConversations();
+
     window.addEventListener('adam:open-live-voice' as any, handleOpenLiveVoice);
+    window.addEventListener('adam:open-session-drawer' as any, handleOpenSidebar);
+    window.addEventListener('adam:toggle-sidebar' as any, handleToggleSidebar);
+    window.addEventListener('adam:refresh-conversations' as any, handleRefreshConversations);
+
     return () => {
       window.removeEventListener('adam:open-live-voice' as any, handleOpenLiveVoice);
+      window.removeEventListener('adam:open-session-drawer' as any, handleOpenSidebar);
+      window.removeEventListener('adam:toggle-sidebar' as any, handleToggleSidebar);
+      window.removeEventListener('adam:refresh-conversations' as any, handleRefreshConversations);
     };
-  }, []);
+  }, [refreshConversations]);
 
-  // Keyboard shortcut listener: Alt+1 / Alt+2 for fast navigation
+  const handleStartNewChat = () => {
+    createNewConversation('', language);
+    refreshConversations();
+    onViewChange('chat');
+    onNewChat?.();
+    window.dispatchEvent(new CustomEvent('adam:new-chat-triggered'));
+  };
+
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    setActiveConvId(id);
+    refreshConversations();
+    onViewChange('chat');
+    window.dispatchEvent(new CustomEvent('adam:select-conversation', { detail: { id } }));
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    const { remaining, nextActiveId } = deleteConversation(id);
+    setConversations(remaining);
+    setActiveConvId(nextActiveId);
+    window.dispatchEvent(new CustomEvent('adam:select-conversation', { detail: { id: nextActiveId } }));
+  };
+
+  const handleRenameConversation = (id: string, newTitle: string) => {
+    renameConversation(id, newTitle);
+    refreshConversations();
+  };
+
+  // Keyboard shortcut listener: Alt+1 / Alt+2 for fast navigation, Alt+B for sidebar toggle, Alt+N for new chat
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -67,6 +126,12 @@ export function AppShell({
         } else if (key === '2') {
           e.preventDefault();
           onViewChange('settings');
+        } else if (key === 'b') {
+          e.preventDefault();
+          setIsSidebarOpen((prev) => !prev);
+        } else if (key === 'n') {
+          e.preventDefault();
+          handleStartNewChat();
         }
       }
     };
@@ -76,29 +141,20 @@ export function AppShell({
   }, [onViewChange]);
 
   return (
-    <div className="app-shell">
-      {/* Top Navigation Bar - Ultra Minimalist & Clean (Only Settings + Brand) */}
-      <header className="navbar glass-panel">
-        {/* Left / Start: History Drawer Button + Brand */}
+    <div className="app-shell flex flex-col h-screen overflow-hidden">
+      {/* Top Navigation Bar - Ultra Minimalist & Clean */}
+      <header className="navbar glass-panel shrink-0">
+        {/* Left / Start: Sidebar Toggle Button + Brand */}
         <div className="navbar-start flex items-center gap-2">
-          {/* History / Session Drawer Button */}
+          {/* Modern Sidebar Toggle Button */}
           <button
             type="button"
-            className="navbar-session-trigger flex items-center justify-center w-8 h-8 rounded-full bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/60 cursor-pointer active:scale-95 shrink-0"
-            onClick={() => {
-              if (onOpenSessionDrawer) {
-                onOpenSessionDrawer();
-              } else {
-                window.dispatchEvent(new CustomEvent('adam:open-session-drawer'));
-              }
-            }}
-            title={isAr ? 'سجل المحادثات والذاكرة' : 'Chat History & Memory'}
-            aria-label="History Menu"
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-all border border-slate-700/60 cursor-pointer active:scale-95 shrink-0"
+            onClick={() => setIsSidebarOpen((prev) => !prev)}
+            title={isAr ? 'الشريط الجانبي / المحادثات السابقة (Alt+B)' : 'Sidebar / Chat History (Alt+B)'}
+            aria-label="Toggle Sidebar"
           >
-            <Clock size={15} className="text-cyan-400" />
-            {typeof conversationCount === 'number' && conversationCount > 0 && (
-              <span className="navbar-session-badge">{conversationCount}</span>
-            )}
+            <PanelLeft size={16} className={isAr ? 'rotate-180' : ''} />
           </button>
 
           {/* Brand Logo */}
@@ -116,7 +172,7 @@ export function AppShell({
         {/* Center: Flexible Spacer */}
         <div className="navbar-center-wrapper flex-1" />
 
-        {/* Right / End: ONLY the Settings option as requested */}
+        {/* Right / End: ONLY the Settings option */}
         <div className="navbar-end flex items-center gap-2">
           <button
             type="button"
@@ -135,8 +191,25 @@ export function AppShell({
         </div>
       </header>
 
-      {/* Main Workspace Area */}
-      <main className="main-content">{children}</main>
+      {/* Main Workspace Area with Collapsible Sidebar */}
+      <div className="flex-1 flex overflow-hidden relative">
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen((prev) => !prev)}
+          onClose={() => setIsSidebarOpen(false)}
+          language={language}
+          conversations={conversations}
+          activeId={activeConvId}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleStartNewChat}
+          onDeleteConversation={handleDeleteConversation}
+          onRenameConversation={handleRenameConversation}
+          onOpenSettings={() => onViewChange('settings')}
+          memoryCount={memoryStats.total}
+        />
+
+        <main className="main-content flex-1 overflow-hidden relative">{children}</main>
+      </div>
 
       {/* Real-time Voice Stream Modal (gemini-3.8-live) */}
       <LiveVoiceModal
