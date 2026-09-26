@@ -1356,10 +1356,41 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     }
 
     if (!output.trim()) {
-      const fallbackNotice = language === 'ar'
-        ? `مرحباً بك! لقد استلمت طلبك بنجاح. أعتذر عن التأخير اللحظي بسبب ضغط الحصص على خوادم المعالجة، يرجى تكرار السؤال أو كتابة ما تريده وسأجيبك مباشرة.`
-        : `Hello! I received your message. The cloud AI servers are experiencing temporary rate limits. Please try sending your message again or ask another question.`;
-      safeWrite(res, { type: 'delta', text: fallbackNotice });
+      const lastMessage = String(lastError?.message || 'No model returned a response.');
+      const normalized = lastMessage.toLowerCase();
+      const providerStatus = Number(lastError?.status ?? lastError?.response?.status ?? lastError?.error?.status ?? 0);
+      const failureCode =
+        providerStatus === 401 || providerStatus === 403 || normalized.includes('api key') || normalized.includes('permission')
+          ? 'AI_AUTH'
+          : providerStatus === 429 || normalized.includes('quota') || normalized.includes('rate limit') || normalized.includes('resource_exhausted')
+            ? 'AI_RATE_LIMIT'
+            : normalized.includes('timeout') || normalized.includes('timed out')
+              ? 'REQUEST_TIMEOUT'
+              : 'AI_PROVIDER';
+      const responseStatus =
+        failureCode === 'AI_AUTH' ? 502 :
+        failureCode === 'AI_RATE_LIMIT' ? 429 :
+        failureCode === 'REQUEST_TIMEOUT' ? 504 : 502;
+      const clientMessage =
+        failureCode === 'AI_AUTH'
+          ? 'The AI provider rejected the configured credentials.'
+          : failureCode === 'AI_RATE_LIMIT'
+            ? 'The AI provider rate limit or quota was reached.'
+            : failureCode === 'REQUEST_TIMEOUT'
+              ? 'The AI provider did not respond within the allowed time.'
+              : 'The AI provider failed to return a response.';
+      console.error('[Adam AI chat] request failed after all providers', {
+        requestId,
+        status: responseStatus,
+        code: failureCode,
+        providerStatus: Number.isFinite(providerStatus) && providerStatus > 0 ? providerStatus : undefined,
+        providerMessage: redactSecrets(lastMessage),
+        providerStack: redactSecrets(String(lastError?.stack || '')),
+        durationMs: Date.now() - requestStartedAt,
+        hasGeminiApiKey: Boolean(apiKey),
+      });
+      sendError(res, responseStatus, failureCode, clientMessage);
+      return;
     } else {
       // Record token usage for cost controls
       const estTokens = Math.ceil(output.length / 4) + 120;
