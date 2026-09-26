@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-
 /**
  * Vercel serverless adapter for the compiled Express application.
  *
