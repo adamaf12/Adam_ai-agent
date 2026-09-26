@@ -11,5 +11,13 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 120,
+      "includeFiles": "dist/server.cjs"
+    }
+  },
+  "fluid": true
 }

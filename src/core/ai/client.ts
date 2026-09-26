@@ -4,14 +4,6 @@ import { ChatError, type ChatClient, type ChatRequest } from './types';
 import { parseStreamLines, type StreamEvent } from './streamParser';
 import { classifyChatError, toUserFacingChatError } from './errors';
 import { getRetryDelayMs, shouldRetryChatError } from './retry';
-import {
-  hasDirectClientAi,
-  getClientGeminiApiKey,
-  getClientHuggingFaceToken,
-  executeDirectGemini,
-  executeDirectHuggingFace,
-} from './directAiClient';
-
 /**
  * Detects if the app is running in a Native Android APK, Capacitor, Cordova, or WebView environment
  */
@@ -108,7 +100,7 @@ async function streamRequestOnce(
   const startupTimeoutId = setTimeout(() => {
     startupTimedOut = true;
     requestController.abort();
-  }, 55_000);
+  }, 90_000);
 
   let response: Response;
   try {
@@ -176,7 +168,7 @@ async function streamRequestOnce(
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             reject(new ChatError('STREAM_TIMEOUT', 'The AI stream stopped responding.'));
-          }, 35_000);
+          }, 60_000);
         }),
       ]);
     } finally {
@@ -221,36 +213,7 @@ async function streamRequest(
     throw new ChatError('NO_INTERNET', offlineMsg);
   }
 
-  // 2. Direct Client AI (Gemini or Hugging Face) if configured with internet
-  if (hasDirectClientAi()) {
-    try {
-      if (getClientGeminiApiKey()) {
-        const text = await executeDirectGemini({
-          prompt: userPrompt,
-          history: request.messages.slice(0, -1),
-          language: request.language,
-          agentName: request.agentName || 'Adam',
-          signal,
-          onDelta,
-        });
-        return createAssistantMessage(text) as Message;
-      }
-
-      if (getClientHuggingFaceToken()) {
-        const text = await executeDirectHuggingFace({
-          prompt: userPrompt,
-          history: request.messages.slice(0, -1),
-          language: request.language,
-          agentName: request.agentName || 'Adam',
-          signal,
-          onDelta,
-        });
-        return createAssistantMessage(text) as Message;
-      }
-    } catch (directAiErr) {
-      console.warn('[Adam Client] Direct AI failed, attempting live server endpoint:', directAiErr);
-    }
-  }
+  // 2. Server-only AI transport. API credentials never enter browser storage or Vite client env.
 
   // 3. Multi-Server Resilient Failover for APK and Web
   const candidateEndpoints = isNativeApp()
