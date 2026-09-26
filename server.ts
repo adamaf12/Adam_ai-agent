@@ -1406,14 +1406,54 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     safeWrite(res, { type: 'done' });
     safeEnd(res);
   } catch (error: any) {
-    if (aborted || res.writableEnded || res.destroyed) return;
-    const status = Number(error?.status ?? error?.code ?? 500);
+    if (aborted || res.writableEnded || res.destroyed) {
+      console.warn('[Adam AI chat] request closed before completion', {
+        requestId,
+        durationMs: Date.now() - requestStartedAt,
+        name: error?.name,
+        message: redactSecrets(String(error?.message || error)),
+      });
+      return;
+    }
+
     const providerMessage = String(error?.message ?? 'The AI provider failed to answer.');
     const normalized = providerMessage.toLowerCase();
-    const code = status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key') ? 'AI_AUTH' : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') || normalized.includes('resource_exhausted') ? 'AI_RATE_LIMIT' : 'AI_PROVIDER';
-    const message = code === 'AI_AUTH' ? 'The AI provider rejected the configured credentials.' : 'Adam could not complete the request. Please retry.';
-    sendError(res, status >= 500 ? 502 : status, code, message);
-    console.error('[Adam AI chat error]', { code, status, providerMessage });
+    const status = Number(error?.status ?? error?.response?.status ?? error?.error?.status ?? 500);
+    const code =
+      status === 401 || status === 403 || normalized.includes('permission') || normalized.includes('api key')
+        ? 'AI_AUTH'
+        : status === 429 || normalized.includes('quota') || normalized.includes('rate limit') || normalized.includes('resource_exhausted')
+          ? 'AI_RATE_LIMIT'
+          : normalized.includes('timeout') || normalized.includes('timed out')
+            ? 'REQUEST_TIMEOUT'
+            : 'AI_PROVIDER';
+    const responseStatus =
+      code === 'AI_RATE_LIMIT' ? 429 :
+      code === 'REQUEST_TIMEOUT' ? 504 :
+      code === 'AI_AUTH' ? 502 :
+      status >= 500 ? 502 : status;
+    const message =
+      code === 'AI_AUTH'
+        ? 'The AI provider rejected the configured credentials.'
+        : code === 'AI_RATE_LIMIT'
+          ? 'The AI provider rate limit or quota was reached.'
+          : code === 'REQUEST_TIMEOUT'
+            ? 'The AI provider did not respond within the allowed time.'
+            : 'Adam could not complete the request. Please retry.';
+
+    console.error('[Adam AI chat error]', {
+      requestId,
+      status: responseStatus,
+      code,
+      providerStatus: Number.isFinite(status) && status > 0 ? status : undefined,
+      providerMessage: redactSecrets(providerMessage),
+      stack: redactSecrets(String(error?.stack || '')),
+      durationMs: Date.now() - requestStartedAt,
+      model,
+      hasGeminiApiKey: Boolean(apiKey),
+    });
+
+    sendError(res, responseStatus, code, message);
   }
 });
 
