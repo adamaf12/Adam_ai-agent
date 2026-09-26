@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { ChatConversation, Language, Message, ViewId } from '../../core/domain';
 import { httpAgentClient, httpChatClient } from '../../core/ai/client';
+import { toUserFacingChatError } from '../../core/ai/errors';
 import { routePrompt } from '../../core/agent/agentTypes';
 import { toCapabilityRequest, requiresDedicatedCapability } from '../../core/agent/capabilities';
 import { parseLocalIntent } from '../../core/agent/localIntent';
@@ -123,6 +124,7 @@ export function Chat({
   const [response, setResponse] = useState<ResponseState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [lastPrompt, setLastPrompt] = useState('');
   const [proactiveAlerts, setProactiveAlerts] = useState<ProactiveEvent[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -238,6 +240,7 @@ export function Chat({
     setCurrentConversation(newConv);
     setMessages([]);
     setError(null);
+    setErrorCode(null);
     setResponse(null);
     setBusy(false);
     setConversations(loadAllConversations());
@@ -372,6 +375,7 @@ export function Chat({
     setResponse(createResponseState(route.intent));
     setLastPrompt(clean);
     setError(null);
+    setErrorCode(null);
     setBusy(true);
     setMessages(current => [...current, user, assistant]);
 
@@ -515,10 +519,11 @@ export function Chat({
       });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
-      const message = err instanceof Error ? err.message : 'AI request failed';
-      setResponse(current => current ? reduceResponseEvent(current, { type: 'error', code: 'AI_ERROR', message }) : current);
+      const failure = toUserFacingChatError(err);
+      setResponse(current => current ? reduceResponseEvent(current, { type: 'error', code: failure.code, message: failure.message }) : current);
       setMessages(current => current.filter(m => m.id !== assistant.id));
-      setError(message);
+      setErrorCode(failure.code);
+      setError(failure.message);
     } finally {
       setBusy(false);
       controller.current = null;
@@ -670,8 +675,36 @@ export function Chat({
         </AnimatePresence>
         {error && (
           <div className="error-banner">
-            <strong>{language === 'ar' ? 'لم تصل إجابة' : 'No answer yet'}</strong>
-            <span>{language === 'ar' ? 'حدث انقطاع في المحرك. سيُعاد توجيه الطلب عند المحاولة التالية.' : 'The response path was interrupted. The next attempt can use a fallback engine.'}</span>
+            <strong>
+              {language === 'ar'
+                ? errorCode === 'REQUEST_TIMEOUT' || errorCode === 'STREAM_TIMEOUT'
+                  ? 'انتهت مهلة الاستجابة'
+                  : errorCode === 'AI_RATE_LIMIT' || errorCode === 'RATE_LIMITED'
+                    ? 'الخدمة مشغولة حالياً'
+                    : errorCode === 'AI_AUTH' || errorCode === 'UNAUTHORIZED'
+                      ? 'مشكلة في اعتماد محرك الذكاء الاصطناعي'
+                      : errorCode === 'BILLING_REQUIRED' || errorCode === 'PAYMENT_REQUIRED'
+                        ? 'مشكلة في الحصة أو الفوترة'
+                        : errorCode === 'NETWORK_ERROR'
+                          ? 'تعذر الاتصال بالخدمة'
+                          : errorCode === 'AI_SERVER_ERROR' || errorCode === 'AI_PROVIDER' || errorCode === 'SERVER_BOOT_ERROR'
+                            ? 'خطأ في خادم Adam'
+                            : 'لم تصل إجابة'
+                : errorCode === 'REQUEST_TIMEOUT' || errorCode === 'STREAM_TIMEOUT'
+                  ? 'Response timed out'
+                  : errorCode === 'AI_RATE_LIMIT' || errorCode === 'RATE_LIMITED'
+                    ? 'Service is busy'
+                    : errorCode === 'AI_AUTH' || errorCode === 'UNAUTHORIZED'
+                      ? 'AI authentication error'
+                      : errorCode === 'BILLING_REQUIRED' || errorCode === 'PAYMENT_REQUIRED'
+                        ? 'Quota or billing issue'
+                        : errorCode === 'NETWORK_ERROR'
+                          ? 'Connection error'
+                          : errorCode === 'AI_SERVER_ERROR' || errorCode === 'AI_PROVIDER' || errorCode === 'SERVER_BOOT_ERROR'
+                            ? 'Adam server error'
+                            : 'No answer received'}
+            </strong>
+            <span>{error}</span>
             <button onClick={() => lastPrompt && send(lastPrompt)}><RotateCcw size={14} /> {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>
           </div>
         )}
