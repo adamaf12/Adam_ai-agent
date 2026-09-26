@@ -1297,7 +1297,12 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           safeWrite(res, { type: 'delta', text: output });
         }
       } catch (hfErr: any) {
-        console.warn('[Adam AI HuggingFace fallback direct error]:', hfErr?.message || hfErr);
+        console.error('[Adam AI chat] Hugging Face fallback failed', {
+          requestId,
+          name: hfErr?.name,
+          message: redactSecrets(String(hfErr?.message || hfErr)),
+          stack: redactSecrets(String(hfErr?.stack || '')),
+        });
       }
 
       if (!output.trim()) {
@@ -1319,11 +1324,22 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
                 break;
               }
             } catch (fbErr: any) {
-              console.warn(`[Adam AI fallback] ${fbModel.id} error:`, fbErr?.message || fbErr);
+              console.error('[Adam AI chat] remote fallback failed', {
+                requestId,
+                model: fbModel.id,
+                name: fbErr?.name,
+                message: redactSecrets(String(fbErr?.message || fbErr)),
+                stack: redactSecrets(String(fbErr?.stack || '')),
+              });
             }
           }
-        } catch (gwErr) {
-          console.warn('[Adam AI gateway error]:', gwErr);
+        } catch (gwErr: any) {
+          console.error('[Adam AI chat] model gateway initialization failed', {
+            requestId,
+            name: gwErr?.name,
+            message: redactSecrets(String(gwErr?.message || gwErr)),
+            stack: redactSecrets(String(gwErr?.stack || '')),
+          });
         }
       }
     }
