@@ -1,4 +1,4 @@
-export type ChatErrorKind = 'auth' | 'billing' | 'rate_limit' | 'server' | 'timeout' | 'network' | 'aborted' | 'invalid' | 'unknown';
+export type ChatErrorKind = 'config' | 'auth' | 'billing' | 'rate_limit' | 'server' | 'timeout' | 'network' | 'aborted' | 'invalid' | 'unknown';
 export interface ChatFailure { status?: number; code?: string; message?: string; name?: string; }
 export interface UserFacingChatError { kind: ChatErrorKind; code: string; message: string; retryable: boolean; }
 
@@ -6,6 +6,7 @@ export function classifyChatError(error: unknown): ChatErrorKind {
   const value = (error && typeof error === 'object' ? error : {}) as ChatFailure;
   if (value.name === 'AbortError' || value.code === 'ABORTED') return 'aborted';
   if (value.code === 'REQUEST_TIMEOUT' || value.code === 'STREAM_TIMEOUT' || /timeout|timed out/i.test(value.message ?? '')) return 'timeout';
+  if (value.code === 'AI_NOT_CONFIGURED' || value.code === 'SERVER_BOOT_ERROR') return 'config';
   if (value.status === 401 || value.code === 'UNAUTHORIZED' || value.code === 'AI_AUTH' || value.code === 'PROVIDER_AUTH_ERROR') return 'auth';
   if (value.status === 403 || value.code === 'BILLING_REQUIRED' || value.code === 'PAYMENT_REQUIRED') return 'billing';
   if (value.status === 429 || value.code === 'RATE_LIMITED' || value.code === 'AI_RATE_LIMIT' || value.code === 'PROVIDER_RATE_LIMITED') return 'rate_limit';
@@ -19,6 +20,7 @@ export function toUserFacingChatError(error: unknown): UserFacingChatError {
   const value = (error && typeof error === 'object' ? error : {}) as ChatFailure;
   const kind = classifyChatError(error);
   switch (kind) {
+    case 'config': return { kind, code: value.code ?? 'AI_NOT_CONFIGURED', message: 'محرك الذكاء الاصطناعي غير مهيأ في خادم الإنتاج. يجب ضبط GEMINI_API_KEY على Vercel.', retryable: false };
     case 'auth': return { kind, code: value.code ?? 'UNAUTHORIZED', message: 'اتصال الذكاء الاصطناعي غير مصادق عليه. جاري التبديل للمحرك البديل.', retryable: true };
     case 'billing': return { kind, code: value.code ?? 'BILLING_REQUIRED', message: 'تعذر إتمام العملية بسبب متطلبات الفوترة أو الرصيد/الدفع. جاري التبديل للمسار المجاني التلقائي.', retryable: true };
     case 'rate_limit': return { kind, code: value.code ?? 'RATE_LIMITED', message: 'الخدمة مشغولة الآن. جاري المعالجة فورياً عبر النموذج البديل.', retryable: true };
