@@ -18,6 +18,10 @@ export function isNativeApp(): boolean {
   return isAndroidApp || isLocalOrigin || isAndroidWebView;
 }
 
+// Live Production Cloud Run Endpoints for Android APK & Web Clients
+export const PRIMARY_CLOUD_SERVER = 'https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app';
+export const SECONDARY_CLOUD_SERVER = 'https://ais-pre-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app';
+
 /**
  * Returns prioritized live server endpoints for native APK and web environments
  */
@@ -36,16 +40,17 @@ export function getLiveServerEndpoints(): string[] {
     endpoints.push(envUrl.replace(/\/$/, ''));
   }
 
-  // 3. Web same-origin (if hosted online and not local file/capacitor)
+  // 3. Web same-origin (if hosted online on HTTP/HTTPS and not local file/capacitor)
   if (typeof window !== 'undefined') {
     const origin = window.location.origin || '';
-    if (origin && !origin.includes('localhost') && !origin.startsWith('file:') && !origin.startsWith('capacitor:')) {
-      endpoints.push(origin);
+    if (origin && /^https?:\/\//i.test(origin) && !origin.includes('localhost') && !origin.startsWith('file:') && !origin.startsWith('capacitor:')) {
+      endpoints.push(origin.replace(/\/$/, ''));
     }
   }
 
-  // 4. Guaranteed Production Cloud Endpoints for Android APK & GitHub builds
-  endpoints.push('https://adam-ai-agent.vercel.app');
+  // 4. Primary & Secondary Live Cloud Run Servers (Active Online Backends)
+  endpoints.push(PRIMARY_CLOUD_SERVER);
+  endpoints.push(SECONDARY_CLOUD_SERVER);
 
   return Array.from(new Set(endpoints.filter(Boolean)));
 }
@@ -53,12 +58,12 @@ export function getLiveServerEndpoints(): string[] {
 export function getResolvedApiBase(): string {
   const endpoints = getLiveServerEndpoints();
   if (endpoints.length > 0) {
-    if (!isNativeApp() && typeof window !== 'undefined' && !window.location.origin.includes('localhost') && !window.location.origin.startsWith('file:')) {
+    if (!isNativeApp() && typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin) && !window.location.origin.includes('localhost') && !window.location.origin.startsWith('file:') && !window.location.origin.startsWith('capacitor:')) {
       return ''; // Browser deployment uses same-origin relative paths
     }
     return endpoints[0];
   }
-  return '';
+  return PRIMARY_CLOUD_SERVER;
 }
 
 /**

@@ -85,6 +85,15 @@ app.use('/api', (req, res, next) => {
 });
 app.use('/api', globalRateLimiter.middleware());
 
+// Fast Health & Ping for Mobile APK & Web Connectivity Probing
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, status: 'online', agent: 'ADEM', timestamp: Date.now() });
+});
+
+app.get('/api/ping', (_req, res) => {
+  res.json({ ok: true, pong: Date.now() });
+});
+
 const overloadedModels = new Map<string, number>();
 
 function getHealthSortedModels(preferredModel: string): string[] {

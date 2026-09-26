@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
+  Globe,
   Globe2,
   Palette,
   Sparkles,
@@ -321,6 +322,39 @@ export function Settings({
               <span>{t.english}</span>
               {language === 'en' && <Check size={16} className="text-[var(--accent)]" />}
             </button>
+          </div>
+        </div>
+
+        {/* Cloud Server & Mobile APK Connectivity */}
+        <div className="settings-card p-5 sm:p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <Globe size={22} className="text-emerald-400" />
+              </div>
+              <div>
+                <strong className="text-base text-[var(--text)] font-bold block">
+                  {language === 'ar' ? 'اتصال السيرفر السحابي (APK & Web)' : 'Cloud Server Connectivity'}
+                </strong>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  {language === 'ar'
+                    ? 'متصل ومربوط مباشرة بالسيرفر السحابي الحي عبر الإنترنت لضمان معالجة المحادثات الفورية.'
+                    : 'Connected to the live online cloud server to process real-time AI conversations.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-mono text-emerald-300 font-bold">
+                https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app
+              </span>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 self-start sm:self-auto">
+              {language === 'ar' ? 'متصل عبر الإنترنت ⚡' : 'Online Connected ⚡'}
+            </span>
           </div>
         </div>
       </div>
