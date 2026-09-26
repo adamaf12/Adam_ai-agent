@@ -1251,10 +1251,20 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           }
         } catch (err: any) {
           lastError = err;
-          const msg = String(err?.message || '').toLowerCase();
-          const code = Number(err?.status ?? err?.code ?? 0);
-          const isHighDemand = code === 503 || msg.includes('unavailable') || msg.includes('high demand') || msg.includes('spike');
-          const isQuota = code === 429 || msg.includes('quota') || msg.includes('resource_exhausted');
+          const providerMessage = String(err?.message || 'Unknown Gemini provider error');
+          const normalizedMsg = providerMessage.toLowerCase();
+          const code = Number(err?.status ?? err?.response?.status ?? err?.error?.status ?? 0);
+          console.error('[Adam AI chat] Gemini provider attempt failed', {
+            requestId,
+            model: currentModel,
+            status: Number.isFinite(code) && code > 0 ? code : undefined,
+            errorCode: typeof err?.code === 'string' ? err.code : undefined,
+            name: err?.name,
+            message: redactSecrets(providerMessage),
+            stack: redactSecrets(String(err?.stack || '')),
+          });
+          const isHighDemand = code === 503 || normalizedMsg.includes('unavailable') || normalizedMsg.includes('high demand') || normalizedMsg.includes('spike');
+          const isQuota = code === 429 || normalizedMsg.includes('quota') || normalizedMsg.includes('resource_exhausted');
           
           if (isHighDemand) {
             markModelOverloaded(currentModel, 60_000);
