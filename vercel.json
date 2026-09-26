@@ -20,5 +20,6 @@
         "dist/server.cjs"
       ]
     }
-  }
+  },
+  "fluid": true
 }
