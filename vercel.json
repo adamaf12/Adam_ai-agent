@@ -16,9 +16,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 120,
-      "includeFiles": [
-        "dist/server.cjs"
-      ]
+      "includeFiles": "dist/server.cjs"
     }
   },
   "fluid": true
