@@ -893,7 +893,15 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     if (!res.writableFinished) aborted = true;
   });
 
-  if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
+  if (!apiKey) {
+    console.error('[Adam AI chat] Gemini API key is not configured', {
+      requestId,
+      code: 'AI_NOT_CONFIGURED',
+      status: 503,
+      durationMs: Date.now() - requestStartedAt,
+    });
+    return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
+  }
   const messages = normalizeMessages(req.body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
   const language = req.body?.language === 'en' ? 'en' : 'ar';
