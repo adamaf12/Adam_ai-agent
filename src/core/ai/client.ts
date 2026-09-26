@@ -108,7 +108,7 @@ async function streamRequestOnce(
   const startupTimeoutId = setTimeout(() => {
     startupTimedOut = true;
     requestController.abort();
-  }, 55_000);
+  }, 90_000);
 
   let response: Response;
   try {
@@ -176,7 +176,7 @@ async function streamRequestOnce(
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             reject(new ChatError('STREAM_TIMEOUT', 'The AI stream stopped responding.'));
-          }, 35_000);
+          }, 60_000);
         }),
       ]);
     } finally {
