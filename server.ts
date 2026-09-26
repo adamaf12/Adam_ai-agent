@@ -884,7 +884,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   // Prevent socket errors from escaping
   res.on('error', () => {});
   req.on('error', () => {});
+  const requestId = String(req.headers['x-vercel-id'] || req.headers['x-request-id'] || `adam-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const requestStartedAt = Date.now();
   let aborted = false;
+  res.setHeader('X-Request-Id', requestId);
+  console.info('[Adam AI chat] request started', { requestId, model, hasGeminiApiKey: Boolean(apiKey), messageCount: Array.isArray(req.body?.messages) ? req.body.messages.length : 0 });
   res.once('close', () => {
     if (!res.writableFinished) aborted = true;
   });
