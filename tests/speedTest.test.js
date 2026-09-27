@@ -7,6 +7,7 @@ import {
 } from '../server/diagnostics/speedTestRoutes.ts';
 
 process.env.NODE_ENV = 'test';
+const skipLiveBenchmark = process.env.CI === 'true';
 const { app } = await import('../server.ts');
 
 test('estimateTokenCount computes accurate token bounds for English and Arabic text', () => {
@@ -56,7 +57,7 @@ test('GET /api/diagnostics/speed-test/info returns active model and presets', as
   }
 });
 
-test('POST /api/diagnostics/speed-test/run executes benchmark and returns TPS metrics', async () => {
+test('POST /api/diagnostics/speed-test/run executes benchmark and returns TPS metrics', { skip: skipLiveBenchmark }, async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
@@ -81,7 +82,7 @@ test('POST /api/diagnostics/speed-test/run executes benchmark and returns TPS me
   }
 });
 
-test('POST /api/diagnostics/speed-test/stream yields real-time streaming ndjson events', async () => {
+test('POST /api/diagnostics/speed-test/stream yields real-time streaming ndjson events', { skip: skipLiveBenchmark }, async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
