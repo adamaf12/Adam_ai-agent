@@ -5,6 +5,11 @@ process.env.NODE_ENV = 'test';
 process.env.GEMINI_API_KEY = '';
 const { app } = await import('../server.ts');
 
+async function closeTestServer(server) {
+  server.closeAllConnections?.();
+  await new Promise((resolve) => server.close(resolve));
+}
+
 test('health endpoint exposes a provider-neutral server status', async () => {
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, resolve));
@@ -14,7 +19,7 @@ test('health endpoint exposes a provider-neutral server status', async () => {
   assert.equal(response.status, 200);
   assert.equal(body.ok, true);
   assert.equal(body.configured, false);
-  server.close();
+  await closeTestServer(server);
 });
 
 test('chat endpoint returns a typed configuration error without provider credentials', async () => {
@@ -29,5 +34,5 @@ test('chat endpoint returns a typed configuration error without provider credent
   const body = await response.json();
   assert.equal(response.status, 503);
   assert.equal(body.code, 'AI_NOT_CONFIGURED');
-  server.close();
+  await closeTestServer(server);
 });
