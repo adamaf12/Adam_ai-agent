@@ -107,6 +107,18 @@ public class MainActivity extends BridgeActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             addIfMissing(requested, Manifest.permission.POST_NOTIFICATIONS);
+            addIfMissing(requested, Manifest.permission.READ_MEDIA_IMAGES);
+            addIfMissing(requested, Manifest.permission.READ_MEDIA_VIDEO);
+            addIfMissing(requested, Manifest.permission.READ_MEDIA_AUDIO);
+        } else {
+            addIfMissing(requested, Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            addIfMissing(requested, Manifest.permission.BLUETOOTH_CONNECT);
+            addIfMissing(requested, Manifest.permission.BLUETOOTH_SCAN);
+        } else {
+            addIfMissing(requested, Manifest.permission.BLUETOOTH);
         }
 
         if (!requested.isEmpty()) {
