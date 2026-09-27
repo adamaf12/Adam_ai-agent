@@ -10,6 +10,11 @@ process.env.NODE_ENV = 'test';
 const skipLiveBenchmark = process.env.CI === 'true';
 const { app } = await import('../server.ts');
 
+async function closeTestServer(server) {
+  server.closeAllConnections?.();
+  await new Promise((resolve) => server.close(resolve));
+}
+
 test('estimateTokenCount computes accurate token bounds for English and Arabic text', () => {
   assert.equal(estimateTokenCount(''), 0);
 
@@ -53,7 +58,7 @@ test('GET /api/diagnostics/speed-test/info returns active model and presets', as
     assert.ok(Array.isArray(body.presets));
     assert.ok(body.presets.length >= 4);
   } finally {
-    server.close();
+    await closeTestServer(server);
   }
 });
 
