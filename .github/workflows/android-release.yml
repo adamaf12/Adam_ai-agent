@@ -65,13 +65,13 @@ jobs:
           "$JAVA_HOME/bin/keytool" -list -v -keystore android/app/release.keystore -alias adamkey -storepass android123 | grep -E "SHA1:|SHA256:" || true
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew clean assembleRelease --no-daemon --stacktrace
       - name: Verify APK and prepare download
         run: |
           set -euo pipefail
-          APK="$(find android/app/build/outputs/apk -type f -name '*.apk' | head -n 1 || true)"
+          APK="$(find android/app/build/outputs/apk/release -type f -name 'app-release.apk' -print -quit || true)"
           if [ -z "$APK" ] || [ ! -f "$APK" ]; then
-            echo "No APK was produced. Searching build outputs:"
+            echo "No release APK was produced. Searching build outputs:"
             find android/app/build/outputs -type f || true
             exit 1
           fi

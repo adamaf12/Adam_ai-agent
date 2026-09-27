@@ -16,7 +16,8 @@
     "cap:android": "npm run build && npx cap sync android",
     "build:apk": "npm run build && npx cap sync android && cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon",
     "build:apk:debug": "npm run build && npx cap sync android && cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon",
-    "open:android": "npx cap open android"
+    "open:android": "npx cap open android",
+    "test:ci": "node --import tsx --test tests/chat-errors.test.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

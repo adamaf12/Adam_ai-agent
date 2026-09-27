@@ -10,6 +10,7 @@ let appPromise: Promise<any> | null = null;
 
 async function loadApp() {
   if (!appPromise) {
+    // @ts-ignore - dist/server.cjs is generated during the Vercel build and included by vercel.json.
     appPromise = import('../dist/server.cjs')
       .then((module) => {
         const app = (module as any).app ?? (module as any).default?.app ?? (module as any).default;

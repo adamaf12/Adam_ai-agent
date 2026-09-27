@@ -19,6 +19,8 @@ export function isNativeApp(): boolean {
 }
 
 // Live Production Cloud Run Endpoints for Android APK & Web Clients
+export const PRODUCTION_API_SERVER = 'https://adam-ai-agent.vercel.app';
+// Legacy Cloud Run fallbacks are kept last so a stale/blocked development service can never shadow production.
 export const PRIMARY_CLOUD_SERVER = 'https://ais-dev-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app';
 export const SECONDARY_CLOUD_SERVER = 'https://ais-pre-npzesm6asflyef75cic2a6-263913895850.asia-southeast1.run.app';
 
@@ -48,7 +50,10 @@ export function getLiveServerEndpoints(): string[] {
     }
   }
 
-  // 4. Primary & Secondary Live Cloud Run Servers (Active Online Backends)
+  // 4. Canonical production backend. Native APKs must not depend on the local Capacitor origin.
+  endpoints.push(PRODUCTION_API_SERVER);
+
+  // 5. Legacy Cloud Run fallbacks, only after production.
   endpoints.push(PRIMARY_CLOUD_SERVER);
   endpoints.push(SECONDARY_CLOUD_SERVER);
 
