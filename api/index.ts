@@ -6,11 +6,15 @@
  * support extensionless directory imports. The production build already
  * creates dist/server.cjs, so load that compiled bundle instead.
  */
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 let appPromise: Promise<any> | null = null;
 
 async function loadApp() {
   if (!appPromise) {
-    appPromise = import('../dist/server.cjs')
+    const bundleUrl = pathToFileURL(resolve(process.cwd(), 'dist/server.cjs')).href;
+    appPromise = import(bundleUrl)
       .then((module) => {
         const app = (module as any).app ?? (module as any).default?.app ?? (module as any).default;
         if (typeof app !== 'function') {
