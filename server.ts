@@ -9,7 +9,6 @@ import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { registerAgentRoute, searchCircuitBreaker, isExplicitImageRequest, isExplicitVideoRequest } from './server/agent';
 import { createAgentModelGateway } from './src/core/models/agentModelGateway';
@@ -1857,6 +1856,7 @@ async function startServer() {
         res.sendFile(path.join(publicDir, 'index.html'));
       });
     } else if (process.env.NODE_ENV !== 'test') {
+      const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
       app.use(vite.middlewares);
     }
