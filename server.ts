@@ -37,6 +37,7 @@ import { dockerSandboxService } from './server/sandbox/dockerSandboxService';
 import { speedTestRouter } from './server/diagnostics/speedTestRoutes';
 import { geminiMultimodalRouter } from './server/features/geminiMultimodalRoutes';
 import { setupLiveApiWebSocket } from './server/features/liveApiBridge';
+import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './server/ecc';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -928,6 +929,9 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     })),
   );
   const executionPlan = buildExecutionPlan(requestContract);
+  const harnessPlan = buildHarnessPlan(userPrompt);
+  res.setHeader('X-Adam-Harness', harnessPlan.taskType);
+  res.setHeader('X-Adam-Harness-Phases', harnessPlan.phases.join(','));
 
   // P2 Cost Control Budget Check
   const budgetCheck = costControlManager.checkBudget(req.user?.uid, false);
@@ -1074,6 +1078,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     finalSystemInstruction += buildIntentProtocol(userPrompt, messages, language);
     finalSystemInstruction += formatRequestContract(requestContract, language);
     finalSystemInstruction += formatExecutionPlan(executionPlan, language);
+    finalSystemInstruction += formatHarnessInstruction(harnessPlan, language);
     finalSystemInstruction += reasoningProfile.mode === 'fast'
       ? '\n\nRESPONSE MODE: FAST. Answer directly, accurately, and simply. Do not over-explain unless asked.'
       : reasoningProfile.mode === 'reasoning'
@@ -1364,7 +1369,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
     if (output.trim() && !streamModelOutput && !res.writableEnded && !res.destroyed) {
       try {
-        const verification = verifyAndCorrectResponse(output.trim());
+        const verification = verifyHarnessOutput(output.trim());
         output = verification.verifiedText;
         safeWrite(res, { type: 'delta', text: output });
       } catch (verificationError) {
