@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { secretsManager } from './secrets';
 import { auditLogger } from './auditLog';
 
@@ -96,7 +96,11 @@ export function verifySessionToken(token: string): { uid: string; role: UserRole
   const secret = secretsManager.getSessionSecret();
   const expectedSig = createHmac('sha256', secret).update(dataStr).digest('base64url');
 
-  if (signature !== expectedSig) {
+  try {
+    const actual = Buffer.from(signature);
+    const expected = Buffer.from(expectedSig);
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+  } catch {
     return null;
   }
 
@@ -151,15 +155,14 @@ export function authenticateSession(req: Request, res: Response, next: NextFunct
     const adminKey = req.header('x-admin-key')?.trim();
     const clientEmail = req.header('x-user-email')?.trim().toLowerCase();
     const isDeveloper = clientEmail === 'maamarfeidat@gmail.com';
-    const isConfiguredAdmin = Boolean((adminKey && adminKey === secretsManager.getAdminSecret()) || isDeveloper);
+    const isConfiguredAdmin = Boolean(adminKey && adminKey === secretsManager.getAdminSecret());
 
     let user: AuthenticatedUser;
 
     const verified = verifySessionToken(token);
     if (verified) {
-      const isDevVerified = verified.email?.toLowerCase() === 'maamarfeidat@gmail.com' || isDeveloper;
-      const role: UserRole = isConfiguredAdmin || isDevVerified ? 'admin' : verified.role || (verified.isAnonymous ? 'guest' : 'user');
-      const uid = isDevVerified ? 'maamarfeidat@gmail.com' : verified.uid;
+      const role: UserRole = isConfiguredAdmin ? 'admin' : verified.role || (verified.isAnonymous ? 'guest' : 'user');
+      const uid = verified.uid;
       user = {
         uid,
         role,
@@ -170,12 +173,11 @@ export function authenticateSession(req: Request, res: Response, next: NextFunct
         permissions: ROLE_PERMISSIONS[role],
       };
     } else {
-      // Check if client provided a client-assigned Firebase UID or generate guest UID
-      const clientUid = req.header('x-user-uid')?.trim() || req.header('x-session-id')?.trim();
-      const rawId = clientUid && clientUid.length <= 128 ? clientUid : randomBytes(12).toString('hex');
-      const isClientUser = Boolean(req.header('x-user-uid')) || isDeveloper;
-      const role: UserRole = isConfiguredAdmin || isDeveloper ? 'admin' : isClientUser ? 'user' : 'guest';
-      const uid = isDeveloper ? 'maamarfeidat@gmail.com' : isClientUser ? `usr_${rawId}` : `guest_${rawId}`;
+      // Never trust client-supplied identity headers. Anonymous identity is generated
+      // server-side and persisted through the signed HttpOnly session cookie.
+      const rawId = randomBytes(12).toString('hex');
+      const role: UserRole = isConfiguredAdmin ? 'admin' : 'guest';
+      const uid = `guest_${rawId}`;
 
       user = {
         uid,
