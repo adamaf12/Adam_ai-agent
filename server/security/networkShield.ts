@@ -15,7 +15,9 @@ export function safePathResolve(baseDir: string, relativePath: string): string {
   const resolved = path.resolve(baseDir, safeRelative);
 
   // Enforce boundary containment
-  if (!resolved.startsWith(path.resolve(baseDir))) {
+  const base = path.resolve(baseDir);
+  const relative = path.relative(base, resolved);
+  if (relative.startsWith('..' + path.sep) || relative === '..' || path.isAbsolute(relative)) {
     throw new Error('Security Alert: Path traversal attempt blocked');
   }
 
