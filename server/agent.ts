@@ -29,6 +29,7 @@ import { chatRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
 import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
+import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './ecc';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -902,6 +903,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       }));
       const requestContract = buildRequestContract(latestPrompt, recentForContract);
       const executionPlan = buildExecutionPlan(requestContract);
+      const harnessPlan = buildHarnessPlan(latestPrompt);
 
       const requestedMaxModelsRaw = typeof body.maxModels === 'number' && Number.isFinite(body.maxModels)
         ? Math.max(1, Math.min(MAX_SWARM_MODELS, Math.floor(body.maxModels)))
@@ -932,12 +934,15 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const remoteGateway = createAgentModelGateway();
       const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
         + formatRequestContract(requestContract, language)
-        + formatExecutionPlan(executionPlan, language);
+        + formatExecutionPlan(executionPlan, language)
+        + formatHarnessInstruction(harnessPlan, language);
       const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '', user);
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => (selected.provider === 'gemini' || selected.provider === 'ADEM-G') ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));
       res.setHeader('X-Adam-Swarm-Concurrency', String(SWARM_CONCURRENCY));
+      res.setHeader('X-Adam-Harness', harnessPlan.taskType);
+      res.setHeader('X-Adam-Harness-Phases', harnessPlan.phases.join(','));
       res.setHeader('X-Adam-Mission-Team', swarmPlan.assignments.map(a => a.agentId).join(','));
       res.status(200).setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -982,7 +987,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       run = appendRunEvent(run, { phase: 'verifying', at: Date.now(), detail: winner?.id ?? 'fallback' });
       let finalizedOutput = output.trim();
       try {
-        const verification = verifyAndCorrectResponse(output.trim());
+        const verification = verifyHarnessOutput(output.trim());
         finalizedOutput = verification.verifiedText;
       } catch (e) {
         console.warn('[Adam AI] verification error:', e);
