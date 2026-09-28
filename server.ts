@@ -1487,7 +1487,7 @@ app.use('/api/speed-test', speedTestRouter);
 app.use('/api', geminiMultimodalRouter);
 
 // Direct Terminal Execution Sandbox API (enhanced with Docker sandbox service)
-app.post('/api/terminal-sandbox', authenticateSession, async (req: express.Request, res: express.Response) => {
+app.post('/api/terminal-sandbox', authenticateSession, requirePermission('agent:tools'), async (req: express.Request, res: express.Response) => {
   try {
     const { code, language = 'javascript', command, limits } = req.body || {};
 
@@ -1535,7 +1535,7 @@ app.post('/api/terminal-sandbox', authenticateSession, async (req: express.Reque
 });
 
 // Unreal Engine 5 Remote Control Bridge API
-app.post('/api/unreal-engine/bridge', authenticateSession, async (req: express.Request, res: express.Response) => {
+app.post('/api/unreal-engine/bridge', authenticateSession, requirePermission('agent:tools'), async (req: express.Request, res: express.Response) => {
   try {
     const { host = 'http://localhost', port = 30010, action, payload } = req.body || {};
     const targetUrl = `${host.replace(/\/$/, '')}:${port}`;
