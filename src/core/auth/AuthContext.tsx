@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
         setError(
-          `خطأ (origin_mismatch): مصدر التطبيق (${origin}) غير مضاف في قائمة أصول JavaScript المعتمدة بـ Google Cloud Console. يمكنك استخدام 'الدخول الفوري / كزائر' لتخطي هذا القيد فوراً.`
+          `Google OAuth رفض هذا المصدر (origin_mismatch). أضف ${origin} إلى Google Cloud → Google Auth Platform → Clients → Authorized JavaScript origins، وتأكد أيضاً من إضافة نطاق adam-ai-agent.vercel.app إلى Firebase Authentication → Authorized domains، ثم أعد المحاولة.`
         );
       } else if (
         msg.includes('missing initial state') ||
