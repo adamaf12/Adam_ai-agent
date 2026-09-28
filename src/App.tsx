@@ -15,6 +15,8 @@ import { NetworkSentinel } from './components/NetworkSentinel';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { InAppBrowserModal } from './components/InAppBrowserModal';
 import { AuthModal } from './components/AuthModal';
+import { AgenticLogin } from './features/auth/AgenticLogin';
+import { useAuth } from './core/auth/AuthContext';
 import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileWebHandler';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
@@ -25,6 +27,7 @@ const DEFAULT_PREFERENCES: AppPreferences = {
 };
 
 export default function App() {
+  const { user, loading, setAuthModalOpen } = useAuth();
   const [preferences, setPreferences] = useState<AppPreferences>(() => {
     const loaded = loadPreferences(DEFAULT_PREFERENCES);
     if (loaded.theme === 'system' || loaded.theme === 'dark') {
@@ -201,6 +204,19 @@ export default function App() {
       unguard();
     };
   }, [activeView]);
+
+  if (loading && !user) {
+    return <AgenticLogin language={preferences.language} loading />;
+  }
+
+  if (!user) {
+    return (
+      <AgenticLogin
+        language={preferences.language}
+        onOpenAuth={() => setAuthModalOpen(true)}
+      />
+    );
+  }
 
   if (!preferences.onboardingComplete) {
     return <Onboarding initial={preferences} onComplete={handleOnboardingComplete} />;
