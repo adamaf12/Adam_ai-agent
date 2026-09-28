@@ -1,5 +1,6 @@
 import {
   PanelLeft,
+  Plus,
   Settings2,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback } from 'react';
@@ -172,8 +173,20 @@ export function AppShell({
         {/* Center: Flexible Spacer */}
         <div className="navbar-center-wrapper flex-1" />
 
-        {/* Right / End: ONLY the Settings option */}
+        {/* Right / End: New Chat + Settings */}
         <div className="navbar-end flex items-center gap-2">
+          {/* New Chat Button */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 hover:border-cyan-400/60 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
+            onClick={handleStartNewChat}
+            title={isAr ? 'محادثة جديدة (Alt+N)' : 'New Chat (Alt+N)'}
+            aria-label={isAr ? 'محادثة جديدة' : 'New Chat'}
+          >
+            <Plus size={15} className="text-cyan-400" />
+            <span>{isAr ? 'محادثة جديدة' : 'New Chat'}</span>
+          </button>
+
           <button
             type="button"
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer active:scale-95 text-xs font-semibold ${

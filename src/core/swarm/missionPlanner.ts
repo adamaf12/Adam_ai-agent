@@ -10,8 +10,21 @@ export function buildMission(mission: string, id = 'mission'): SwarmTask {
 
 export function selectAgents(task: SwarmTask, agents: readonly AgentProfile[]): AgentProfile[] {
   const required = new Set(task.requiredCapabilities.map((value) => value.toLowerCase()));
+  const missionLower = (task.mission || '').toLowerCase();
+
   return agents.filter((agent) => agent.enabled)
-    .map((agent) => ({ agent, score: agent.capabilities.filter((capability) => required.has(capability.toLowerCase())).length }))
+    .map((agent) => {
+      let score = agent.capabilities.filter((capability) => required.has(capability.toLowerCase())).length * 2;
+      for (const cap of agent.capabilities) {
+        if (missionLower.includes(cap.toLowerCase())) {
+          score += 3;
+        }
+      }
+      if (missionLower.includes(agent.id.toLowerCase()) || missionLower.includes(agent.name.toLowerCase())) {
+        score += 5;
+      }
+      return { agent, score };
+    })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(1, task.maxAgents))

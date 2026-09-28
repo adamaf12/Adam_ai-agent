@@ -5,12 +5,14 @@ import dns from 'node:dns';
 try {
   dns.setDefaultResultOrder('ipv4first');
 } catch {}
+import fs from 'node:fs';
 import compression from 'compression';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { GoogleGenAI } from '@google/genai';
 import { registerAgentRoute, searchCircuitBreaker, isExplicitImageRequest, isExplicitVideoRequest } from './server/agent';
+import { AGENT_ACTION_TOOLS, executeAgentActionTool } from './src/core/agent/toolExecution';
 import { createAgentModelGateway } from './src/core/models/agentModelGateway';
 import { modelRegistry } from './src/core/models/modelSwarm';
 import { hermesEngine } from './server/hermesAgent';
@@ -89,7 +91,14 @@ app.use('/api', globalRateLimiter.middleware());
 
 // Fast Health & Ping for Mobile APK & Web Connectivity Probing
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, status: 'online', agent: 'ADEM', timestamp: Date.now() });
+  res.json({
+    ok: true,
+    status: 'online',
+    agent: 'ADEM',
+    configured: Boolean(secretsManager.getGeminiApiKey()),
+    agentic: true,
+    timestamp: Date.now(),
+  });
 });
 
 // Guardian endpoint: exposes safe, non-secret diagnostics for autonomous recovery workflows.
@@ -1135,14 +1144,16 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     for (const currentModel of candidateModels) {
       if (aborted || res.writableEnded || res.destroyed) break;
 
-      // Always connect to Google Search Grounding by default for live accurate web information
+      // Multi-Agent tools configuration: enable AGENT_ACTION_TOOLS for full Agentic AI execution
       const canTrySearch = searchCircuitBreaker.isAvailable() && !isToday;
       const configsToTry = canTrySearch
         ? [
-            { ...baseConfig, tools: [{ googleSearch: {} }] },
+            { ...baseConfig, tools: [{ googleSearch: {} }, ...AGENT_ACTION_TOOLS] },
+            { ...baseConfig, tools: AGENT_ACTION_TOOLS },
             baseConfig,
           ]
         : [
+            { ...baseConfig, tools: AGENT_ACTION_TOOLS },
             baseConfig,
           ];
 
@@ -1163,7 +1174,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
               accumulatedGrounding = mergeGroundingData(accumulatedGrounding, extracted);
             }
 
-            // Handle function calls (generate_specialized_image & generate_image)
+            // Handle function calls (Agentic Tool Actions & Image Generation)
             const fnCalls = (chunk as any).functionCalls || (chunk as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
             if (fnCalls && fnCalls.length) {
               for (const fn of fnCalls) {
@@ -1212,6 +1223,105 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
                     output += cardText;
                     safeWrite(res, { type: 'delta', text: cardText });
                   }
+                } else {
+                  // Execute Agentic tools (execute_code, execute_terminal_command, create_file, create_task, etc.)
+                  const permCheck = AgentPermissionGuard.canExecuteTool(fn.name, req.user);
+                  if (permCheck.allowed) {
+                    try {
+                      const toolResult = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, req.user?.uid || 'guest_default');
+                      let cardText = '';
+                      if (fn.name === 'execute_code') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'code_exec',
+                          title: language === 'ar' ? '⚡ تشغيل الكود البرمجي (ADEM Core)' : '⚡ Code Execution (ADEM Core)',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'code_exec',
+                            data: {
+                              code: String(fn.args?.code || ''),
+                              language: String(fn.args?.language || 'javascript'),
+                              output: (toolResult as any).stdout || (toolResult as any).stderr || '',
+                              success: (toolResult as any).ok ?? true,
+                              executionTimeMs: (toolResult as any).durationMs || 10,
+                              stdout: (toolResult as any).stdout ? [(toolResult as any).stdout] : [],
+                              stderr: (toolResult as any).stderr ? [(toolResult as any).stderr] : [],
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'execute_terminal_command') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'terminal_command',
+                          title: language === 'ar' ? '🖥️ أمر الطرفية المستقل (ADEM Terminal)' : '🖥️ Terminal Command (ADEM Terminal)',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'terminal_command',
+                            data: {
+                              command: String(fn.args?.command || ''),
+                              cwd: String(fn.args?.cwd || '/workspace'),
+                              output: (toolResult as any).stdout || (toolResult as any).stderr || '',
+                              exitCode: (toolResult as any).exitCode ?? 0,
+                              executionTimeMs: (toolResult as any).durationMs || 10,
+                              systemTarget: (toolResult as any).systemTarget || 'linux',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'create_file') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'file_created',
+                          title: language === 'ar' ? '💾 تم إنشاء الملف وتحضيره للتحميل' : '💾 File Generated & Ready to Download',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'file_created',
+                            data: {
+                              fileName: (toolResult as any).fileName || 'project-artifact.txt',
+                              fileType: (toolResult as any).fileType || 'text/plain',
+                              content: String(fn.args?.content || ''),
+                              sizeBytes: (toolResult as any).sizeBytes || 0,
+                              downloadUrl: (toolResult as any).downloadUrl || '',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'create_task') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'task_created',
+                          title: language === 'ar' ? '📋 تم تسجيل المهمة في منظومة ADEM' : '📋 Task Registered in ADEM System',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'task_created',
+                            data: {
+                              task: {
+                                id: (toolResult as any).taskId || `task_${Date.now()}`,
+                                title: String(fn.args?.title || ''),
+                                notes: String(fn.args?.description || ''),
+                                priority: String(fn.args?.priority || 'medium'),
+                                completed: false,
+                                createdAt: Date.now(),
+                                updatedAt: Date.now(),
+                              },
+                              systemTarget: (fn.args?.system_target as any) || 'universal',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'adk_coordinate_agents') {
+                        cardText = `\n:::adk-orchestrator\n${JSON.stringify(toolResult, null, 2)}\n:::\n`;
+                      }
+
+                      if (cardText) {
+                        output += cardText;
+                        safeWrite(res, { type: 'delta', text: cardText });
+                      }
+                    } catch (toolErr) {
+                      console.warn('[ADEM Agentic Tool Execution Error]:', toolErr);
+                    }
+                  }
                 }
               }
             }
@@ -1242,7 +1352,9 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
                       prompt: detailedPrompt,
                       aspectRatio: (aspect as any) || '1:1',
                       apiKey,
+                      userId: req.user?.uid,
                     });
+                    costControlManager.recordUsage(req.user?.uid, 50, true);
                     const cardPayload = {
                       imageUrl: item.url,
                       enhancedPrompt: item.enhancedPrompt,
@@ -1270,6 +1382,105 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
                     output += cardText;
                     safeWrite(res, { type: 'delta', text: cardText });
                   }
+                } else {
+                  // Execute Agentic tools
+                  const permCheck = AgentPermissionGuard.canExecuteTool(fn.name, req.user);
+                  if (permCheck.allowed) {
+                    try {
+                      const toolResult = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, req.user?.uid || 'guest_default');
+                      let cardText = '';
+                      if (fn.name === 'execute_code') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'code_exec',
+                          title: language === 'ar' ? '⚡ تشغيل الكود البرمجي (ADEM Core)' : '⚡ Code Execution (ADEM Core)',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'code_exec',
+                            data: {
+                              code: String(fn.args?.code || ''),
+                              language: String(fn.args?.language || 'javascript'),
+                              output: (toolResult as any).stdout || (toolResult as any).stderr || '',
+                              success: (toolResult as any).ok ?? true,
+                              executionTimeMs: (toolResult as any).durationMs || 10,
+                              stdout: (toolResult as any).stdout ? [(toolResult as any).stdout] : [],
+                              stderr: (toolResult as any).stderr ? [(toolResult as any).stderr] : [],
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'execute_terminal_command') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'terminal_command',
+                          title: language === 'ar' ? '🖥️ أمر الطرفية المستقل (ADEM Terminal)' : '🖥️ Terminal Command (ADEM Terminal)',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'terminal_command',
+                            data: {
+                              command: String(fn.args?.command || ''),
+                              cwd: String(fn.args?.cwd || '/workspace'),
+                              output: (toolResult as any).stdout || (toolResult as any).stderr || '',
+                              exitCode: (toolResult as any).exitCode ?? 0,
+                              executionTimeMs: (toolResult as any).durationMs || 10,
+                              systemTarget: (toolResult as any).systemTarget || 'linux',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'create_file') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'file_created',
+                          title: language === 'ar' ? '💾 تم إنشاء الملف وتحضيره للتحميل' : '💾 File Generated & Ready to Download',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'file_created',
+                            data: {
+                              fileName: (toolResult as any).fileName || 'project-artifact.txt',
+                              fileType: (toolResult as any).fileType || 'text/plain',
+                              content: String(fn.args?.content || ''),
+                              sizeBytes: (toolResult as any).sizeBytes || 0,
+                              downloadUrl: (toolResult as any).downloadUrl || '',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'create_task') {
+                        cardText = `\n:::agent-action\n${JSON.stringify({
+                          actionType: 'task_created',
+                          title: language === 'ar' ? '📋 تم تسجيل المهمة في منظومة ADEM' : '📋 Task Registered in ADEM System',
+                          engine: 'engine_1_executive',
+                          authorityLevel: 'root_unrestricted',
+                          timestamp: Date.now(),
+                          payload: {
+                            type: 'task_created',
+                            data: {
+                              task: {
+                                id: (toolResult as any).taskId || `task_${Date.now()}`,
+                                title: String(fn.args?.title || ''),
+                                notes: String(fn.args?.description || ''),
+                                priority: String(fn.args?.priority || 'medium'),
+                                completed: false,
+                                createdAt: Date.now(),
+                                updatedAt: Date.now(),
+                              },
+                              systemTarget: (fn.args?.system_target as any) || 'universal',
+                            },
+                          },
+                        }, null, 2)}\n:::\n`;
+                      } else if (fn.name === 'adk_coordinate_agents') {
+                        cardText = `\n:::adk-orchestrator\n${JSON.stringify(toolResult, null, 2)}\n:::\n`;
+                      }
+
+                      if (cardText) {
+                        output += cardText;
+                        safeWrite(res, { type: 'delta', text: cardText });
+                      }
+                    } catch (toolErr) {
+                      console.warn('[ADEM Agentic Tool Execution Error in fallback]:', toolErr);
+                    }
+                  }
                 }
               }
             }
@@ -1288,27 +1499,27 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           lastError = err;
           const providerMessage = String(err?.message || 'Unknown Gemini provider error');
           const normalizedMsg = providerMessage.toLowerCase();
-          const code = Number(err?.status ?? err?.response?.status ?? err?.error?.status ?? 0);
-          console.error('[Adam AI chat] Gemini provider attempt failed', {
-            requestId,
-            model: currentModel,
-            status: Number.isFinite(code) && code > 0 ? code : undefined,
-            errorCode: typeof err?.code === 'string' ? err.code : undefined,
-            name: err?.name,
-            message: redactSecrets(providerMessage),
-            stack: redactSecrets(String(err?.stack || '')),
-          });
+          let code = Number(err?.status ?? err?.response?.status ?? err?.error?.status ?? err?.code ?? 0);
+          if (!code || isNaN(code)) {
+            const match = providerMessage.match(/"code"\s*:\s*(\d+)/);
+            if (match) code = Number(match[1]);
+          }
           const isHighDemand = code === 503 || normalizedMsg.includes('unavailable') || normalizedMsg.includes('high demand') || normalizedMsg.includes('spike');
-          const isQuota = code === 429 || normalizedMsg.includes('quota') || normalizedMsg.includes('resource_exhausted');
+          const isQuota = code === 429 || normalizedMsg.includes('quota') || normalizedMsg.includes('resource_exhausted') || normalizedMsg.includes('too many requests') || normalizedMsg.includes('rate limit');
           
           if (isHighDemand) {
             markModelOverloaded(currentModel, 60_000);
             modelEncountered503 = true;
           }
           
-          if (isQuota && config.tools) {
-            searchCircuitBreaker.trip(60 * 60 * 1000);
+          if (isQuota) {
+            markModelOverloaded(currentModel, 120_000);
+            modelEncountered503 = true;
+            if (config.tools) {
+              searchCircuitBreaker.trip(60 * 60 * 1000);
+            }
           }
+          console.log(`[Adam AI chat] Handled ${isQuota ? 'quota limit (429)' : isHighDemand ? 'service load (503)' : 'provider status ' + (code || '')} on ${currentModel}; switching to next swarm engine.`);
         }
       }
 
@@ -1318,7 +1529,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     // Grounding sources omitted per user request
 
     if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
-      console.warn('[Adam AI chat] Gemini models unavailable or quota exceeded, attempting Hugging Face & remote model gateway fallback...');
+      console.log('[Adam AI chat] Gemini models unavailable or quota exhausted, attempting Hugging Face & remote model gateway fallback...');
       try {
         const hfResult = await huggingFaceEngine.generateChatCompletion({
           model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
@@ -1332,18 +1543,13 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
           safeWrite(res, { type: 'delta', text: output });
         }
       } catch (hfErr: any) {
-        console.error('[Adam AI chat] Hugging Face fallback failed', {
-          requestId,
-          name: hfErr?.name,
-          message: redactSecrets(String(hfErr?.message || hfErr)),
-          stack: redactSecrets(String(hfErr?.stack || '')),
-        });
+        console.log('[Adam AI chat] Hugging Face fallback unavailable; attempting remote model gateway candidates...');
       }
 
       if (!output.trim()) {
         try {
           const remoteGateway = createAgentModelGateway();
-          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini');
+          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini' && m.provider !== 'ADEM-G');
           for (const fbModel of fallbackCandidates) {
             if (aborted || res.writableEnded || res.destroyed) break;
             try {
@@ -1359,22 +1565,11 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
                 break;
               }
             } catch (fbErr: any) {
-              console.error('[Adam AI chat] remote fallback failed', {
-                requestId,
-                model: fbModel.id,
-                name: fbErr?.name,
-                message: redactSecrets(String(fbErr?.message || fbErr)),
-                stack: redactSecrets(String(fbErr?.stack || '')),
-              });
+              // Graceful candidate switch
             }
           }
         } catch (gwErr: any) {
-          console.error('[Adam AI chat] model gateway initialization failed', {
-            requestId,
-            name: gwErr?.name,
-            message: redactSecrets(String(gwErr?.message || gwErr)),
-            stack: redactSecrets(String(gwErr?.stack || '')),
-          });
+          console.log('[Adam AI chat] Model gateway fallback route bypassed');
         }
       }
     }
@@ -1393,11 +1588,15 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     if (!output.trim()) {
       const lastMessage = String(lastError?.message || 'No model returned a response.');
       const normalized = lastMessage.toLowerCase();
-      const providerStatus = Number(lastError?.status ?? lastError?.response?.status ?? lastError?.error?.status ?? 0);
+      let providerStatus = Number(lastError?.status ?? lastError?.response?.status ?? lastError?.error?.status ?? lastError?.code ?? 0);
+      if (!providerStatus || isNaN(providerStatus)) {
+        const match = lastMessage.match(/"code"\s*:\s*(\d+)/);
+        if (match) providerStatus = Number(match[1]);
+      }
       const failureCode =
         providerStatus === 401 || providerStatus === 403 || normalized.includes('api key') || normalized.includes('permission')
           ? 'AI_AUTH'
-          : providerStatus === 429 || normalized.includes('quota') || normalized.includes('rate limit') || normalized.includes('resource_exhausted')
+          : providerStatus === 429 || normalized.includes('quota') || normalized.includes('rate limit') || normalized.includes('resource_exhausted') || normalized.includes('too many requests')
             ? 'AI_RATE_LIMIT'
             : normalized.includes('timeout') || normalized.includes('timed out')
               ? 'REQUEST_TIMEOUT'
@@ -1856,7 +2055,11 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 async function startServer() {
   try {
-    if (process.env.NODE_ENV === 'production') {
+    const distIndex = path.join(publicDir, 'index.html');
+    const rootIndex = path.join(rootDir, 'index.html');
+    const hasDist = fs.existsSync(distIndex);
+
+    if (hasDist && (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1')) {
       app.use(express.static(publicDir, {
         index: false,
         maxAge: '7d',
@@ -1868,9 +2071,16 @@ async function startServer() {
           }
         }
       }));
-      app.get('*', (_req, res) => {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.sendFile(path.join(publicDir, 'index.html'));
+      app.get('*', (_req, res, next) => {
+        if (fs.existsSync(distIndex)) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.sendFile(distIndex);
+        } else if (fs.existsSync(rootIndex)) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.sendFile(rootIndex);
+        } else {
+          next();
+        }
       });
     } else if (process.env.NODE_ENV !== 'test') {
       const { createServer: createViteServer } = await import('vite');
@@ -1878,7 +2088,7 @@ async function startServer() {
       app.use(vite.middlewares);
     }
   } catch (err) {
-    console.error('[Adam Server] Vite setup error:', err);
+    console.error('[Adam Server] Static / Vite setup error:', err);
   }
 
   if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {

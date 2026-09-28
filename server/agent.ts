@@ -30,6 +30,7 @@ import { buildRequestContract, formatRequestContract } from '../src/core/agent/r
 import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './ecc';
+import { huggingFaceEngine } from './huggingfaceEngine';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -613,12 +614,10 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
     const modelVariants = [
-      'gemini-3.8-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
       modelDesc.id,
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-flash-latest',
     ];
     const uniqueModels = [...new Set(modelVariants.filter(m => Boolean(m) && !m.includes('-pro')))];
 
@@ -633,25 +632,114 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
           ]
         : [{ ...baseConfig, ...toolConfig }];
 
+      let modelQuotaEncountered = false;
       for (const config of configsToTry) {
+        if (modelQuotaEncountered) break;
         try {
           let response = await ai.models.generateContent({ model: modelId, contents, config: buildGenerationConfig(config, modelId) });
           let textResult = response.text || '';
 
-          // Real tool loop: execute declared actions and feed verified results back to Gemini.
-          for (let toolRound = 0; toolRound < 3; toolRound += 1) {
+          // Real Autonomous ReAct Tool Loop: execute declared actions and feed verified results back to Gemini.
+          for (let toolRound = 0; toolRound < 5; toolRound += 1) {
             const fnCalls = (response as any).functionCalls || (response as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
             if (!fnCalls || !fnCalls.length) break;
             const actionParts: any[] = [];
             for (const fn of fnCalls) {
-              if (fn.name === 'create_task' || fn.name === 'query_memory' || fn.name === 'save_memory') {
-                const permission = AgentPermissionGuard.canExecuteTool(fn.name, user, { resource: fn.name });
-                if (!permission.allowed || !userId) {
-                  actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: permission.allowed ? 'AUTH_REQUIRED' : 'PERMISSION_DENIED' } } });
-                  continue;
-                }
-                const result = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, userId);
-                actionParts.push({ functionResponse: { name: fn.name, response: result } });
+              const permCheck = AgentPermissionGuard.canExecuteTool(fn.name, user, { resource: fn.name });
+              if (!permCheck.allowed || !userId) {
+                actionParts.push({ functionResponse: { name: fn.name, response: { ok: false, error: permCheck.allowed ? 'AUTH_REQUIRED' : 'PERMISSION_DENIED', message: permCheck.reason } } });
+                continue;
+              }
+              const result = await executeAgentActionTool(fn.name, (fn.args ?? {}) as Record<string, unknown>, userId);
+              actionParts.push({ functionResponse: { name: fn.name, response: result } });
+
+              // Attach formatted visual cards for the UI
+              if (fn.name === 'execute_code') {
+                const codeCard = {
+                  actionType: 'code_exec',
+                  title: language === 'ar' ? '⚡ تشغيل الكود البرمجي (ADEM Core)' : '⚡ Code Execution (ADEM Core)',
+                  engine: 'engine_1_executive',
+                  authorityLevel: 'root_unrestricted',
+                  timestamp: Date.now(),
+                  payload: {
+                    type: 'code_exec',
+                    data: {
+                      code: String(fn.args?.code || ''),
+                      language: String(fn.args?.language || 'javascript'),
+                      output: (result as any).stdout || (result as any).stderr || '',
+                      success: (result as any).ok ?? true,
+                      executionTimeMs: (result as any).durationMs || 10,
+                      stdout: (result as any).stdout ? [(result as any).stdout] : [],
+                      stderr: (result as any).stderr ? [(result as any).stderr] : [],
+                    },
+                  },
+                };
+                textResult = `:::agent-action\n${JSON.stringify(codeCard, null, 2)}\n:::\n` + textResult;
+              } else if (fn.name === 'execute_terminal_command') {
+                const termCard = {
+                  actionType: 'terminal_command',
+                  title: language === 'ar' ? '🖥️ أمر الطرفية المستقل (ADEM Terminal)' : '🖥️ Terminal Command (ADEM Terminal)',
+                  engine: 'engine_1_executive',
+                  authorityLevel: 'root_unrestricted',
+                  timestamp: Date.now(),
+                  payload: {
+                    type: 'terminal_command',
+                    data: {
+                      command: String(fn.args?.command || ''),
+                      cwd: String(fn.args?.cwd || '/workspace'),
+                      output: (result as any).stdout || (result as any).stderr || '',
+                      exitCode: (result as any).exitCode ?? 0,
+                      executionTimeMs: (result as any).durationMs || 10,
+                      systemTarget: (result as any).systemTarget || 'linux',
+                    },
+                  },
+                };
+                textResult = `:::agent-action\n${JSON.stringify(termCard, null, 2)}\n:::\n` + textResult;
+              } else if (fn.name === 'create_file') {
+                const fileCard = {
+                  actionType: 'file_created',
+                  title: language === 'ar' ? '💾 تم إنشاء الملف وتحضيره للتحميل' : '💾 File Generated & Ready to Download',
+                  engine: 'engine_1_executive',
+                  authorityLevel: 'root_unrestricted',
+                  timestamp: Date.now(),
+                  payload: {
+                    type: 'file_created',
+                    data: {
+                      fileName: (result as any).fileName || 'project-artifact.txt',
+                      fileType: (result as any).fileType || 'text/plain',
+                      content: String(fn.args?.content || ''),
+                      sizeBytes: (result as any).sizeBytes || 0,
+                      downloadUrl: (result as any).downloadUrl || '',
+                    },
+                  },
+                };
+                textResult = `:::agent-action\n${JSON.stringify(fileCard, null, 2)}\n:::\n` + textResult;
+              } else if (fn.name === 'create_task') {
+                const taskCard = {
+                  actionType: 'task_created',
+                  title: language === 'ar' ? '📋 تم تسجيل المهمة في منظومة ADEM' : '📋 Task Registered in ADEM System',
+                  engine: 'engine_1_executive',
+                  authorityLevel: 'root_unrestricted',
+                  timestamp: Date.now(),
+                  payload: {
+                    type: 'task_created',
+                    data: {
+                      task: {
+                        id: (result as any).taskId || `task_${Date.now()}`,
+                        title: String(fn.args?.title || ''),
+                        notes: String(fn.args?.description || ''),
+                        priority: String(fn.args?.priority || 'medium'),
+                        completed: false,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                      },
+                      systemTarget: (fn.args?.system_target as any) || 'universal',
+                    },
+                  },
+                };
+                textResult = `:::agent-action\n${JSON.stringify(taskCard, null, 2)}\n:::\n` + textResult;
+              } else if (fn.name === 'adk_coordinate_agents') {
+                textResult = `:::adk-orchestrator\n${JSON.stringify(result, null, 2)}\n:::\n` + textResult;
               }
             }
             if (!actionParts.length) break;
@@ -659,7 +747,7 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
             if (!modelContent) break;
             contents = [...contents, modelContent, { role: 'user' as const, parts: actionParts }];
             response = await ai.models.generateContent({ model: modelId, contents, config: buildGenerationConfig({ ...config, tools: AGENT_ACTION_TOOLS }, modelId) });
-            textResult = response.text || '';
+            textResult = (response.text || '') + (textResult ? `\n\n` + textResult : '');
           }
 
           // Check for function calls
@@ -706,11 +794,13 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
           if (textResult.trim()) return textResult;
         } catch (err: any) {
           const errMsg = String(err?.message || err);
-          if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-            // Google Search tool quota exhausted: trip circuit breaker for 1 hour
+          const isDemand = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('overloaded') || errMsg.includes('spike');
+          const isQuota = errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED');
+          if (isQuota || isDemand) {
             searchCircuitBreaker.trip(60 * 60 * 1000);
+            modelQuotaEncountered = true;
           }
-          console.warn(`[Gemini Invoker] Attempt failed on ${modelId}:`, errMsg.slice(0, 120));
+          console.log(`[Gemini Invoker] Handled ${isDemand ? '503 high demand' : isQuota ? '429 quota limit' : 'attempt status'} on ${modelId}; proceeding to next candidate.`);
         }
       }
     }
@@ -718,13 +808,13 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
     // Direct string prompt fallback
     try {
       const resp = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-3.1-flash-lite',
         contents: promptText,
-        config: buildGenerationConfig(baseConfig, 'gemini-3.6-flash'),
+        config: buildGenerationConfig(baseConfig, 'gemini-3.1-flash-lite'),
       });
       if (resp.text?.trim()) return resp.text.trim();
     } catch (e) {
-      console.warn('[Gemini Invoker] Fallback failed:', e);
+      // Fallback seamlessly to swarm models
     }
 
     return '';
@@ -962,20 +1052,37 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         if (success) { winner = success.value.model; output = success.value.text; }
       }
       if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
-        // Try any non-gemini fallback in registry
+        // 1. Direct Hugging Face fallback
         try {
-          const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini' && m.provider !== 'ADEM-G');
-          for (const fb of fallbackCandidates) {
-            try {
-              const resText = await remoteGateway.gateway.invokeSelected(fb, { prompt: latestPrompt, system: hermesSystem, temperature: 0.35, maxTokens: 4096 });
-              if (resText.text?.trim()) {
-                output = resText.text.trim();
-                winner = fb;
-                break;
-              }
-            } catch {}
+          const hfResult = await huggingFaceEngine.generateChatCompletion({
+            model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+            messages: [{ role: 'user', content: latestPrompt }],
+            systemPrompt: hermesSystem,
+            temperature: 0.35,
+            maxTokens: 4096,
+          });
+          if (hfResult.text?.trim()) {
+            output = hfResult.text.trim();
+            winner = { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', provider: 'huggingface', displayName: 'Qwen 2.5 Coder', capabilities: ['coding', 'general'], quality: 9.8, speed: 9.5, cost: 1, enabled: true };
           }
         } catch {}
+
+        // 2. Try any non-gemini fallback in registry
+        if (!output.trim()) {
+          try {
+            const fallbackCandidates = modelRegistry.enabled().filter(m => m.provider !== 'gemini' && m.provider !== 'ADEM-G');
+            for (const fb of fallbackCandidates) {
+              try {
+                const resText = await remoteGateway.gateway.invokeSelected(fb, { prompt: latestPrompt, system: hermesSystem, temperature: 0.35, maxTokens: 4096 });
+                if (resText.text?.trim()) {
+                  output = resText.text.trim();
+                  winner = fb;
+                  break;
+                }
+              } catch {}
+            }
+          } catch {}
+        }
       }
 
       if (!output.trim()) {

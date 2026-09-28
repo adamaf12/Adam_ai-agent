@@ -3,12 +3,15 @@ import {
   Camera,
   Check,
   Code2,
+  Cpu,
+  FileCode,
   Gamepad2,
   Globe,
   Languages,
   Loader2,
   Mic,
   MicOff,
+  Play,
   Radio,
   FileAudio,
   MapPin,
@@ -16,6 +19,7 @@ import {
   Send,
   Sparkles,
   Square,
+  Terminal,
   UploadCloud,
   Wrench,
   X,
@@ -485,6 +489,42 @@ export function Composer({
               {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.flag}{' '}
               {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.label.split(' ')[0] || (isAr ? 'اللهجة واللغة' : 'Dialect')}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'نفذ ذاتياً كوكيل مستقل (Agentic AI) وقم بالتخطيط واستدعاء الأدوات اللازمة والتحقق لـ: ' : 'Execute autonomously as an Agentic AI with tool calls & verification for: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="ADEM Autonomous Agentic AI Execution"
+          >
+            <Cpu size={13} className="text-emerald-400" />
+            <span>{isAr ? '⚡ وكيل ذاتي (Agentic)' : '⚡ Agentic Mode'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'شغل كود في بيئة Sandbox المعزولة واعرض المخرجات: ' : 'Run code in the isolated sandbox environment: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Live Sandbox Code Execution"
+          >
+            <Play size={13} className="text-blue-400" />
+            <span>{isAr ? 'تشغيل كود Sandbox' : 'Sandbox Run'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'نفذ أمر طرفية لينكس/أندرويد: ' : 'Run system terminal command: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0 font-mono"
+            title="Terminal Command Execution"
+          >
+            <Terminal size={13} className="text-emerald-400" />
+            <span>{isAr ? 'طرفية Terminal' : 'Terminal CLI'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertPromptChip(isAr ? 'أنشئ ملفاً برمجياً كاملاً مع رابط تنزيل فوري لـ: ' : 'Create a complete downloadable file for: ')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
+            title="Generate Downloadable File"
+          >
+            <FileCode size={13} className="text-amber-400" />
+            <span>{isAr ? 'إنشاء ملف 💾' : 'Create File 💾'}</span>
           </button>
           <button
             type="button"

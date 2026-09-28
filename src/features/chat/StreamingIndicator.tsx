@@ -87,10 +87,17 @@ export function StreamingIndicator({
       animate={{ opacity: 1, y: 0, x: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="streaming"
+      className="streaming flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-emerald-400 text-xs shadow-lg backdrop-blur-md"
     >
-      <LoaderCircle size={15} className="spin" />
-      <span>{label}</span>
+      <LoaderCircle size={14} className="spin text-emerald-400" />
+      <span className="font-semibold tracking-wide">
+        {isAr ? '⚡ ADEM Agentic AI • جاري التحليل والتنفيذ الذاتي...' : '⚡ ADEM Agentic AI • Autonomous ReAct Execution...'}
+      </span>
+      {label && label !== 'جاري التوليد…' && label !== 'Generating…' && (
+        <span className="text-[11px] text-[var(--muted)] font-normal border-s border-slate-700 ps-2">
+          {label}
+        </span>
+      )}
     </motion.div>
   );
 }

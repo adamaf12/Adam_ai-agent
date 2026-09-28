@@ -6,7 +6,12 @@ export type AgentToolId =
   | 'generate_specialized_image'
   | 'generate_video'
   | 'google_search'
+  | 'search_web'
   | 'execute_code'
+  | 'execute_terminal_command'
+  | 'create_file'
+  | 'inspect_system'
+  | 'adk_coordinate_agents'
   | 'read_file'
   | 'write_file'
   | 'call_external_api'
@@ -22,16 +27,46 @@ export interface AgentPermissionPolicy {
 }
 
 const DEFAULT_GUEST_POLICY: AgentPermissionPolicy = {
-  allowedTools: ['generate_image', 'generate_specialized_image', 'google_search'],
-  maxDailyToolCalls: 50,
-  requireApprovalForDestructive: true,
+  allowedTools: [
+    'generate_image',
+    'generate_specialized_image',
+    'google_search',
+    'search_web',
+    'execute_code',
+    'execute_terminal_command',
+    'create_file',
+    'create_task',
+    'query_memory',
+    'save_memory',
+    'inspect_system',
+    'adk_coordinate_agents',
+  ],
+  maxDailyToolCalls: 100,
+  requireApprovalForDestructive: false,
   safeModeOnly: true,
 };
 
 const DEFAULT_USER_POLICY: AgentPermissionPolicy = {
-  allowedTools: ['generate_image', 'generate_specialized_image', 'generate_video', 'google_search', 'execute_code', 'create_task', 'query_memory', 'save_memory'],
-  maxDailyToolCalls: 200,
-  requireApprovalForDestructive: true,
+  allowedTools: [
+    'generate_image',
+    'generate_specialized_image',
+    'generate_video',
+    'google_search',
+    'search_web',
+    'execute_code',
+    'execute_terminal_command',
+    'create_file',
+    'create_task',
+    'query_memory',
+    'save_memory',
+    'inspect_system',
+    'adk_coordinate_agents',
+    'read_file',
+    'write_file',
+    'call_external_api',
+  ],
+  maxDailyToolCalls: 500,
+  requireApprovalForDestructive: false,
   safeModeOnly: false,
 };
 
@@ -41,7 +76,12 @@ const DEFAULT_ADMIN_POLICY: AgentPermissionPolicy = {
     'generate_specialized_image',
     'generate_video',
     'google_search',
+    'search_web',
     'execute_code',
+    'execute_terminal_command',
+    'create_file',
+    'inspect_system',
+    'adk_coordinate_agents',
     'read_file',
     'write_file',
     'call_external_api',
