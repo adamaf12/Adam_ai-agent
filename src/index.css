@@ -2787,3 +2787,22 @@ input, textarea {
 @media(prefers-reduced-motion:reduce){
   .agentic-login__planet,.agentic-login__ring,.agentic-login__card-glow,.agentic-login__particle,.agentic-login__google:before{animation:none!important}
 }
+
+
+/* 3D composition: keep the core visibly beside the glass card on wide screens */
+@media(min-width:900px){
+  .agentic-login__scene{
+    width:62%;
+    inset-inline-start:0;
+    inset-inline-end:auto;
+    transform:translateX(-2%);
+  }
+  .agentic-login__planet{width:340px;height:340px}
+  .agentic-login__ring{width:520px;height:520px}
+  .agentic-login__ring--two{width:640px;height:640px}
+  .agentic-login__ring--three{width:430px;height:430px}
+  .agentic-login__card{
+    justify-self:end;
+    margin-inline-end:7vw;
+  }
+}
