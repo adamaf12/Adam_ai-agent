@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 /**
  * Secrets Manager & Redaction Engine
@@ -136,8 +136,16 @@ class SecretsManager {
    * Safe getter for session secret with stable fallback
    */
   public getSessionSecret(): string {
-    const raw = process.env.SESSION_SECRET || process.env.GEMINI_API_KEY || 'adam-secure-fallback-salt-2026';
-    return createHash('sha256').update(raw).digest('hex');
+    const configured = process.env.SESSION_SECRET?.trim();
+    if (configured) return createHash('sha256').update(configured).digest('hex');
+
+    // Never derive session signing from an AI provider key. If SESSION_SECRET is
+    // missing, use a per-process random secret and surface the configuration issue
+    // through getStatus() rather than silently creating a predictable global secret.
+    if (!(globalThis as any).__adamSessionSecret) {
+      (globalThis as any).__adamSessionSecret = randomBytes(32).toString('hex');
+    }
+    return createHash('sha256').update((globalThis as any).__adamSessionSecret).digest('hex');
   }
 
   /**
@@ -153,9 +161,11 @@ class SecretsManager {
   public getStatus() {
     const hasGemini = Boolean(this.getGeminiApiKey());
     const hasAdmin = Boolean(this.getAdminSecret());
+    const hasSessionSecret = Boolean(process.env.SESSION_SECRET?.trim());
     return {
       geminiConfigured: hasGemini,
       adminConfigured: hasAdmin,
+      sessionSecretConfigured: hasSessionSecret,
       maskedSecretsCount: this.secretsToMask.size,
       secretsShieldActive: true,
     };
