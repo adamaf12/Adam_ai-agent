@@ -399,8 +399,10 @@ export async function signInWithGoogle(): Promise<AppUser> {
     return await signInWithGoogleForAndroid();
   }
 
+  // Web OAuth must use a Google OAuth client whose Authorized JavaScript
+  // origins include the current production origin. Never hide origin_mismatch
+  // by looping through multiple OAuth transports; surface the real setup error.
   try {
-    // 1. Direct GSI Token Flow (100% immune to storage partitioning)
     return await signInWithGoogleDirect();
   } catch (directErr: any) {
     const errMsg = String(directErr?.message || directErr);
@@ -408,9 +410,31 @@ export async function signInWithGoogle(): Promise<AppUser> {
       throw directErr;
     }
 
-    console.warn('[Google Auth] Direct GSI unavailable or blocked by origin, falling back to popup handler:', errMsg);
-    // 2. Fallback to Popup
-    return await signInWithGooglePopup();
+    if (
+      errMsg.includes('origin_mismatch') ||
+      errMsg.includes('unauthorized_client') ||
+      errMsg.includes('disallowed_useragent') ||
+      errMsg.includes('redirect_uri_mismatch')
+    ) {
+      throw new Error(`GOOGLE_OAUTH_CONFIGURATION_ERROR:${window.location.origin}`);
+    }
+
+    console.warn('[Google Auth] Direct GSI unavailable; falling back to Firebase popup:', errMsg);
+
+    try {
+      return await signInWithGooglePopup();
+    } catch (popupErr: any) {
+      const popupMsg = String(popupErr?.message || popupErr);
+      if (
+        popupMsg.includes('origin_mismatch') ||
+        popupMsg.includes('unauthorized_client') ||
+        popupMsg.includes('redirect_uri_mismatch') ||
+        popupErr?.code === 'auth/unauthorized-domain'
+      ) {
+        throw new Error(`GOOGLE_OAUTH_CONFIGURATION_ERROR:${window.location.origin}`);
+      }
+      throw popupErr;
+    }
   }
 }
 
