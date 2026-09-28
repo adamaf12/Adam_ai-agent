@@ -70,11 +70,14 @@ export async function executeAgentActionTool(
     });
 
     return {
+      status: 'success',
+      summary: `Task '${title}' was queued successfully.`,
+      next_actions: ['Poll the task by taskId to observe completion.'],
+      artifacts: [task.id],
       ok: true,
       executed: true,
       tool: name,
       taskId: task.id,
-      status: task.status,
       result: { title, description, priority, systemTarget },
     };
   }
@@ -84,6 +87,10 @@ export async function executeAgentActionTool(
     if (!searchTerm) return { ok: false, error: 'INVALID_ARGUMENT', message: 'search_term is required.' };
     const memories = BetterMemoryEngine.queryRelevantMemories(userId, searchTerm, 8);
     return {
+      status: 'success',
+      summary: `Found ${memories.length} relevant memories.`,
+      next_actions: memories.length ? ['Use only memories relevant to the current task.'] : ['No memory evidence matched this query.'],
+      artifacts: [],
       ok: true,
       executed: true,
       tool: name,
@@ -108,6 +115,10 @@ export async function executeAgentActionTool(
     const confidence = Number.isFinite(confidenceRaw) ? Math.min(1, Math.max(0, confidenceRaw)) : 0.9;
     const memory = BetterMemoryEngine.addMemory(userId, category, text, confidence);
     return {
+      status: 'success',
+      summary: 'Memory was stored in the user-isolated memory store.',
+      next_actions: ['Treat the stored item as user-provided memory, not model-derived fact.'],
+      artifacts: [memory.id],
       ok: true,
       executed: true,
       tool: name,
@@ -116,5 +127,13 @@ export async function executeAgentActionTool(
     };
   }
 
-  return { ok: false, error: 'UNKNOWN_TOOL', message: `Tool '${name}' is not available.` };
+  return {
+    status: 'error',
+    summary: `Tool '${name}' is not available.`,
+    next_actions: ['Select a registered tool instead of retrying the same unknown tool.'],
+    artifacts: [],
+    ok: false,
+    error: 'UNKNOWN_TOOL',
+    message: `Tool '${name}' is not available.`,
+  };
 }
