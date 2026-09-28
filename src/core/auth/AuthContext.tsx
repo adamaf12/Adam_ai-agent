@@ -94,13 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (err?.code === 'auth/popup-blocked') {
         setError('تم حظر النافذة المنبثقة بواسطة المتصفح. يرجى السماح بالنوافذ المنبثقة لتسجيل الدخول.');
       } else if (
+        msg.startsWith('GOOGLE_OAUTH_CONFIGURATION_ERROR:') ||
         msg.includes('origin_mismatch') ||
+        msg.includes('redirect_uri_mismatch') ||
+        msg.includes('unauthorized_client') ||
         msg.includes('400') ||
         msg.includes('idpiframe_initialization_failed')
       ) {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const origin =
+          msg.split('GOOGLE_OAUTH_CONFIGURATION_ERROR:')[1] ||
+          (typeof window !== 'undefined' ? window.location.origin : '');
         setError(
-          `Google OAuth رفض هذا المصدر (origin_mismatch). أضف ${origin} إلى Google Cloud → Google Auth Platform → Clients → Authorized JavaScript origins، وتأكد أيضاً من إضافة نطاق adam-ai-agent.vercel.app إلى Firebase Authentication → Authorized domains، ثم أعد المحاولة.`
+          `تسجيل Google يحتاج ضبط OAuth مرة واحدة. في Google Cloud → Google Auth Platform → Clients → Authorized JavaScript origins أضف بالضبط: ${origin}. وفي Firebase Authentication → Settings → Authorized domains أضف: ${typeof window !== 'undefined' ? window.location.hostname : 'adam-ai-agent.vercel.app'}.`
         );
       } else if (
         msg.includes('missing initial state') ||
