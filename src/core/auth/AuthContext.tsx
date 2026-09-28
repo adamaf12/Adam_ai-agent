@@ -87,11 +87,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(signedInUser);
       setAuthModalOpen(false);
     } catch (err: any) {
-      console.error('[AuthProvider] Failed to sign in:', err);
       const msg = String(err?.message || '');
-      if (err?.code === 'auth/popup-closed-by-user' || msg === 'popup_closed_by_user') {
+      const isUserCancellation =
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request' ||
+        msg.includes('popup-closed-by-user') ||
+        msg.includes('popup_closed_by_user') ||
+        msg.includes('access_denied') ||
+        msg.includes('cancelled-popup-request');
+
+      if (isUserCancellation) {
+        // User closed or dismissed the popup intentionally
         setError(null);
-      } else if (err?.code === 'auth/popup-blocked') {
+        return;
+      }
+
+      console.error('[AuthProvider] Failed to sign in:', err);
+      if (err?.code === 'auth/popup-blocked') {
         setError('تم حظر النافذة المنبثقة بواسطة المتصفح. يرجى السماح بالنوافذ المنبثقة لتسجيل الدخول.');
       } else if (
         msg.startsWith('GOOGLE_OAUTH_CONFIGURATION_ERROR:') ||

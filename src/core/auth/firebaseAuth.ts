@@ -28,8 +28,8 @@ if (!getApps().length) {
 export const auth: Auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
-// Pre-register all Google Workspace scopes so user signs into all Google Apps at once!
-WORKSPACE_SCOPES.forEach((scope) => googleProvider.addScope(scope));
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
 
 export const GOOGLE_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
@@ -261,10 +261,9 @@ export async function signInWithGoogleDirect(): Promise<AppUser> {
 
     try {
       const allScopes = [
+        'openid',
         'https://www.googleapis.com/auth/userinfo.profile',
         'https://www.googleapis.com/auth/userinfo.email',
-        'openid',
-        ...WORKSPACE_SCOPES,
       ].join(' ');
 
       const tokenClient = google.accounts.oauth2.initTokenClient({
@@ -282,7 +281,6 @@ export async function signInWithGoogleDirect(): Promise<AppUser> {
           }
 
           if (tokenResponse?.access_token) {
-            // Automatically cache token for all Google Workspace integrations!
             setCachedAccessToken(tokenResponse.access_token);
             try {
               const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -323,8 +321,6 @@ export async function signInWithGoogleDirect(): Promise<AppUser> {
 
 /**
  * Standard Firebase Google popup with graceful error interception.
- * If Storage Partitioning or "missing initial state" error occurs, it
- * automatically recovers without showing a white screen.
  */
 export async function signInWithGooglePopup(): Promise<AppUser> {
   try {
@@ -344,8 +340,9 @@ export async function signInWithGooglePopup(): Promise<AppUser> {
     saveCachedUser(appUser);
     return appUser;
   } catch (error: any) {
-    const msg = String(error?.message || '');
-    console.error('[Google Auth] Popup error:', error);
+    if (error?.code !== 'auth/popup-closed-by-user' && error?.code !== 'auth/cancelled-popup-request') {
+      console.warn('[Google Auth] Firebase popup notice:', error?.message || error);
+    }
     throw error;
   }
 }
@@ -391,48 +388,48 @@ export async function signInWithGoogleForAndroid(): Promise<AppUser> {
 
 /**
  * Universal Master Sign-In:
- * If on native Android app with Google Play Services bridge, triggers native Google Sign-In.
- * In Web, prioritizes direct Google Identity Services (GSI) or popup.
+ * Prioritizes standard Firebase Popup first, then Google Identity Services (GSI) direct client.
  */
 export async function signInWithGoogle(): Promise<AppUser> {
   if (typeof window !== 'undefined' && window.AndroidApp?.signInWithGoogle) {
     return await signInWithGoogleForAndroid();
   }
 
-  // Web OAuth must use a Google OAuth client whose Authorized JavaScript
-  // origins include the current production origin. Never hide origin_mismatch
-  // by looping through multiple OAuth transports; surface the real setup error.
+  // 1. Try Firebase Popup first
   try {
-    return await signInWithGoogleDirect();
-  } catch (directErr: any) {
-    const errMsg = String(directErr?.message || directErr);
-    if (errMsg === 'popup_closed_by_user' || errMsg === 'access_denied') {
-      throw directErr;
+    return await signInWithGooglePopup();
+  } catch (popupErr: any) {
+    const popupCode = popupErr?.code || '';
+    const popupMsg = String(popupErr?.message || popupErr);
+
+    if (popupCode === 'auth/popup-closed-by-user' || popupMsg.includes('popup-closed-by-user')) {
+      throw popupErr;
+    }
+    if (popupCode === 'auth/popup-blocked') {
+      throw popupErr;
     }
 
-    if (
-      errMsg.includes('origin_mismatch') ||
-      errMsg.includes('unauthorized_client') ||
-      errMsg.includes('disallowed_useragent') ||
-      errMsg.includes('redirect_uri_mismatch')
-    ) {
-      throw new Error(`GOOGLE_OAUTH_CONFIGURATION_ERROR:${window.location.origin}`);
-    }
+    console.warn('[Google Auth] Firebase popup unavailable; attempting direct GSI Token Client...', popupMsg);
 
-    console.warn('[Google Auth] Direct GSI unavailable; falling back to Firebase popup:', errMsg);
-
+    // 2. Try direct Google Identity Services (GSI) Token Client
     try {
-      return await signInWithGooglePopup();
-    } catch (popupErr: any) {
-      const popupMsg = String(popupErr?.message || popupErr);
+      return await signInWithGoogleDirect();
+    } catch (directErr: any) {
+      const errMsg = String(directErr?.message || directErr);
+      if (errMsg === 'popup_closed_by_user' || errMsg === 'access_denied') {
+        throw directErr;
+      }
+
       if (
-        popupMsg.includes('origin_mismatch') ||
-        popupMsg.includes('unauthorized_client') ||
-        popupMsg.includes('redirect_uri_mismatch') ||
-        popupErr?.code === 'auth/unauthorized-domain'
+        popupCode === 'auth/unauthorized-domain' ||
+        popupMsg.includes('unauthorized-domain') ||
+        errMsg.includes('origin_mismatch') ||
+        errMsg.includes('unauthorized_client') ||
+        errMsg.includes('redirect_uri_mismatch')
       ) {
         throw new Error(`GOOGLE_OAUTH_CONFIGURATION_ERROR:${window.location.origin}`);
       }
+
       throw popupErr;
     }
   }
