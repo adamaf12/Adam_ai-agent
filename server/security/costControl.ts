@@ -41,12 +41,17 @@ class CostControlManager {
   /**
    * Pre-check if user has remaining budget before calling expensive AI operations
    */
-  public checkBudget(_userId: string, _isImage = false): { allowed: boolean; remainingTokens: number; remainingImages: number; reason?: string } {
-    return {
-      allowed: true,
-      remainingTokens: 999_999_999,
-      remainingImages: 999_999,
-    };
+  public checkBudget(userId: string, isImage = false): { allowed: boolean; remainingTokens: number; remainingImages: number; reason?: string } {
+    const budget = this.getOrCreate(userId || 'guest_default');
+    const remainingTokens = Math.max(0, budget.dailyTokenLimit - budget.tokensUsedToday);
+    const remainingImages = Math.max(0, budget.maxDailyImages - budget.imageGenerationsToday);
+    if (isImage && remainingImages <= 0) {
+      return { allowed: false, remainingTokens, remainingImages, reason: 'Daily image generation limit reached.' };
+    }
+    if (remainingTokens <= 0 || budget.estimatedCostUsd >= budget.maxDailyCostUsd) {
+      return { allowed: false, remainingTokens, remainingImages, reason: 'Daily AI usage limit reached.' };
+    }
+    return { allowed: true, remainingTokens, remainingImages };
   }
 
   /**
