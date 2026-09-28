@@ -37,6 +37,7 @@ import { speedTestRouter } from './server/diagnostics/speedTestRoutes';
 import { geminiMultimodalRouter } from './server/features/geminiMultimodalRoutes';
 import { setupLiveApiWebSocket } from './server/features/liveApiBridge';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './server/ecc';
+import { buildGuardianReport } from './server/guardian';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -89,6 +90,18 @@ app.use('/api', globalRateLimiter.middleware());
 // Fast Health & Ping for Mobile APK & Web Connectivity Probing
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, status: 'online', agent: 'ADEM', timestamp: Date.now() });
+});
+
+// Guardian endpoint: exposes safe, non-secret diagnostics for autonomous recovery workflows.
+app.get('/api/guardian', (_req, res) => {
+  const report = buildGuardianReport({
+    geminiConfigured: Boolean(secretsManager.getGeminiApiKey()),
+    sessionSecretConfigured: Boolean(process.env.SESSION_SECRET?.trim()),
+    vercel: process.env.VERCEL === '1',
+    production: process.env.VERCEL_ENV === 'production',
+    model,
+  });
+  res.status(report.status === 'healthy' ? 200 : report.status === 'degraded' ? 200 : 503).json(report);
 });
 
 app.get('/api/ping', (_req, res) => {
