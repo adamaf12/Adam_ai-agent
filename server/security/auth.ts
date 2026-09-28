@@ -135,7 +135,7 @@ export function parseCookies(cookieHeader?: string): Record<string, string> {
 /**
  * Authentication & Session Middleware
  * Verifies identity via Authorization Bearer or Session Cookie,
- * or generates a deterministic isolated session identity.
+ * or generates a cryptographically random isolated session identity.
  */
 export function authenticateSession(req: Request, res: Response, next: NextFunction) {
   try {
@@ -153,8 +153,6 @@ export function authenticateSession(req: Request, res: Response, next: NextFunct
 
     // Check custom admin key in header for system operations
     const adminKey = req.header('x-admin-key')?.trim();
-    const clientEmail = req.header('x-user-email')?.trim().toLowerCase();
-    const isDeveloper = clientEmail === 'maamarfeidat@gmail.com';
     const isConfiguredAdmin = Boolean(adminKey && adminKey === secretsManager.getAdminSecret());
 
     let user: AuthenticatedUser;
@@ -166,7 +164,7 @@ export function authenticateSession(req: Request, res: Response, next: NextFunct
       user = {
         uid,
         role,
-        email: isDevVerified ? 'maamarfeidat@gmail.com' : verified.email,
+        email: verified.email,
         displayName: verified.displayName,
         isAnonymous: verified.isAnonymous,
         sessionId: randomBytes(8).toString('hex'),
@@ -182,7 +180,7 @@ export function authenticateSession(req: Request, res: Response, next: NextFunct
       user = {
         uid,
         role,
-        isAnonymous: !isClientUser,
+        isAnonymous: true,
         sessionId: randomBytes(8).toString('hex'),
         permissions: ROLE_PERMISSIONS[role],
       };
