@@ -143,11 +143,32 @@ export async function requestAllPermissions(options?: { promptOverlay?: boolean 
   } catch {}
 }
 
+export async function requestMicrophonePermission(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  if (window.AndroidApp?.requestAllPermissions) {
+    try {
+      window.AndroidApp.requestAllPermissions();
+    } catch {}
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      return true;
+    } catch (err) {
+      console.warn('Microphone permission request failed:', err);
+      return false;
+    }
+  }
+
+  return false;
+}
+
 export function requestOverlayPermission(): void {
   if (window.AndroidApp) {
     window.AndroidApp.requestOverlayPermission();
-  } else {
-    alert('إذن الظهور فوق التطبيقات مخصص لتطبيق أندرويد APK المرفق.');
   }
 }
 

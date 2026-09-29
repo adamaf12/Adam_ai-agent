@@ -16,6 +16,7 @@ import {
   isAndroidNative,
   checkPermissionsStatus,
   requestAllPermissions,
+  requestMicrophonePermission,
   requestOverlayPermission,
   requestIgnoreBatteryOptimization,
   openAppSettings,
@@ -46,6 +47,12 @@ export function AndroidPermissionsBanner({ language, standalone = false }: Andro
     } finally {
       setRequesting(false);
     }
+  };
+
+  const handleRequestMic = async () => {
+    await requestMicrophonePermission();
+    const updated = await checkPermissionsStatus();
+    setStatus(updated);
   };
 
   const isAr = language === 'ar';
@@ -153,6 +160,16 @@ export function AndroidPermissionsBanner({ language, standalone = false }: Andro
 
       {/* Manual Granular Controls */}
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border)]">
+        <button
+          type="button"
+          id="btn-request-mic"
+          onClick={handleRequestMic}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs text-[var(--text)] font-semibold transition-all cursor-pointer"
+        >
+          <Mic size={14} className="text-emerald-400" />
+          <span>{isAr ? 'طلب إذن الميكروفون' : 'Request Microphone'}</span>
+        </button>
+
         <button
           type="button"
           id="btn-request-overlay"

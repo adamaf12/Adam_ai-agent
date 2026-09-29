@@ -1,7 +1,13 @@
 import {
+  Film,
+  Gamepad2,
+  Languages,
+  MessageSquare,
   PanelLeft,
   Plus,
+  Radio,
   Settings2,
+  Sparkles,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback } from 'react';
 import type { ChatConversation, Language, ViewId } from '../core/domain';
@@ -32,13 +38,20 @@ interface AppShellProps {
   onOpenSessionDrawer?: () => void;
 }
 
+const STUDIO_TABS: { id: ViewId; icon: typeof MessageSquare; labelAr: string; labelEn: string }[] = [
+  { id: 'chat', icon: MessageSquare, labelAr: 'المحادثة', labelEn: 'Chat' },
+  { id: 'apps', icon: Gamepad2, labelAr: 'التطبيقات', labelEn: 'Apps' },
+  { id: 'media', icon: Film, labelAr: 'الاستوديو 8K', labelEn: '8K Media' },
+  { id: 'translate', icon: Languages, labelAr: 'المترجم', labelEn: 'Translator' },
+];
+
 export function AppShell({
   activeView,
   language,
   agentName: _agentName,
   onViewChange,
   onNewChat,
-  onToggleLanguage: _onToggleLanguage,
+  onToggleLanguage,
   children,
   sessionTitle: _sessionTitle,
   conversationCount: _conversationCount,
@@ -60,6 +73,13 @@ export function AppShell({
 
   // Listen for custom events
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('live') === '1') {
+        setIsLiveVoiceOpen(true);
+      }
+    } catch {}
+
     const handleOpenLiveVoice = () => setIsLiveVoiceOpen(true);
     const handleOpenSidebar = () => setIsSidebarOpen(true);
     const handleToggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -143,63 +163,118 @@ export function AppShell({
 
   return (
     <div className="app-shell flex flex-col h-screen overflow-hidden">
-      {/* Top Navigation Bar - Ultra Minimalist & Clean */}
-      <header className="navbar glass-panel shrink-0">
-        {/* Left / Start: Sidebar Toggle Button + Brand */}
-        <div className="navbar-start flex items-center gap-2">
-          {/* Modern Sidebar Toggle Button */}
+      {/* Top Organized Shelf Navigation Bar (الرف العلوي المنظم المتجاوب) */}
+      <header className="flex items-center justify-between w-full px-2.5 sm:px-4 py-2 bg-[var(--surface)]/95 backdrop-blur-2xl border-b border-[var(--border)] z-30 shrink-0 select-none shadow-sm gap-2">
+        {/* Start Section: Sidebar Toggle Button + Brand Mark */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-all border border-slate-700/60 cursor-pointer active:scale-95 shrink-0"
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all border border-[var(--border)] cursor-pointer active:scale-95 shrink-0 shadow-sm"
             onClick={() => setIsSidebarOpen((prev) => !prev)}
-            title={isAr ? 'الشريط الجانبي / المحادثات السابقة (Alt+B)' : 'Sidebar / Chat History (Alt+B)'}
+            title={isAr ? 'المحادثات السابقة والذاكرة (Alt+B)' : 'Chat History & Memory (Alt+B)'}
             aria-label="Toggle Sidebar"
           >
             <PanelLeft size={16} className={isAr ? 'rotate-180' : ''} />
           </button>
 
-          {/* Brand Logo */}
           <button
             type="button"
-            className="navbar-brand flex items-center"
+            className="flex items-center gap-2 cursor-pointer group"
             onClick={() => onViewChange('chat')}
             title="ADEM AI"
             aria-label="ADEM AI Home"
           >
             <BrandMark compact />
+            <div className="hidden sm:flex flex-col text-start leading-tight">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-xs tracking-wider text-[var(--text)] font-mono">ADEM</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              </div>
+              <span className="text-[9px] text-[var(--muted)] font-medium">
+                {isAr ? 'المنظومة التنفيذية' : 'Executive OS'}
+              </span>
+            </div>
           </button>
         </div>
 
-        {/* Center: Flexible Spacer */}
-        <div className="navbar-center-wrapper flex-1" />
+        {/* Center Section: Organized Studio Tabs Shelf (الرف الأوسط لتبديل الأدوات والاستوديوهات) */}
+        <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-1 rounded-2xl bg-[var(--surface-2)]/60 border border-[var(--border)]/70 max-w-full">
+          {STUDIO_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeView === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onViewChange(tab.id)}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-[var(--accent)] text-slate-950 shadow-md shadow-[var(--accent-glow)] scale-[1.02]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+                title={isAr ? tab.labelAr : tab.labelEn}
+              >
+                <Icon size={14} className={isActive ? 'text-slate-950' : 'text-[var(--muted)]'} />
+                <span className={isActive ? 'inline' : 'hidden md:inline'}>
+                  {isAr ? tab.labelAr : tab.labelEn}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
 
-        {/* Right / End: New Chat + Settings */}
-        <div className="navbar-end flex items-center gap-2">
+        {/* End Section: Live Voice + New Chat + Language + Settings */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Live Voice Call Trigger */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
+            onClick={() => setIsLiveVoiceOpen(true)}
+            title={isAr ? 'مكالمة صوتية تفاعلية حية' : 'Interactive Live Voice Call'}
+            aria-label="Live Voice"
+          >
+            <Radio size={14} className="text-emerald-400 animate-pulse" />
+            <span className="hidden lg:inline">{isAr ? 'صوت مباشر' : 'Live Voice'}</span>
+          </button>
+
           {/* New Chat Button */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 hover:border-cyan-400/60 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[var(--accent-subtle)] hover:bg-[var(--accent)] text-[var(--accent)] hover:text-slate-950 border border-[var(--accent)]/30 hover:border-transparent transition-all cursor-pointer active:scale-95 text-xs font-bold shadow-sm group"
             onClick={handleStartNewChat}
             title={isAr ? 'محادثة جديدة (Alt+N)' : 'New Chat (Alt+N)'}
             aria-label={isAr ? 'محادثة جديدة' : 'New Chat'}
           >
-            <Plus size={15} className="text-cyan-400" />
-            <span>{isAr ? 'محادثة جديدة' : 'New Chat'}</span>
+            <Plus size={14} className="group-hover:rotate-90 transition-transform" />
+            <span className="hidden sm:inline">{isAr ? 'محادثة جديدة' : 'New Chat'}</span>
           </button>
 
+          {/* Language Toggle Button */}
+          {onToggleLanguage && (
+            <button
+              type="button"
+              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text)] transition-all border border-[var(--border)] cursor-pointer active:scale-95 text-xs font-bold font-mono shadow-sm"
+              onClick={onToggleLanguage}
+              title={isAr ? 'Switch to English' : 'التحويل للعربية'}
+              aria-label="Toggle Language"
+            >
+              {isAr ? 'EN' : 'ع'}
+            </button>
+          )}
+
+          {/* Settings Button */}
           <button
             type="button"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer active:scale-95 text-xs font-semibold ${
+            className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-sm ${
               activeView === 'settings'
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20'
-                : 'bg-slate-800/70 hover:bg-slate-700 text-slate-200 border-slate-700/60 hover:border-slate-500'
+                ? 'bg-[var(--accent)] text-slate-950 border-[var(--accent)] shadow-md shadow-[var(--accent-glow)]'
+                : 'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text)] border-[var(--border)]'
             }`}
             onClick={() => onViewChange(activeView === 'settings' ? 'chat' : 'settings')}
             title={activeView === 'settings' ? (isAr ? 'الرجوع للمحادثة' : 'Back to Chat') : (isAr ? 'الإعدادات والخيارات' : 'Settings')}
             aria-label={t.nav.settings}
           >
-            <Settings2 size={15} className={activeView === 'settings' ? 'text-cyan-400' : 'text-slate-300'} />
-            <span>{activeView === 'settings' ? (isAr ? 'المحادثة' : 'Chat') : (isAr ? 'الإعدادات' : 'Settings')}</span>
+            <Settings2 size={16} />
           </button>
         </div>
       </header>
@@ -221,7 +296,7 @@ export function AppShell({
           memoryCount={memoryStats.total}
         />
 
-        <main className="main-content flex-1 overflow-hidden relative">{children}</main>
+        <main className="main-content flex-1 flex flex-col h-full overflow-hidden relative min-h-0">{children}</main>
       </div>
 
       {/* Real-time Voice Stream Modal (gemini-3.8-live) */}

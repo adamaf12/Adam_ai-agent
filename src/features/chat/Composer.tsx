@@ -104,6 +104,7 @@ export function Composer({
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [micPermissionNotice, setMicPermissionNotice] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
@@ -128,6 +129,15 @@ export function Composer({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const t = copy(language);
+
+  // Auto-expand textarea height as user types
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 38), 160);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }, [draft]);
 
   // Listen for external image trigger events
   useEffect(() => {
@@ -282,10 +292,35 @@ export function Composer({
   };
 
   const startAudioRecording = async () => {
+    setMicPermissionNotice(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MEDIA_DEVICES_UNAVAILABLE');
+      }
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
       audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
+      let options: MediaRecorderOptions = {};
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options = { mimeType: 'audio/webm;codecs=opus' };
+        else if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' };
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
+        else if (MediaRecorder.isTypeSupported('audio/aac')) options = { mimeType: 'audio/aac' };
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -311,9 +346,18 @@ export function Composer({
       timerIntervalRef.current = setInterval(() => {
         setRecordSeconds((s) => s + 1);
       }, 1000);
-    } catch (err) {
-      console.warn('Microphone stream error, falling back to browser speech recognition', err);
-      fallbackBrowserSpeech();
+    } catch (err: any) {
+      console.warn('Microphone stream error:', err);
+      const isDenied = err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError';
+      if (isDenied) {
+        setMicPermissionNotice(
+          isAr
+            ? 'المتصفح حظر إذن الميكروفون. اضغط على رمز القفل 🔒 أعلى شريط العنوان ➔ الأذونات ➔ السماح بالميكروفون (Allow).'
+            : 'Microphone permission blocked. Tap lock 🔒 in address bar > Permissions > Allow Microphone.'
+        );
+      } else {
+        fallbackBrowserSpeech();
+      }
     }
   };
 
@@ -741,12 +785,39 @@ export function Composer({
         </div>
       )}
 
+      {/* Microphone Blocked Helper Notice */}
+      {micPermissionNotice && (
+        <div className="mb-2 p-2.5 sm:p-3 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between gap-2.5 text-xs text-amber-200 animate-fadeIn shadow-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <Mic size={15} className="text-amber-400 shrink-0" />
+            <span className="text-[11px] leading-relaxed truncate-2-lines">{micPermissionNotice}</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={startAudioRecording}
+              className="px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] transition cursor-pointer"
+            >
+              {isAr ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMicPermissionNotice(null)}
+              className="p-1 rounded-lg text-amber-300/70 hover:text-amber-200 transition cursor-pointer"
+              aria-label="Dismiss"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Luxury Composer Box */}
-      <div className="composer flex items-end gap-1 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
+      <div className="composer flex items-end gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
         {/* Quick Power Tools Toggle */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             showQuickModes
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -755,13 +826,13 @@ export function Composer({
           aria-label="Toggle prompt tools"
           title={isAr ? 'أدوات مساعدة سريعة' : 'Quick Prompt Tools'}
         >
-          <Sparkles size={16} />
+          <Sparkles size={17} />
         </button>
 
         {/* Attach Image Button */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -772,16 +843,16 @@ export function Composer({
           disabled={processingImages}
         >
           {processingImages ? (
-            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
+            <Loader2 size={17} className="animate-spin text-[var(--accent)]" />
           ) : (
-            <Camera size={16} />
+            <Camera size={17} />
           )}
         </button>
 
         {/* Dedicated Instant Translation Trigger Button (Desktop / Tablet) */}
         <button
           type="button"
-          className={`hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 ${
             showTranslateModal
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-emerald-400 hover:bg-[var(--surface-2)]'
@@ -790,11 +861,11 @@ export function Composer({
           aria-label={isAr ? 'ترجمة فورية للنصوص' : 'Universal Translation'}
           title={isAr ? 'ترجمة النصوص إلى أي لغة' : 'Translate text to any language'}
         >
-          <Languages size={16} />
+          <Languages size={17} />
         </button>
 
         {/* Flexible Text Input Wrapper */}
-        <div className="flex-1 min-w-0 w-full flex items-center">
+        <div className="flex-1 min-w-0 w-full flex items-center py-0.5">
           <textarea
             ref={textareaRef}
             dir={isAr ? 'rtl' : 'ltr'}
@@ -822,7 +893,7 @@ export function Composer({
             }
             rows={1}
             disabled={busy}
-            className="w-full bg-transparent border-0 outline-none text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] placeholder:truncate placeholder:whitespace-nowrap resize-none py-1.5 sm:py-2 px-1 min-h-[28px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
+            className="w-full bg-transparent border-0 outline-none text-[14px] sm:text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1 sm:py-1.5 px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
           />
         </div>
 
@@ -838,23 +909,23 @@ export function Composer({
         {/* Audio File Upload for gemini-3.5-transcribe (Desktop / Tablet) */}
         <button
           type="button"
-          className="hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
+          className="hidden md:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
           onClick={() => audioFileInputRef.current?.click()}
           aria-label={isAr ? 'تفريغ ملف صوتي (gemini-3.5-transcribe)' : 'Transcribe Audio File (gemini-3.5-transcribe)'}
           title={isAr ? 'رفع وتفريغ ملف صوتي بالذكاء الاصطناعي' : 'Upload & Transcribe Audio'}
           disabled={isTranscribing}
         >
           {isTranscribing ? (
-            <Loader2 size={16} className="animate-spin text-cyan-400" />
+            <Loader2 size={17} className="animate-spin text-cyan-400" />
           ) : (
-            <FileAudio size={16} />
+            <FileAudio size={17} />
           )}
         </button>
 
         {/* Voice Input Microphone (gemini-3.5-transcribe) */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
             isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
@@ -874,16 +945,16 @@ export function Composer({
           }
         >
           {isRecordingAudio ? (
-            <MicOff size={16} className="text-rose-400" />
+            <MicOff size={17} className="text-rose-400" />
           ) : (
-            <Mic size={16} />
+            <Mic size={17} />
           )}
         </button>
 
         {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg ${
             busy
               ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
               : draft.trim() || images.length > 0
@@ -894,7 +965,7 @@ export function Composer({
           aria-label={busy ? t.stop : t.send}
           disabled={!busy && !draft.trim() && images.length === 0}
         >
-          {busy ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
+          {busy ? <Square size={14} fill="currentColor" /> : <Send size={16} />}
         </button>
       </div>
 

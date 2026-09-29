@@ -10,9 +10,23 @@ import { secretsManager, redactSecrets } from '../security/secrets';
  * Output: 24kHz PCM Little-Endian Audio
  */
 export function setupLiveApiWebSocket(server: http.Server) {
-  const wss = new WebSocketServer({ server, path: '/live' });
+  const wss = new WebSocketServer({ noServer: true });
 
-  wss.on('connection', async (clientWs: WebSocket) => {
+  server.on('upgrade', (request, socket, head) => {
+    try {
+      const url = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+      if (url.pathname === '/live') {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      }
+    } catch (err) {
+      console.warn('[Live WebSocket Upgrade Error]:', err);
+      socket.destroy();
+    }
+  });
+
+  wss.on('connection', async (clientWs: WebSocket, request: http.IncomingMessage) => {
     const apiKey = secretsManager.getGeminiApiKey();
     if (!apiKey) {
       if (clientWs.readyState === WebSocket.OPEN) {
@@ -20,7 +34,7 @@ export function setupLiveApiWebSocket(server: http.Server) {
           JSON.stringify({
             type: 'error',
             code: 'API_KEY_REQUIRED',
-            message: 'Gemini API key is required for Live Voice conversation.',
+            message: 'مفتاح Gemini API مطلوب لتشغيل المحادثة الصوتية الحية (Gemini Live).',
           })
         );
         clientWs.close(1008, 'API Key Required');
@@ -28,17 +42,22 @@ export function setupLiveApiWebSocket(server: http.Server) {
       return;
     }
 
+    let session: any = null;
+
     try {
+      const url = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+      const requestedVoice = url.searchParams.get('voice') || 'Zephyr';
+
       const ai = new GoogleGenAI({ apiKey });
-      const session = await ai.live.connect({
+      session = await ai.live.connect({
         model: 'gemini-3.8-live',
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: requestedVoice } },
           },
           systemInstruction:
-            'You are ADEM (آدم), an advanced, high-speed executive AI assistant. Be direct, natural, conversational, and precise. Respond in the user\'s language (Arabic, English, French, etc.).',
+            'You are ADEM (آدم), an advanced, high-speed executive AI assistant. Be direct, natural, conversational, and energetic. Respond smoothly in the language spoken by the user (Arabic, English, French, etc.). Keep responses concise and audible for natural live conversation.',
         },
         callbacks: {
           onmessage: (message: LiveServerMessage) => {
@@ -108,6 +127,8 @@ export function setupLiveApiWebSocket(server: http.Server) {
             return;
           }
 
+          if (!session) return;
+
           // 1. Audio stream (16kHz PCM)
           if (payload.audio && typeof payload.audio === 'string') {
             session.sendRealtimeInput({
@@ -141,14 +162,14 @@ export function setupLiveApiWebSocket(server: http.Server) {
 
       clientWs.on('close', () => {
         try {
-          session.close();
+          session?.close();
         } catch {}
       });
 
       clientWs.on('error', (err) => {
         console.warn('[Live API WebSocket client error]:', redactSecrets(err.message || String(err)));
         try {
-          session.close();
+          session?.close();
         } catch {}
       });
     } catch (err: any) {

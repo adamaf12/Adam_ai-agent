@@ -207,7 +207,7 @@ export default function App() {
             duration: 0.2,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="view-transition-wrapper"
+          className="view-transition-wrapper h-full w-full flex flex-col flex-1 min-h-0 overflow-hidden"
         >
           {activeView === 'chat' && (
             <Chat

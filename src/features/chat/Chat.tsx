@@ -541,8 +541,8 @@ export function Chat({
   };
 
   return (
-    <section className={busy ? "chat-page chat-page--busy" : "chat-page"}>
-      <div className="chat-scroll">
+    <section className={`chat-page flex flex-col h-full w-full overflow-hidden relative justify-between ${busy ? 'chat-page--busy' : ''}`}>
+      <div className="chat-scroll flex-1 overflow-y-auto w-full px-3 sm:px-6 py-3 sm:py-4 flex flex-col min-h-0">
         {proactiveAlerts.length > 0 && (
           <div className="proactive-banner" role="status" aria-live="polite">
             <div className="proactive-banner-content">
@@ -562,16 +562,16 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 text-center flex flex-col items-center gap-6 animate-fadeIn select-none">
+          <div className="flex-1 my-auto max-w-2xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col items-center justify-center gap-5 sm:gap-6 animate-fadeIn select-none">
             {/* Ambient Minimalist Brand Mark */}
             <div className="relative group">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
-                <Sparkles size={28} className="drop-shadow-[0_0_10px_var(--accent)]" />
+              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
+                <Sparkles size={26} className="drop-shadow-[0_0_10px_var(--accent)]" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <h1 className="text-2xl sm:text-3xl font-black text-[var(--text)] tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-black text-[var(--text)] tracking-tight">
                 {language === 'ar' ? 'مرحباً، كيف يمكنني مساعدتك اليوم؟' : 'Hello, how can I help you today?'}
               </h1>
               <p className="text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto leading-relaxed">
@@ -582,7 +582,7 @@ export function Chat({
             </div>
 
             {/* 4 Clean Minimal Prompt Pills */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg text-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 w-full max-w-lg text-start">
               {[
                 {
                   icon: Code,
@@ -619,10 +619,10 @@ export function Chat({
                     key={idx}
                     type="button"
                     onClick={() => send(language === 'ar' ? card.promptAr : card.promptEn)}
-                    className="group p-3 sm:p-3.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-3 text-start cursor-pointer shadow-sm active:scale-[0.99]"
+                    className="group p-2.5 sm:p-3.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2.5 sm:gap-3 text-start cursor-pointer shadow-sm active:scale-[0.99]"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors">
-                      <Icon size={16} />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors">
+                      <Icon size={15} />
                     </div>
                     <span className="text-xs font-semibold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate flex-1">
                       {language === 'ar' ? card.titleAr : card.titleEn}
@@ -715,7 +715,10 @@ export function Chat({
         <div ref={messagesEndRef} className="h-2 w-full flex-none pointer-events-none" />
       </div>
 
-      <Composer language={language} busy={busy} onSend={send} onStop={stop} />
+      {/* Pinned Bottom Input Shelf (رف الكتابة السفلي المثبت في قاع الشاشة) */}
+      <footer className="w-full max-w-4xl mx-auto px-3 sm:px-6 pb-2.5 sm:pb-4 pt-1 shrink-0 mt-auto z-20">
+        <Composer language={language} busy={busy} onSend={send} onStop={stop} />
+      </footer>
 
       {/* Session Control Side Drawer (مستخرج عبر الزر الجانبي) */}
       <ChatSessionDrawer
