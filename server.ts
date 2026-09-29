@@ -117,6 +117,21 @@ app.get('/api/ping', (_req, res) => {
   res.json({ ok: true, pong: Date.now() });
 });
 
+app.get('/api/adam-character-image', async (_req, res) => {
+  const source = 'https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg';
+  try {
+    const upstream = await fetch(source, { headers: { accept: 'image/jpeg,image/*;q=0.9,*/*;q=0.1' } });
+    if (!upstream.ok) return res.status(502).json({ ok: false, error: 'CHARACTER_IMAGE_UNAVAILABLE' });
+    const body = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.send(body);
+  } catch {
+    return res.status(502).json({ ok: false, error: 'CHARACTER_IMAGE_PROXY_FAILED' });
+  }
+});
+
 const overloadedModels = new Map<string, number>();
 
 function getHealthSortedModels(preferredModel: string): string[] {
