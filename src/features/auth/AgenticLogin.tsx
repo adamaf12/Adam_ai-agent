@@ -68,6 +68,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
             referrerPolicy="no-referrer"
           />
           <div className="agentic-login__character-glass" />
+          </motion.div>
         </motion.div>
 
         <motion.div
