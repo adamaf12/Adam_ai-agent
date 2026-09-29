@@ -3289,7 +3289,7 @@ function securityHeadersMiddleware(req, res, next) {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://image.pollinations.ai https://pollinations.ai https://lh3.googleusercontent.com https://*.googleusercontent.com https://picsum.photos https://images.unsplash.com",
+      "img-src 'self' data: blob: https://image.pollinations.ai https://pollinations.ai https://lh3.googleusercontent.com https://*.googleusercontent.com https://picsum.photos https://images.unsplash.com https://i.pinimg.com",
       "media-src 'self' data: blob: https://pollinations.ai https://image.pollinations.ai",
       "connect-src 'self' http: https: ws: wss: capacitor: ionic: data: blob:",
       "frame-src 'self' https://accounts.google.com https://apis.google.com",
