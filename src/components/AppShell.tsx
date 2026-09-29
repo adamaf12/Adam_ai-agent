@@ -12,6 +12,7 @@ import {
 import { type ReactNode, useEffect, useState, useCallback } from 'react';
 import type { ChatConversation, Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
+import { GoogleAuthButton } from './GoogleAuthButton';
 import { Sidebar } from './Sidebar';
 import { copy } from '../core/i18n';
 import { LiveVoiceModal } from '../features/live/LiveVoiceModal';
@@ -36,6 +37,7 @@ interface AppShellProps {
   sessionTitle?: string;
   conversationCount?: number;
   onOpenSessionDrawer?: () => void;
+  onOpenAuth?: () => void;
 }
 
 const STUDIO_TABS: { id: ViewId; icon: typeof MessageSquare; labelAr: string; labelEn: string }[] = [
@@ -56,6 +58,7 @@ export function AppShell({
   sessionTitle: _sessionTitle,
   conversationCount: _conversationCount,
   onOpenSessionDrawer: _onOpenSessionDrawer,
+  onOpenAuth,
 }: AppShellProps) {
   const t = copy(language);
   const isAr = language === 'ar';
@@ -261,6 +264,9 @@ export function AppShell({
               {isAr ? 'EN' : 'ع'}
             </button>
           )}
+
+          {/* Profile / Authentication */}
+          <GoogleAuthButton language={language} compact onUnauthenticatedClick={onOpenAuth} />
 
           {/* Settings Button */}
           <button
