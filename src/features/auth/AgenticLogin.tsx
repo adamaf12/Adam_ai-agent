@@ -8,6 +8,9 @@ interface AgenticLoginProps {
   language: Language;
   loading?: boolean;
   onOpenAuth?: () => void;
+  open?: boolean;
+  onClose?: () => void;
+  onOpenFallbackAuth?: () => void;
 }
 
 const features = [
@@ -16,9 +19,10 @@ const features = [
   { icon: Zap, ar: 'ينفّذ ويتحقق ويتعافى من الأخطاء ضمن الحدود', en: 'Executes, verifies and recovers within safe boundaries' },
 ];
 
-export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticLoginProps) {
+export function AgenticLogin({ language, loading = false, onOpenAuth, open = true, onClose, onOpenFallbackAuth }: AgenticLoginProps) {
   const { signIn, signInAsGuest, error, clearError } = useAuth();
   const isAr = language === 'ar';
+  const fallbackAuth = onOpenFallbackAuth || onOpenAuth;
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
   const characterX = useSpring(useTransform(cursorX, [-1, 1], [-30, 30]), { stiffness: 120, damping: 18, mass: 0.8 });
@@ -183,8 +187,22 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
     await signIn();
   };
 
+  if (!open) return null;
+
   return (
     <main className="agentic-login" dir={isAr ? 'rtl' : 'ltr'} onPointerMove={handlePointerMove} onPointerLeave={resetCharacter}>
+      {onClose && (
+        <button
+          type="button"
+          className="agentic-login__close"
+          onClick={onClose}
+          aria-label={isAr ? 'إغلاق' : 'Close'}
+          title={isAr ? 'إغلاق' : 'Close'}
+        >
+          ×
+        </button>
+      )}
+      <div className="agentic-login__backdrop" aria-hidden="true" />
       <div className="agentic-login__noise" aria-hidden="true" />
       <div className="agentic-login__aurora agentic-login__aurora--one" />
       <div className="agentic-login__aurora agentic-login__aurora--two" />
@@ -210,8 +228,6 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
               scale: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
             }}
           >
-            <motion.div className="agentic-login__character-light" style={{ left: characterGlowX, top: characterGlowY }} />
-            <div className="agentic-login__character-shadow" />
             {characterSrc && (
               <img
                 className="agentic-login__character-image"
@@ -300,8 +316,8 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
           <span>{isAr ? 'جلسة خاصة وعزل لبيانات المستخدم' : 'Private session with isolated user data'}</span>
         </div>
 
-        {onOpenAuth && (
-          <button className="agentic-login__fallback" onClick={onOpenAuth}>
+        {fallbackAuth && (
+          <button className="agentic-login__fallback" onClick={fallbackAuth}>
             {isAr ? 'خيارات تسجيل الدخول الأخرى' : 'Other sign-in options'}
           </button>
         )}
