@@ -53,21 +53,33 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
       <div className="agentic-login__scene" aria-hidden="true">
         <motion.div
           className="agentic-login__character"
-          style={{ x: characterX, y: characterY, rotateX: characterRotateX, rotateY: characterRotateY }}
-          animate={{ y: [0, -7, 0], scale: [1, 1.018, 1] }}
-          transition={{ y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' }, scale: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' } }}
+          style={{
+            x: characterX,
+            y: characterY,
+            rotateX: characterRotateX,
+            rotateY: characterRotateY,
+            transformPerspective: 1000,
+          }}
         >
-          <motion.div className="agentic-login__character-light" style={{ left: characterGlowX, top: characterGlowY }} />
-          <div className="agentic-login__character-shadow" />
-          <img
-            className="agentic-login__character-image"
-            src="https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg"
-            alt=""
-            draggable={false}
-            loading="eager"
-            referrerPolicy="no-referrer"
-          />
-          <div className="agentic-login__character-glass" />
+          <motion.div
+            className="agentic-login__character-idle"
+            animate={{ y: [0, -7, 0], scale: [1, 1.018, 1] }}
+            transition={{
+              y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
+              scale: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
+            }}
+          >
+            <motion.div className="agentic-login__character-light" style={{ left: characterGlowX, top: characterGlowY }} />
+            <div className="agentic-login__character-shadow" />
+            <img
+              className="agentic-login__character-image"
+              src="https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg"
+              alt=""
+              draggable={false}
+              loading="eager"
+              referrerPolicy="no-referrer"
+            />
+            <div className="agentic-login__character-glass" />
           </motion.div>
         </motion.div>
 
