@@ -2957,3 +2957,34 @@ input, textarea {
 @media(max-width:600px){
   .agentic-login__character{top:2%;width:min(240px,64vw);opacity:.28}
 }
+
+/* Character 3D stage: perspective belongs to the parent so rotateX/rotateY
+   actually produce depth instead of a flat 2D tilt. */
+.agentic-login__scene{
+  perspective:1100px;
+  perspective-origin:50% 48%;
+}
+.agentic-login__character{
+  transform-style:preserve-3d;
+  transform-origin:center center;
+  backface-visibility:hidden;
+}
+.agentic-login__character-idle{
+  position:absolute;
+  inset:0;
+  transform-style:preserve-3d;
+}
+.agentic-login__character-image{
+  border-radius:0;
+  object-fit:contain;
+  mix-blend-mode:multiply;
+  background:transparent;
+  transform:translateZ(24px);
+}
+.agentic-login__character-glass{
+  border-radius:0;
+  transform:translateZ(42px);
+  background:linear-gradient(120deg,rgba(255,255,255,.12),transparent 28%,transparent 72%,rgba(86,255,211,.08));
+  border:0;
+  box-shadow:0 0 60px rgba(61,226,177,.09);
+}
