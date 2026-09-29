@@ -2924,67 +2924,117 @@ input, textarea {
   }
 }
 
-.agentic-login__character{
-  position:absolute;left:25%;top:50%;width:min(430px,34vw);aspect-ratio:1;
-  transform-style:preserve-3d;perspective:900px;z-index:3;pointer-events:none;
-  will-change:transform;filter:drop-shadow(0 34px 42px rgba(0,0,0,.48));
-}
-.agentic-login__character-image{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
-  border-radius:38px;user-select:none;-webkit-user-drag:none;
-  transform:translateZ(18px) scale(1.02);mix-blend-mode:multiply;
-  filter:saturate(1.08) contrast(1.04);
-}
-.agentic-login__character-light{
-  position:absolute;width:42%;aspect-ratio:1;transform:translate(-50%,-50%) translateZ(55px);
-  border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.30),rgba(86,255,211,.10) 32%,transparent 72%);
-  filter:blur(10px);mix-blend-mode:screen;z-index:4;pointer-events:none;
-}
-.agentic-login__character-shadow{
-  position:absolute;left:50%;bottom:2%;width:58%;height:10%;transform:translateX(-50%) translateZ(-25px);
-  border-radius:50%;background:rgba(0,0,0,.52);filter:blur(22px);z-index:-1;
-}
-.agentic-login__character-glass{
-  position:absolute;inset:0;border-radius:38px;transform:translateZ(38px);
-  background:linear-gradient(125deg,rgba(255,255,255,.10),transparent 25%,transparent 72%,rgba(72,255,207,.06));
-  border:1px solid rgba(255,255,255,.11);box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 0 50px rgba(61,226,177,.08);
-  z-index:5;
-}
-@media(max-width:899px){
-  .agentic-login__character{left:50%;top:6%;width:min(285px,72vw);transform:translateX(-50%);opacity:.40}
-  .agentic-login__card{z-index:6}
-}
-@media(max-width:600px){
-  .agentic-login__character{top:2%;width:min(240px,64vw);opacity:.28}
-}
-
-/* Character 3D stage: perspective belongs to the parent so rotateX/rotateY
-   actually produce depth instead of a flat 2D tilt. */
+/* ==========================================================================
+   ADAM LOGIN CHARACTER — transparent 3D cursor-following hero
+   ========================================================================== */
 .agentic-login__scene{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  display:block;
+  overflow:hidden;
   perspective:1100px;
   perspective-origin:50% 48%;
+  transform-style:preserve-3d;
 }
 .agentic-login__character{
+  position:absolute;
+  left:23%;
+  top:50%;
+  width:min(370px,29vw);
+  aspect-ratio:2 / 3;
+  transform:translate(-50%,-50%);
   transform-style:preserve-3d;
   transform-origin:center center;
   backface-visibility:hidden;
+  z-index:3;
+  pointer-events:none;
+  will-change:transform;
+  filter:drop-shadow(0 38px 36px rgba(0,0,0,.48)) drop-shadow(0 0 28px rgba(65,235,186,.08));
 }
 .agentic-login__character-idle{
   position:absolute;
   inset:0;
   transform-style:preserve-3d;
+  will-change:transform;
 }
 .agentic-login__character-image{
-  border-radius:0;
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
   object-fit:contain;
-  mix-blend-mode:multiply;
-  background:transparent;
-  transform:translateZ(24px);
+  object-position:center;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform:translateZ(30px);
+  filter:saturate(1.06) contrast(1.035) drop-shadow(0 22px 28px rgba(0,0,0,.24));
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+}
+.agentic-login__character-light{
+  position:absolute;
+  width:45%;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%) translateZ(72px);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.22),rgba(91,255,214,.10) 34%,transparent 72%);
+  filter:blur(13px);
+  mix-blend-mode:screen;
+  z-index:4;
+  pointer-events:none;
+}
+.agentic-login__character-shadow{
+  position:absolute;
+  left:50%;
+  bottom:1.5%;
+  width:48%;
+  height:5%;
+  transform:translateX(-50%) translateZ(-35px);
+  border-radius:50%;
+  background:rgba(0,0,0,.48);
+  filter:blur(20px);
+  z-index:-1;
 }
 .agentic-login__character-glass{
-  border-radius:0;
-  transform:translateZ(42px);
-  background:linear-gradient(120deg,rgba(255,255,255,.12),transparent 28%,transparent 72%,rgba(86,255,211,.08));
+  position:absolute;
+  inset:4% 5%;
+  transform:translateZ(62px);
+  background:linear-gradient(120deg,rgba(255,255,255,.10),transparent 27%,transparent 70%,rgba(86,255,211,.07));
   border:0;
-  box-shadow:0 0 60px rgba(61,226,177,.09);
+  box-shadow:0 0 70px rgba(61,226,177,.08),0 1px 0 rgba(255,255,255,.10) inset;
+  z-index:5;
+  pointer-events:none;
+  border-radius:34% 34% 28% 28%;
+}
+@media(min-width:900px){
+  .agentic-login__scene{
+    width:57%;
+    inset-inline-start:0;
+    inset-inline-end:auto;
+  }
+  .agentic-login__character{
+    left:49%;
+    width:min(400px,31vw);
+  }
+}
+@media(max-width:899px){
+  .agentic-login__scene{opacity:.9}
+  .agentic-login__character{
+    left:50%;
+    top:18%;
+    width:min(260px,58vw);
+  }
+  .agentic-login__card{z-index:6}
+}
+@media(max-width:600px){
+  .agentic-login__character{
+    top:12%;
+    width:min(220px,54vw);
+    opacity:.42;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .agentic-login__character-idle{animation:none!important}
 }
