@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { ArrowRight, Bot, BrainCircuit, CheckCircle2, LockKeyhole, Network, Sparkles, Zap } from 'lucide-react';
 import { useAuth } from '../../core/auth/AuthContext';
 import type { Language } from '../../core/domain';
@@ -18,6 +18,25 @@ const features = [
 export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticLoginProps) {
   const { signIn, signInAsGuest, error, clearError } = useAuth();
   const isAr = language === 'ar';
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+  const characterX = useSpring(useTransform(cursorX, [-1, 1], [-30, 30]), { stiffness: 120, damping: 18, mass: 0.8 });
+  const characterY = useSpring(useTransform(cursorY, [-1, 1], [-18, 18]), { stiffness: 120, damping: 18, mass: 0.8 });
+  const characterRotateY = useSpring(useTransform(cursorX, [-1, 1], [-18, 18]), { stiffness: 110, damping: 16, mass: 0.9 });
+  const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [14, -14]), { stiffness: 110, damping: 16, mass: 0.9 });
+  const characterGlowX = useTransform(cursorX, [-1, 1], ['25%', '75%']);
+  const characterGlowY = useTransform(cursorY, [-1, 1], ['25%', '75%']);
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType === 'touch') return;
+    cursorX.set(Math.max(-1, Math.min(1, event.clientX / Math.max(window.innerWidth, 1) * 2 - 1)));
+    cursorY.set(Math.max(-1, Math.min(1, event.clientY / Math.max(window.innerHeight, 1) * 2 - 1)));
+  };
+
+  const resetCharacter = () => {
+    cursorX.set(0);
+    cursorY.set(0);
+  };
 
   const handleGoogle = async () => {
     clearError();
@@ -25,13 +44,32 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
   };
 
   return (
-    <main className="agentic-login" dir={isAr ? 'rtl' : 'ltr'}>
+    <main className="agentic-login" dir={isAr ? 'rtl' : 'ltr'} onPointerMove={handlePointerMove} onPointerLeave={resetCharacter}>
       <div className="agentic-login__noise" aria-hidden="true" />
       <div className="agentic-login__aurora agentic-login__aurora--one" />
       <div className="agentic-login__aurora agentic-login__aurora--two" />
       <div className="agentic-login__grid" />
 
       <div className="agentic-login__scene" aria-hidden="true">
+        <motion.div
+          className="agentic-login__character"
+          style={{ x: characterX, y: characterY, rotateX: characterRotateX, rotateY: characterRotateY }}
+          animate={{ y: [0, -7, 0], scale: [1, 1.018, 1] }}
+          transition={{ y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' }, scale: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' } }}
+        >
+          <motion.div className="agentic-login__character-light" style={{ left: characterGlowX, top: characterGlowY }} />
+          <div className="agentic-login__character-shadow" />
+          <img
+            className="agentic-login__character-image"
+            src="https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg"
+            alt=""
+            draggable={false}
+            loading="eager"
+            referrerPolicy="no-referrer"
+          />
+          <div className="agentic-login__character-glass" />
+        </motion.div>
+
         <motion.div
           className="agentic-login__planet"
           animate={{ rotateY: 360, rotateZ: [0, 2, -2, 0], scale: [1, 1.025, 1] }}
