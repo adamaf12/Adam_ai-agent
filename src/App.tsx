@@ -16,7 +16,6 @@ import { Onboarding } from './features/onboarding/Onboarding';
 import { InAppBrowserModal } from './components/InAppBrowserModal';
 import { AuthModal } from './components/AuthModal';
 import { AgenticLogin } from './features/auth/AgenticLogin';
-import { useAuth } from './core/auth/AuthContext';
 import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileWebHandler';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
@@ -27,7 +26,6 @@ const DEFAULT_PREFERENCES: AppPreferences = {
 };
 
 export default function App() {
-  const { user, loading, setAuthModalOpen } = useAuth();
   const [preferences, setPreferences] = useState<AppPreferences>(() => {
     const loaded = loadPreferences(DEFAULT_PREFERENCES);
     if (loaded.theme === 'system' || loaded.theme === 'dark') {
@@ -41,6 +39,7 @@ export default function App() {
   const [chatSessionKey, setChatSessionKey] = useState(1);
   const [selectedSandboxAppId, setSelectedSandboxAppId] = useState<string | undefined>(undefined);
   const [sessionMeta, setSessionMeta] = useState<{ title?: string; count?: number }>({});
+  const [loginExperienceOpen, setLoginExperienceOpen] = useState(false);
 
   const handleOpenSessionDrawer = useCallback(() => {
     window.dispatchEvent(new CustomEvent('adam:open-session-drawer'));
@@ -166,19 +165,6 @@ export default function App() {
     };
   }, [activeView]);
 
-  if (loading && !user) {
-    return <AgenticLogin language={preferences.language} loading />;
-  }
-
-  if (!user) {
-    return (
-      <AgenticLogin
-        language={preferences.language}
-        onOpenAuth={() => setAuthModalOpen(true)}
-      />
-    );
-  }
-
   if (!preferences.onboardingComplete) {
     return <Onboarding initial={preferences} onComplete={handleOnboardingComplete} />;
   }
@@ -196,6 +182,7 @@ export default function App() {
       sessionTitle={sessionMeta.title}
       conversationCount={sessionMeta.count}
       onOpenSessionDrawer={handleOpenSessionDrawer}
+      onOpenAuth={() => setLoginExperienceOpen(true)}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -286,6 +273,12 @@ export default function App() {
       <NetworkSentinel language={preferences.language} />
       <InAppBrowserModal language={preferences.language} />
       <AuthModal language={preferences.language} />
+      <AgenticLogin
+        language={preferences.language}
+        open={loginExperienceOpen}
+        onClose={() => setLoginExperienceOpen(false)}
+        onOpenFallbackAuth={() => window.dispatchEvent(new CustomEvent('adam:open-auth-modal'))}
+      />
     </AppShell>
   );
 }
