@@ -653,3 +653,127 @@ body {
 @media(prefers-reduced-motion:reduce){
   .agentic-login__character-idle{animation:none!important}
 }
+
+
+/* ==========================================================================
+   ADAM PROFILE AUTH EXPERIENCE — on-demand 3D login
+   Uses the uploaded character as the visual anchor and its orange/cream/black
+   palette as the interaction language. The experience is hidden until the
+   profile control opens it.
+   ========================================================================== */
+.agentic-login {
+  z-index: 10000;
+  background:
+    radial-gradient(circle at 24% 22%, rgba(255, 151, 42, .18), transparent 28%),
+    radial-gradient(circle at 78% 72%, rgba(91, 145, 72, .12), transparent 30%),
+    radial-gradient(circle at 52% 50%, rgba(255, 196, 105, .07), transparent 36%),
+    linear-gradient(135deg, #100a06 0%, #19130e 44%, #070908 100%);
+}
+.agentic-login__backdrop {
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(115deg, rgba(255,145,36,.08), transparent 38%),
+    radial-gradient(circle at 32% 52%, rgba(255,176,84,.08), transparent 30%),
+    radial-gradient(circle at 72% 40%, rgba(0,0,0,.28), transparent 40%);
+}
+.agentic-login__noise { z-index:0; opacity:.035; }
+.agentic-login__grid {
+  z-index:0;
+  background-image:
+    linear-gradient(rgba(255,177,83,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,177,83,.035) 1px, transparent 1px);
+}
+.agentic-login__aurora--one { background:#ff8a1e; opacity:.13; }
+.agentic-login__aurora--two { background:#7b8b42; opacity:.08; }
+.agentic-login__card {
+  z-index:10;
+  border-color:rgba(255,184,102,.18);
+  background:linear-gradient(145deg, rgba(29,21,15,.86), rgba(10,12,10,.82));
+  box-shadow:0 34px 110px rgba(0,0,0,.58), inset 0 1px rgba(255,224,187,.08);
+}
+.agentic-login__logo {
+  background:linear-gradient(145deg,#ff9a2f,#a94f10);
+  border-color:rgba(255,211,153,.34);
+  color:#fff4e6;
+}
+.agentic-login__status span { background:#ffad4d; box-shadow:0 0 10px #ffad4d; }
+.agentic-login__eyebrow { color:#ffb45f; }
+.agentic-login__features div { background:rgba(255,177,83,.028); border-color:rgba(255,220,180,.06); }
+.agentic-login__features div svg:first-child,
+.agentic-login__security svg { color:#ffb35b; }
+.agentic-login__google { border-color:rgba(255,255,255,.14); }
+.agentic-login__guest { border-color:rgba(255,178,88,.22); background:rgba(126,91,46,.12); color:#ffd09a; }
+.agentic-login__guest:hover { background:rgba(126,91,46,.19); border-color:rgba(255,190,112,.38); }
+.agentic-login__character {
+  filter:drop-shadow(0 34px 30px rgba(0,0,0,.52)) drop-shadow(0 0 34px rgba(255,145,43,.11));
+}
+.agentic-login__character-image {
+  filter:saturate(1.02) contrast(1.04) drop-shadow(0 24px 28px rgba(0,0,0,.30));
+}
+.agentic-login__close {
+  position:absolute;
+  top:20px;
+  inset-inline-end:22px;
+  z-index:30;
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  border:1px solid rgba(255,221,190,.12);
+  background:rgba(12,12,10,.52);
+  color:#f4e6d5;
+  font-size:26px;
+  line-height:1;
+  cursor:pointer;
+  backdrop-filter:blur(14px);
+  transition:transform .2s ease, background .2s ease, border-color .2s ease;
+}
+.agentic-login__close:hover {
+  transform:translateY(-1px) scale(1.03);
+  background:rgba(255,155,56,.14);
+  border-color:rgba(255,190,112,.3);
+}
+@media(min-width:900px){
+  .agentic-login__scene{ width:57%; }
+  .agentic-login__character{ left:49%; width:min(430px,32vw); }
+  .agentic-login__card{ width:min(500px,42vw); margin-inline-end:5vw; }
+}
+@media(max-width:899px){
+  .agentic-login{ padding:24px 14px; }
+  .agentic-login__scene{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    margin:0;
+  }
+  .agentic-login__character{
+    left:78%;
+    top:55%;
+    width:min(290px,54vw);
+    opacity:.94;
+  }
+  .agentic-login__card{
+    width:min(100%, 460px);
+    margin:auto;
+    padding:25px 20px;
+  }
+}
+@media(max-width:600px){
+  .agentic-login__character{
+    left:82%;
+    top:62%;
+    width:min(250px,62vw);
+    opacity:.82;
+  }
+  .agentic-login__card{ padding:22px 17px; border-radius:26px; }
+  .agentic-login__headline h1{ font-size:29px; }
+  .agentic-login__close{ top:12px; inset-inline-end:12px; width:36px; height:36px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .agentic-login__grid,
+  .agentic-login__aurora,
+  .agentic-login__character-idle { animation:none !important; }
+}
