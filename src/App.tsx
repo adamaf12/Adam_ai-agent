@@ -277,7 +277,7 @@ export default function App() {
         language={preferences.language}
         open={loginExperienceOpen}
         onClose={() => setLoginExperienceOpen(false)}
-        onOpenFallbackAuth={() => window.dispatchEvent(new CustomEvent('adam:open-auth-modal'))}
+        onOpenFallbackAuth={() => { setLoginExperienceOpen(false); window.dispatchEvent(new CustomEvent('adam:open-auth-modal')); }}
       />
     </AppShell>
   );
