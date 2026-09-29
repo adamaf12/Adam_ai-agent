@@ -58,6 +58,12 @@ export function AuthModal({ language }: AuthModalProps) {
 
   // Initialize official Google Identity Services button & One Tap (Web only)
   useEffect(() => {
+    const openFromProfile = () => setAuthModalOpen(true);
+    window.addEventListener('adam:open-auth-modal', openFromProfile);
+    return () => window.removeEventListener('adam:open-auth-modal', openFromProfile);
+  }, [setAuthModalOpen]);
+
+  useEffect(() => {
     if (!authModalOpen || isAndroid) return;
     let isCancelled = false;
 
