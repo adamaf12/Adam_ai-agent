@@ -29,8 +29,6 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
   const characterY = useSpring(useTransform(cursorY, [-1, 1], [-18, 18]), { stiffness: 120, damping: 18, mass: 0.8 });
   const characterRotateY = useSpring(useTransform(cursorX, [-1, 1], [-18, 18]), { stiffness: 110, damping: 16, mass: 0.9 });
   const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [14, -14]), { stiffness: 110, damping: 16, mass: 0.9 });
-  const characterGlowX = useTransform(cursorX, [-1, 1], ['22%', '78%']);
-  const characterGlowY = useTransform(cursorY, [-1, 1], ['18%', '82%']);
   const [characterSrc, setCharacterSrc] = useState('');
 
   useEffect(() => {
