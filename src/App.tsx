@@ -98,92 +98,40 @@ export default function App() {
       'sunset-miami',
       'deep-space',
       'emerald-luxury',
-      'peaky-blinders',
-      'breaking-bad',
-      'interstellar',
-      'batman-gotham',
-      'cyber-samurai',
-      'cherry-blossom',
-      'iceberg-polar',
+      'titanium-dark',
     ];
-
-    const applyThemeClasses = () => {
-      if (preferences.theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        root.classList.toggle('dark', prefersDark);
-        root.setAttribute('data-resolved-theme', prefersDark ? 'dark' : 'light');
-      } else if (darkThemes.includes(preferences.theme)) {
-        root.classList.add('dark');
-        root.setAttribute('data-resolved-theme', preferences.theme);
-      } else {
-        root.classList.remove('dark');
-        root.setAttribute('data-resolved-theme', preferences.theme);
-      }
-    };
-
-    applyThemeClasses();
-
-    if (preferences.theme === 'system') {
-      const media = window.matchMedia('(prefers-color-scheme: dark)');
-      const listener = () => applyThemeClasses();
-      media.addEventListener('change', listener);
-      return () => media.removeEventListener('change', listener);
+    if (darkThemes.includes(preferences.theme)) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
     }
   }, [preferences.theme, preferences.language]);
 
-  const updatePreferences = (partial: Partial<AppPreferences>) => {
+  const updatePreferences = (next: Partial<AppPreferences>) => {
     setPreferences((prev) => {
-      const next = normalizePreferences({ ...prev, ...partial });
-      savePreferences(next);
-      return next;
+      const merged = normalizePreferences({ ...prev, ...next });
+      savePreferences(merged);
+      return merged;
     });
   };
 
-  const handleOnboardingComplete = (updatedPrefs: AppPreferences) => {
-    const next = normalizePreferences({ ...updatedPrefs, onboardingComplete: true });
-    setPreferences(next);
-    savePreferences(next);
+  const handleOnboardingComplete = (next: AppPreferences) => {
+    updatePreferences({ ...next, onboardingComplete: true });
   };
 
   const heroCopy = useMemo(() => {
     return preferences.language === 'ar'
       ? {
-          title: 'أهلاً بك، كيف يمكنني مساعدتك اليوم؟',
-          subtitle: 'اسأل عن أي شيء، أنجز مهامك، أو ابدأ فكرة جديدة.',
+          title: `مرحباً، أنا ${preferences.agentName}`,
+          subtitle: 'وكيلك الذكي الشخصي — يفهم، يخطط، ينفذ الأدوات، ويتحقق من النتيجة بدقة',
         }
       : {
-          title: 'Welcome, how can I help you today?',
-          subtitle: 'Ask anything, organize your day, or spark a new idea.',
+          title: `Hello, I'm ${preferences.agentName}`,
+          subtitle: 'Your autonomous personal agent — plans, executes tools, and verifies results',
         };
-  }, [preferences.language]);
+  }, [preferences.language, preferences.agentName]);
 
   useEffect(() => {
-    const handleAppOpenEvent = (e: CustomEvent<{ view?: ViewId; sandboxAppId?: string; url?: string; title?: string }>) => {
-      const { view, sandboxAppId, url, title } = e.detail || {};
-      if (url) {
-        openSafeExternalUrl(url, { title });
-        return;
-      }
-      if (sandboxAppId) {
-        setSelectedSandboxAppId(sandboxAppId);
-        setActiveView('apps');
-        return;
-      }
-      if (view) {
-        if ((view as string) === 'academic') {
-          setActiveView('chat');
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('adam_open_academic_modal'));
-          }, 100);
-        } else {
-          setActiveView(view);
-        }
-      }
-    };
-
-    window.addEventListener('adam_open_app' as any, handleAppOpenEvent);
-
-    // Setup hardware back guard for APK & Mobile
     const unguard = setupAndroidBackGuard(() => {
       if (activeView !== 'chat') {
         setActiveView('chat');
@@ -192,11 +140,24 @@ export default function App() {
       return false;
     });
 
-    // Auto-prompt Android permissions on launch
-    if (typeof window !== 'undefined' && (window as any).AndroidApp) {
-      try {
-        (window as any).AndroidApp.requestAllPermissions();
-      } catch {}
+    const handleAppOpenEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ appId: string; externalUrl?: string }>;
+      const appId = customEvent.detail?.appId;
+      const externalUrl = customEvent.detail?.externalUrl;
+
+      if (externalUrl) {
+        openSafeExternalUrl(externalUrl);
+        return;
+      }
+
+      if (appId) {
+        setSelectedSandboxAppId(appId);
+        setActiveView('apps');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('adam_open_app' as any, handleAppOpenEvent);
     }
 
     return () => {
@@ -311,7 +272,7 @@ export default function App() {
           {activeView === 'media' && (
             <MediaStudio
               language={preferences.language}
-              onNavigate={setActiveView}
+              onNavigate={(view) => setActiveView(view)}
               onRunPromptInChat={(_prompt) => {
                 setActiveView('chat');
               }}
@@ -320,19 +281,10 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
 
-      {/* QuickLiquid Optical Refraction & Specular Lighting Engine (amarnath3003/quickLiquid) */}
-      <QuickLiquidRefraction />
-
-      {/* Real-time Network Sentinel for APK and Online Accuracy Guarantee */}
-      <NetworkSentinel language={preferences.language} />
-
-      {/* Autonomous Background Security Sentinel (حارس الأمان النشط في الخلفية لحماية المستخدم) */}
       <BackgroundSecuritySentinel />
-
-      {/* Safe In-App Browser for Mobile and APK WebView environments */}
+      <QuickLiquidRefraction />
+      <NetworkSentinel language={preferences.language} />
       <InAppBrowserModal language={preferences.language} />
-
-      {/* Authentication Dialog with Instant Mobile Login & Storage Partitioning Protection */}
       <AuthModal language={preferences.language} />
     </AppShell>
   );
