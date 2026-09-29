@@ -31,7 +31,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
 
   useEffect(() => {
     let disposed = false;
-    const source = 'https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg';
+    const source = '/api/adam-character-image';
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.decoding = 'async';
@@ -221,7 +221,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
                 loading="eager"
               />
             )}
-            <div className="agentic-login__character-glass" />
+
           </motion.div>
         </motion.div>
       </div>
