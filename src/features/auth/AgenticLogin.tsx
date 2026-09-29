@@ -27,7 +27,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
   const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [14, -14]), { stiffness: 110, damping: 16, mass: 0.9 });
   const characterGlowX = useTransform(cursorX, [-1, 1], ['22%', '78%']);
   const characterGlowY = useTransform(cursorY, [-1, 1], ['18%', '82%']);
-  const [characterSrc, setCharacterSrc] = useState('https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg');
+  const [characterSrc, setCharacterSrc] = useState('');
 
   useEffect(() => {
     let disposed = false;
@@ -212,14 +212,15 @@ export function AgenticLogin({ language, loading = false, onOpenAuth }: AgenticL
           >
             <motion.div className="agentic-login__character-light" style={{ left: characterGlowX, top: characterGlowY }} />
             <div className="agentic-login__character-shadow" />
-            <img
-              className="agentic-login__character-image"
-              src={characterSrc}
-              alt=""
-              draggable={false}
-              loading="eager"
-              referrerPolicy="no-referrer"
-            />
+            {characterSrc && (
+              <img
+                className="agentic-login__character-image"
+                src={characterSrc}
+                alt=""
+                draggable={false}
+                loading="eager"
+              />
+            )}
             <div className="agentic-login__character-glass" />
           </motion.div>
         </motion.div>
