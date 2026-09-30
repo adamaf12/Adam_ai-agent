@@ -1,19 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536" role="img" aria-label="Adam character">
   <defs>
-    <filter id="character-shadow" x="-30%" y="-20%" width="160%" height="150%">
-      <feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#000" flood-opacity=".30"/>
+    <filter id="character-shadow" x="-35%" y="-20%" width="170%" height="155%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#000" flood-opacity=".34"/>
     </filter>
     <mask id="adam-silhouette" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1536">
       <rect width="1024" height="1536" fill="black"/>
-      <polygon fill="white" points="456,62 395,91 344,156 341,265 308,319 458,441 358,462 229,728 258,751 240,973 271,1026 326,1043 326,1327 196,1424 171,1467 352,1477 371,1495 717,1476 787,1495 768,1428 648,1330 664,1308 638,1174 663,1076 650,1045 719,1012 758,907 720,759 748,730 633,511 629,463 516,441 605,359 652,350 671,295 636,265 645,186 605,111 543,69"/>
+      <polygon fill="white" points="456,63 397,91 344,158 333,197 341,264 312,287 309,319 328,350 374,361 408,404 456,429 459,440 428,458 412,443 397,443 357,465 348,509 289,592 230,728 233,737 258,749 238,928 241,973 273,1026 326,1044 314,1075 320,1088 318,1139 326,1163 338,1172 334,1255 318,1274 314,1306 326,1329 246,1397 190,1432 172,1457 172,1493 246,1509 394,1509 487,1499 571,1509 721,1509 783,1499 788,1456 775,1448 768,1430 698,1380 647,1330 663,1308 655,1271 643,1263 638,1178 653,1160 651,1086 662,1076 652,1046 696,1031 719,1010 737,969 739,928 757,906 754,848 728,828 719,750 747,730 697,606 632,511 629,465 584,442 544,454 515,439 519,429 567,406 603,361 649,351 669,323 670,294 655,273 637,264 644,186 605,113 578,88 543,70 492,60"/>
     </mask>
   </defs>
-  <image
-    width="1024"
-    height="1536"
-    preserveAspectRatio="none"
-    href="/api/adam-character-image"
-    mask="url(#adam-silhouette)"
-    filter="url(#character-shadow)"
-  />
+  <image width="1024" height="1536" preserveAspectRatio="none" href="/api/adam-character-image" mask="url(#adam-silhouette)" filter="url(#character-shadow)"/>
 </svg>
