@@ -562,55 +562,86 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="flex-1 my-auto max-w-2xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col items-center justify-center gap-5 sm:gap-6 animate-fadeIn select-none">
-            {/* Ambient Minimalist Brand Mark */}
-            <div className="relative group">
-              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
-                <Sparkles size={26} className="drop-shadow-[0_0_10px_var(--accent)]" />
+          <div className="chat-hero">
+            <div className="chat-hero__ambient chat-hero__ambient--one" aria-hidden="true" />
+            <div className="chat-hero__ambient chat-hero__ambient--two" aria-hidden="true" />
+
+            <div className="chat-hero__topline">
+              <div className="chat-hero__identity">
+                <span className="chat-hero__mark"><Sparkles size={17} /></span>
+                <span>
+                  <strong>ADAM</strong>
+                  <small>{language === 'ar' ? 'GENERAL AGENT' : 'GENERAL AGENT'}</small>
+                </span>
               </div>
+              <span className="chat-hero__status">
+                <span />
+                {language === 'ar' ? 'جاهز للتنفيذ' : 'Ready to execute'}
+              </span>
             </div>
 
-            <div className="space-y-1.5">
-              <h1 className="text-xl sm:text-3xl font-black text-[var(--text)] tracking-tight">
-                {language === 'ar' ? 'مرحباً، كيف يمكنني مساعدتك اليوم؟' : 'Hello, how can I help you today?'}
-              </h1>
-              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto leading-relaxed">
+            <div className="chat-hero__copy">
+              <span className="chat-hero__eyebrow">
+                {language === 'ar' ? 'COMMAND CENTER' : 'COMMAND CENTER'}
+              </span>
+              <h1>
                 {language === 'ar'
-                  ? 'منظومة ذكاء اصطناعي شاملة للبرمجة، التحليل، الإدراك البصري، وإدارة المشاريع.'
-                  : 'Executive AI for full-stack engineering, vision perception, and system intelligence.'}
+                  ? 'ماذا تريد أن ينجز آدم لك؟'
+                  : 'What do you want Adam to get done?'}
+              </h1>
+              <p>
+                {language === 'ar'
+                  ? 'اكتب الهدف فقط. آدم يفهم السياق، يختار الأدوات، ينفّذ الخطوات، ثم يتحقق من النتيجة.'
+                  : 'Describe the goal. Adam understands context, selects tools, executes the workflow, and verifies the result.'}
               </p>
             </div>
 
-            {/* 4 Clean Minimal Prompt Pills */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 w-full max-w-lg text-start">
+            <div className="chat-hero__command">
+              <div className="chat-hero__command-icon"><Zap size={17} /></div>
+              <div className="chat-hero__command-body">
+                <span>{language === 'ar' ? 'ابدأ بأمر طبيعي' : 'Start with a natural command'}</span>
+                <small>{language === 'ar' ? 'مثال: افحص المشروع وأصلح المشكلة ثم اختبره' : 'Example: audit the project, fix the issue, then test it'}</small>
+              </div>
+              <span className="chat-hero__shortcut">↵</span>
+            </div>
+
+            <div className="chat-hero__actions">
               {[
                 {
                   icon: Code,
-                  titleAr: 'برمجة وتطوير تطبيق ويب كامل',
-                  titleEn: 'Architect full web application',
-                  promptAr: 'برمج لي تطبيق ويب متجاوب وحديث بالكامل بنسبة 100% مع واجهة أنيقة',
-                  promptEn: 'Write a complete responsive production-ready web application',
+                  tagAr: 'BUILD',
+                  tagEn: 'BUILD',
+                  titleAr: 'ابنِ تطبيقاً كاملاً',
+                  titleEn: 'Build a complete app',
+                  promptAr: 'ابنِ لي تطبيق ويب متجاوب وحديث بالكامل مع واجهة احترافية واختبارات أساسية',
+                  promptEn: 'Build a complete responsive production-ready web app with a polished UI and basic tests',
                 },
                 {
-                  icon: Sparkles,
-                  titleAr: 'توليد أفكار أو صور سينمائية 8K',
-                  titleEn: 'Cinematic 8K image prompt',
-                  promptAr: 'أنشئ لي فكرة وتفاصيل برومبت سينمائي فائق الدقة 8K مع توزيع إضاءة احترافي',
-                  promptEn: 'Generate an 8K cinematic visual concept with studio lighting',
+                  icon: Globe,
+                  tagAr: 'SEARCH',
+                  tagEn: 'SEARCH',
+                  titleAr: 'ابحث وحلل من الويب',
+                  titleEn: 'Search & analyze the web',
+                  promptAr: 'ابحث في الويب عن أحدث المعلومات وحلل المصادر ثم أعطني خلاصة دقيقة',
+                  promptEn: 'Search the web for the latest information, analyze the sources, and give me a precise summary',
                 },
                 {
                   icon: Terminal,
-                  titleAr: 'أوامر وإدارة أنظمة لينكس والسيرفرات',
-                  titleEn: 'Linux commands & system automation',
-                  promptAr: 'ما هي أفضل سكربتات وأوامر فحص وإدارة سيرفرات لينكس بأمان؟',
-                  promptEn: 'Provide advanced Linux server audit & automation scripts',
+                  tagAr: 'SYSTEM',
+                  tagEn: 'SYSTEM',
+                  titleAr: 'افحص نظاماً أو سيرفراً',
+                  titleEn: 'Audit a system or server',
+                  promptAr: 'افحص نظام لينكس أو سيرفراً وحدد المشاكل والمخاطر والحلول الآمنة',
+                  promptEn: 'Audit a Linux system or server and identify issues, risks, and safe fixes',
                 },
                 {
                   icon: GraduationCap,
-                  titleAr: 'شرح أكاديمي وحل مسائل تخصصية',
-                  titleEn: 'Academic study & problem solving',
-                  promptAr: 'اشرح لي مفهوماً علمياً مع أمثلة عملية ونصائح لتثبيت الفهم',
-                  promptEn: 'Explain a core scientific concept with practical examples and study tips',
+                  tagAr: 'STUDY',
+                  tagEn: 'STUDY',
+                  titleAr: 'تعلّم وحل مسألة',
+                  titleEn: 'Study & solve',
+                  promptAr: 'اشرح لي هذا الموضوع خطوة بخطوة مع أمثلة ثم اختبر فهمي',
+                  promptEn: 'Explain this topic step by step with examples, then test my understanding',
                 },
               ].map((card, idx) => {
                 const Icon = card.icon;
@@ -619,20 +650,24 @@ export function Chat({
                     key={idx}
                     type="button"
                     onClick={() => send(language === 'ar' ? card.promptAr : card.promptEn)}
-                    className="group p-2.5 sm:p-3.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-2.5 sm:gap-3 text-start cursor-pointer shadow-sm active:scale-[0.99]"
+                    className="chat-hero__action"
                   >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--surface-2)] group-hover:bg-[var(--accent-subtle)] text-[var(--accent)] flex items-center justify-center flex-shrink-0 transition-colors">
-                      <Icon size={15} />
-                    </div>
-                    <span className="text-xs font-semibold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate flex-1">
-                      {language === 'ar' ? card.titleAr : card.titleEn}
+                    <span className="chat-hero__action-icon"><Icon size={17} /></span>
+                    <span className="chat-hero__action-copy">
+                      <small>{language === 'ar' ? card.tagAr : card.tagEn}</small>
+                      <strong>{language === 'ar' ? card.titleAr : card.titleEn}</strong>
                     </span>
+                    <span className="chat-hero__action-arrow">↗</span>
                   </button>
                 );
               })}
             </div>
-          </div>
-        ) : (
+
+            <div className="chat-hero__hint">
+              <ShieldCheck size={14} />
+              <span>{language === 'ar' ? 'ذاكرة سياقية • أدوات • تحقق من النتائج' : 'Context memory • tools • result verification'}</span>
+            </div>
+          </div>        ) : (
           <AnimatePresence initial={false}>
             {messages.map((message, idx) => {
               const prevUser = messages
