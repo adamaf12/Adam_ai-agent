@@ -127,7 +127,10 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
         </div>
 
         <div className="agentic-login__headline">
-          <span className="agentic-login__eyebrow">{isAr ? 'PERSONAL AI OPERATING SYSTEM' : 'PERSONAL AI OPERATING SYSTEM'}</span>
+          <div className="agentic-login__access-line">
+            <span className="agentic-login__eyebrow">{isAr ? 'PROFILE ACCESS' : 'PROFILE ACCESS'}</span>
+            <span className="agentic-login__access-state"><i /> SECURE</span>
+          </div>
           <h1>{isAr ? 'مرحباً بك في آدم' : 'Welcome to Adam'}</h1>
           <p>
             {isAr
