@@ -40,6 +40,7 @@ import { geminiMultimodalRouter } from './server/features/geminiMultimodalRoutes
 import { setupLiveApiWebSocket } from './server/features/liveApiBridge';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './server/ecc';
 import { buildGuardianReport } from './server/guardian';
+import { isGatewayConfigured, streamGatewayChat } from './server/aiGateway';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -940,14 +941,14 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     if (!res.writableFinished) aborted = true;
   });
 
-  if (!apiKey) {
-    console.error('[Adam AI chat] Gemini API key is not configured', {
+  if (!apiKey && !isGatewayConfigured(req)) {
+    console.error('[Adam AI chat] No AI credential is available (Gemini key or Vercel AI Gateway OIDC)', {
       requestId,
       code: 'AI_NOT_CONFIGURED',
       status: 503,
       durationMs: Date.now() - requestStartedAt,
     });
-    return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server yet.');
+    return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI has no active server-side AI credential. Enable Vercel AI Gateway OIDC for this project or configure GEMINI_API_KEY for Production.');
   }
   const messages = normalizeMessages(req.body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
@@ -1174,6 +1175,44 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
 
       let modelSuccess = false;
       let modelEncountered503 = false;
+
+      // Production path: use Vercel AI Gateway with the deployment's short-lived OIDC
+      // token instead of depending on a long-lived Gemini API secret.
+      if (isGatewayConfigured(req)) {
+        try {
+          const gatewayOutput = await streamGatewayChat({
+            req,
+            messages,
+            systemInstruction: finalSystemInstruction,
+            model: currentModel,
+            temperature: baseConfig.temperature,
+            topP: baseConfig.topP,
+            maxOutputTokens: baseConfig.maxOutputTokens,
+            userId: req.user?.uid || 'guest_default',
+            user: req.user,
+            onText: emitModelText,
+            maxToolRounds: 3,
+          });
+
+          if (gatewayOutput.trim()) {
+            modelSuccess = true;
+          } else {
+            throw new Error('AI Gateway returned an empty completion.');
+          }
+        } catch (gatewayError: any) {
+          lastError = gatewayError;
+          console.warn('[Adam AI Gateway] model failed, trying next model', {
+            model: currentModel,
+            status: gatewayError?.status,
+            message: redactSecrets(String(gatewayError?.message || gatewayError)),
+          });
+        }
+      }
+
+      if (modelSuccess) {
+        break;
+      }
+
       for (const config of configsToTry) {
         if (aborted || res.writableEnded || res.destroyed || modelSuccess || modelEncountered503) break;
 
