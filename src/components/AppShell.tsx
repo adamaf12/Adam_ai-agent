@@ -167,7 +167,7 @@ export function AppShell({
   return (
     <div className="app-shell flex flex-col h-screen overflow-hidden">
       {/* Top Organized Shelf Navigation Bar (الرف العلوي المنظم المتجاوب) */}
-      <header className="flex items-center justify-between w-full px-3 sm:px-5 py-2.5 sm:py-3 bg-[var(--surface)]/92 backdrop-blur-2xl border-b border-[var(--border)] z-30 shrink-0 select-none shadow-sm gap-2">
+      <header className="adam-topbar flex items-center justify-between w-full px-3 sm:px-5 py-2.5 sm:py-3 bg-[var(--surface)]/92 backdrop-blur-2xl border-b border-[var(--border)] z-30 shrink-0 select-none shadow-sm gap-2">
         {/* Start Section: Sidebar Toggle Button + Brand Mark */}
         <div className="flex items-center gap-2 shrink-0">
           <button
@@ -201,7 +201,7 @@ export function AppShell({
         </div>
 
         {/* Center Section: Organized Studio Tabs Shelf (الرف الأوسط لتبديل الأدوات والاستوديوهات) */}
-        <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-1 rounded-2xl bg-[var(--surface-2)]/60 border border-[var(--border)]/70 max-w-full">
+        <nav className="adam-studio-nav flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-1 rounded-2xl bg-[var(--surface-2)]/60 border border-[var(--border)]/70 max-w-full">
           {STUDIO_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeView === tab.id;
@@ -227,7 +227,7 @@ export function AppShell({
         </nav>
 
         {/* End Section: Live Voice + New Chat + Language + Settings */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="adam-topbar-actions flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Live Voice Call Trigger */}
           <button
             type="button"
