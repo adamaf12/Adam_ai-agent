@@ -106,6 +106,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/guardian', (_req, res) => {
   const report = buildGuardianReport({
     geminiConfigured: Boolean(secretsManager.getGeminiApiKey()),
+    gatewayConfigured: isGatewayConfigured(req),
     sessionSecretConfigured: Boolean(process.env.SESSION_SECRET?.trim()),
     vercel: process.env.VERCEL === '1',
     production: process.env.VERCEL_ENV === 'production',
