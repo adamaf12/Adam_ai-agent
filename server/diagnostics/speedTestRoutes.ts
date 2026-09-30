@@ -1,9 +1,10 @@
 import { Router, type Request, type Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { secretsManager } from '../security/secrets';
 
 export const speedTestRouter = Router();
 
-const getApiKey = () => process.env.GEMINI_API_KEY || '';
+const getApiKey = () => secretsManager.getGeminiApiKey();
 const getDefaultModel = () => process.env.ADAM_GEMINI_MODEL || 'gemini-3.8-flash';
 const isSimulationMode = () =>
   process.env.NODE_ENV === 'test' || !getApiKey() || getApiKey().length < 10 || getApiKey() === 'test-key';
