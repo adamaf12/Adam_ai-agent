@@ -97,6 +97,12 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
 
           </motion.div>
         </motion.div>
+
+        <div className="agentic-login__character-hud">
+          <span className="agentic-login__character-hud-kicker">ADAM / 3D CORE</span>
+          <strong>{isAr ? 'وكيل عام جاهز للتنفيذ' : 'General agent ready to execute'}</strong>
+          <small><i /> {isAr ? 'تفاعل حي • تتبع المؤشر • جلسة خاصة' : 'Live interaction • cursor tracking • private session'}</small>
+        </div>
       </div>
 
       <motion.section
