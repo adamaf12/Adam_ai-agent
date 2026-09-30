@@ -2,6 +2,7 @@ export type GuardianStatus = 'healthy' | 'degraded' | 'critical';
 
 export interface GuardianInput {
   geminiConfigured: boolean;
+  gatewayConfigured: boolean;
   sessionSecretConfigured: boolean;
   vercel: boolean;
   production: boolean;
@@ -42,12 +43,12 @@ export interface GuardianReport {
 export function buildGuardianReport(input: GuardianInput): GuardianReport {
   const findings: GuardianFinding[] = [];
 
-  if (!input.geminiConfigured) {
+  if (!input.geminiConfigured && !input.gatewayConfigured) {
     findings.push({
       code: 'AI_RUNTIME_NOT_CONFIGURED',
       severity: 'critical',
-      message: 'The production runtime cannot see the configured AI provider key.',
-      remediation: 'Verify GEMINI_API_KEY is scoped to Production in Vercel, then create a fresh production deployment.',
+      message: 'The production runtime has neither a Gemini provider key nor a Vercel AI Gateway credential.',
+      remediation: 'Enable Secure Backend Access with OIDC Federation for the Vercel project, or configure GEMINI_API_KEY for Production, then redeploy.',
       autoRepairable: false,
     });
   }
