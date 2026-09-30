@@ -1110,3 +1110,111 @@ body {
  .chat-hero__action{min-height:88px;flex-direction:row!important;align-items:center!important}
  .chat-hero__action-copy{margin-top:0}
 }
+
+
+/* ===== PROFILE LOGIN v2 — actual character-first layout ===== */
+.agentic-login{
+  place-items:stretch!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:clamp(18px,4vw,48px)!important;
+}
+.agentic-login__scene{
+  width:58%!important;
+  inset-inline-start:0!important;
+  inset-inline-end:auto!important;
+  z-index:4!important;
+}
+.agentic-login__character{
+  left:52%!important;
+  top:52%!important;
+  width:min(470px,36vw)!important;
+  filter:drop-shadow(0 38px 36px rgba(0,0,0,.55))!important;
+}
+.agentic-login__character-image{
+  transform:translateZ(42px) scale(1.02)!important;
+  filter:saturate(1.08) contrast(1.04) drop-shadow(0 26px 26px rgba(0,0,0,.28))!important;
+}
+.agentic-login__card{
+  width:min(510px,calc(100vw - 36px))!important;
+  margin-inline-start:auto!important;
+  margin-inline-end:clamp(0px,4vw,60px)!important;
+  padding:clamp(25px,3vw,36px)!important;
+  border-radius:30px!important;
+  z-index:10!important;
+  background:
+    linear-gradient(145deg,rgba(30,23,17,.93),rgba(8,11,9,.91))!important;
+  border-color:rgba(255,184,102,.22)!important;
+  box-shadow:0 40px 120px rgba(0,0,0,.64),inset 0 1px rgba(255,231,201,.1)!important;
+}
+.agentic-login__card-glow{
+  position:absolute;
+  inset:-1px;
+  border-radius:30px;
+  pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,170,80,.10),transparent 34%,transparent 68%,rgba(125,255,190,.06));
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  padding:1px;
+}
+.agentic-login__headline h1{font-size:clamp(30px,3.3vw,42px)!important}
+.agentic-login__google{
+  height:54px!important;
+  border-radius:16px!important;
+  box-shadow:0 14px 35px rgba(0,0,0,.28)!important;
+}
+.agentic-login__guest{
+  height:48px!important;
+  border-radius:16px!important;
+}
+.agentic-login__footer{inset-inline-start:50%;transform:translateX(-50%);white-space:nowrap}
+.agentic-login__close{
+  position:absolute;
+  top:20px;
+  inset-inline-end:22px;
+  z-index:20;
+  width:42px;height:42px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.045);
+  color:#d6e1dc;
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+  backdrop-filter:blur(14px);
+  transition:.2s ease;
+}
+.agentic-login__close:hover{
+  background:rgba(255,170,80,.10);
+  border-color:rgba(255,184,102,.3);
+  transform:scale(1.04);
+}
+@media(max-width:899px){
+ .agentic-login{
+   padding:16px!important;
+   overflow-y:auto!important;
+   justify-content:flex-start!important;
+ }
+ .agentic-login__scene{
+   position:absolute!important;
+   width:100%!important;
+   height:52%!important;
+   inset:0!important;
+ }
+ .agentic-login__character{
+   left:78%!important;
+   top:25%!important;
+   width:min(290px,58vw)!important;
+ }
+ .agentic-login__card{
+   margin:clamp(220px,42vh,360px) auto 24px!important;
+   width:min(560px,100%)!important;
+ }
+ .agentic-login__footer{display:none}
+}
+@media(max-width:600px){
+ .agentic-login__character{left:82%!important;top:18%!important;width:min(245px,60vw)!important}
+ .agentic-login__card{margin-top:210px!important;padding:24px 18px!important}
+ .agentic-login__features div{font-size:10px!important}
+}
