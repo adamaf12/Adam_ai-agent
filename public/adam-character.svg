@@ -7,5 +7,5 @@
     <polygon fill="black" points="473,1338 506,1338 506,1442 474,1442"/>
   </mask>
 </defs>
-<image width="1024" height="1536" preserveAspectRatio="none" href="https://i.pinimg.com/originals/b9/29/84/b92984d3cf394fb4421bd48e9641c964.jpg" mask="url(#adam-silhouette)"/>
+<image width="1024" height="1536" preserveAspectRatio="none" href="/api/adam-character-image" mask="url(#adam-silhouette)"/>
 </svg>
