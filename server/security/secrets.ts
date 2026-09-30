@@ -129,7 +129,21 @@ class SecretsManager {
    * Safe getter for GEMINI_API_KEY
    */
   public getGeminiApiKey(): string {
-    return process.env.GEMINI_API_KEY?.trim() ?? '';
+    // Vercel/AI Studio projects sometimes use one of Google's conventional
+    // provider variable names. Prefer GEMINI_API_KEY, but safely accept the
+    // equivalent names without ever exposing their values.
+    const candidates = [
+      'GEMINI_API_KEY',
+      'GOOGLE_API_KEY',
+      'GOOGLE_GENERATIVE_AI_API_KEY',
+      'GOOGLE_GENAI_API_KEY',
+      'GEMINI_KEY',
+    ];
+    for (const key of candidates) {
+      const value = process.env[key]?.trim();
+      if (value) return value;
+    }
+    return '';
   }
 
   /**
