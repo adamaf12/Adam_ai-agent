@@ -856,3 +856,23 @@ body {
     border-radius: 20px !important;
   }
 }
+
+/* Final login character visibility pass */
+.agentic-login__scene { z-index: 4; }
+.agentic-login__character { z-index: 5; }
+@media(min-width:900px){
+  .agentic-login__character{ left:50%; top:51%; width:min(455px,33vw); }
+}
+@media(max-width:899px){
+  .agentic-login__scene{ z-index:4; }
+  .agentic-login__character{ left:76%; top:30%; width:min(280px,58vw); opacity:.96; }
+  .agentic-login__card{
+    position:relative; z-index:10; margin-top:clamp(155px,23vh,220px);
+    background:linear-gradient(145deg,rgba(29,21,15,.88),rgba(10,12,10,.86));
+    backdrop-filter:blur(18px);
+  }
+}
+@media(max-width:600px){
+  .agentic-login__character{ left:76%; top:19%; width:min(245px,60vw); opacity:.96; }
+  .agentic-login__card{ margin-top:clamp(135px,21vh,180px); max-height:calc(100dvh - 165px); overflow-y:auto; }
+}
