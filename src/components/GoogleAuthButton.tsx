@@ -128,7 +128,7 @@ export function GoogleAuthButton({ language, compact = false, onUnauthenticatedC
           aria-label={isAr ? 'الملف الشخصي' : 'Profile'}
         >
           <span className="google-user-avatar-placeholder">
-            <UserCircle2 size={compact ? 17 : 18} strokeWidth={1.8} />
+            <UserCircle2 size={compact ? 21 : 20} strokeWidth={1.7} />
           </span>
           {!compact && <span className="google-user-name desktop-only">{isAr ? 'الملف الشخصي' : 'Profile'}</span>}
         </button>
