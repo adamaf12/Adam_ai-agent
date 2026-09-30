@@ -167,12 +167,12 @@ export function AppShell({
   return (
     <div className="app-shell flex flex-col h-screen overflow-hidden">
       {/* Top Organized Shelf Navigation Bar (الرف العلوي المنظم المتجاوب) */}
-      <header className="flex items-center justify-between w-full px-2.5 sm:px-4 py-2 bg-[var(--surface)]/95 backdrop-blur-2xl border-b border-[var(--border)] z-30 shrink-0 select-none shadow-sm gap-2">
+      <header className="flex items-center justify-between w-full px-3 sm:px-5 py-2.5 sm:py-3 bg-[var(--surface)]/92 backdrop-blur-2xl border-b border-[var(--border)] z-30 shrink-0 select-none shadow-sm gap-2">
         {/* Start Section: Sidebar Toggle Button + Brand Mark */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all border border-[var(--border)] cursor-pointer active:scale-95 shrink-0 shadow-sm"
+            className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-all border border-[var(--border)] cursor-pointer active:scale-95 shrink-0 shadow-sm"
             onClick={() => setIsSidebarOpen((prev) => !prev)}
             title={isAr ? 'المحادثات السابقة والذاكرة (Alt+B)' : 'Chat History & Memory (Alt+B)'}
             aria-label="Toggle Sidebar"
@@ -231,7 +231,7 @@ export function AppShell({
           {/* Live Voice Call Trigger */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
+            className="hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
             onClick={() => setIsLiveVoiceOpen(true)}
             title={isAr ? 'مكالمة صوتية تفاعلية حية' : 'Interactive Live Voice Call'}
             aria-label="Live Voice"
@@ -243,7 +243,7 @@ export function AppShell({
           {/* New Chat Button */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[var(--accent-subtle)] hover:bg-[var(--accent)] text-[var(--accent)] hover:text-slate-950 border border-[var(--accent)]/30 hover:border-transparent transition-all cursor-pointer active:scale-95 text-xs font-bold shadow-sm group"
+            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-[var(--accent-subtle)] hover:bg-[var(--accent)] text-[var(--accent)] hover:text-slate-950 border border-[var(--accent)]/30 hover:border-transparent transition-all cursor-pointer active:scale-95 text-xs font-bold shadow-sm group"
             onClick={handleStartNewChat}
             title={isAr ? 'محادثة جديدة (Alt+N)' : 'New Chat (Alt+N)'}
             aria-label={isAr ? 'محادثة جديدة' : 'New Chat'}
