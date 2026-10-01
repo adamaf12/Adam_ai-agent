@@ -100,8 +100,8 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
 
         <div className="agentic-login__character-hud">
           <span className="agentic-login__character-hud-kicker">ADAM / 3D CORE</span>
-          <strong>{isAr ? 'وكيل عام جاهز للتنفيذ' : 'General agent ready to execute'}</strong>
-          <small><i /> {isAr ? 'تفاعل حي • تتبع المؤشر • جلسة خاصة' : 'Live interaction • cursor tracking • private session'}</small>
+          <strong>{isAr ? 'نواة آدم — جاهزة للعمل' : 'Adam Core — Online'}</strong>
+          <small><i /> {isAr ? 'تفاعل حي • تتبع الماوس • جلسة خاصة' : 'Live interaction • mouse tracking • private session'}</small>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
             <Sparkles size={23} />
           </motion.div>
           <div>
-            <div className="agentic-login__name">ADAM</div>
+            <div className="agentic-login__name">Adam <span>AI</span></div>
             <div className="agentic-login__status"><span /> {isAr ? 'General Agentic AI' : 'General Agentic AI'}</div>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
             <span className="agentic-login__eyebrow">{isAr ? 'PROFILE ACCESS' : 'PROFILE ACCESS'}</span>
             <span className="agentic-login__access-state"><i /> SECURE</span>
           </div>
-          <h1>{isAr ? 'مرحباً بك في آدم' : 'Welcome to Adam'}</h1>
+          <h1>{isAr ? 'مرحباً بك في آدم' : 'Welcome Back'}</h1>
           <p>
             {isAr
               ? 'من محادثة عادية إلى وكيل عام: يفهم نيتك، يبني الخطة، ينسّق الأدوات، ينفّذ، ثم يتحقق من النتيجة.'
