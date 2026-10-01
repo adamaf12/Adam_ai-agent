@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoaderCircle, Sparkles, Image as ImageIcon, Wand2 } from 'lucide-react';
+import { Bot, LoaderCircle, Sparkles, Image as ImageIcon, Wand2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function StreamingIndicator({
@@ -23,56 +23,51 @@ export function StreamingIndicator({
         animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
         exit={{ opacity: 0, y: -6, scale: 0.98 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="message-row"
+        className="message-row w-full"
         role="status"
         aria-live="polite"
       >
         <div className="message-avatar">
-          <Sparkles size={16} className="text-indigo-400 animate-pulse" />
+          <Sparkles size={17} className="text-[var(--accent)] animate-pulse" />
         </div>
         <div className="message-body w-full max-w-lg">
           <div className="message-meta">
-            <span>Adam AI Vision</span>
-            <span className="text-xs text-indigo-400 font-medium animate-pulse">
-              {isAr ? 'جاري التوليد…' : 'Generating…'}
+            <span className="font-bold text-[var(--text)]">ADEM Studio</span>
+            <span className="text-xs text-[var(--accent)] font-medium">
+              {isAr ? 'جاري بناء المشهد البصري…' : 'Generating…'}
             </span>
           </div>
           
-          <div className="my-2 rounded-2xl overflow-hidden border border-indigo-500/30 bg-slate-950/90 shadow-2xl relative">
-            {/* Shimmer Placeholder Box */}
-            <div className="w-full aspect-video relative flex flex-col items-center justify-center p-6 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950">
-              {/* Animated Light Sweep Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-              
+          <div className="my-2 rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--surface)] shadow-md relative">
+            <div className="w-full aspect-video relative flex flex-col items-center justify-center p-6 text-center overflow-hidden bg-gradient-to-br from-[var(--surface-2)] via-[var(--surface)] to-[var(--surface-2)]">
               <div className="relative z-10 flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-lg shadow-indigo-500/10">
-                  <ImageIcon size={24} className="animate-bounce" />
+                <div className="w-12 h-12 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border-strong)] flex items-center justify-center text-[var(--accent)] shadow-sm">
+                  <ImageIcon size={22} className="animate-pulse" />
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white">
-                    <Wand2 size={13} className="text-emerald-400" />
-                    <span>{isAr ? 'جاري بناء المشهد البصري بدقة 8K' : 'Synthesizing 8K Photorealistic Frame'}</span>
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[var(--text)]">
+                    <Wand2 size={13} className="text-[var(--accent)]" />
+                    <span>{isAr ? 'توليد الصورة وتوزيع الإضاءة السينمائية' : 'Synthesizing High-Resolution Scene'}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 max-w-xs truncate font-mono">
-                    {prompt || (isAr ? 'معالجة البرومبت وتوزيع الإضاءة السينمائية…' : 'Processing lighting and camera optics…')}
+                  <p className="text-[11px] text-[var(--muted)] max-w-xs truncate font-mono">
+                    {prompt || (isAr ? 'معالجة البرومبت بدقة…' : 'Processing prompt…')}
                   </p>
                 </div>
 
-                {/* Progress bar pulse */}
-                <div className="w-48 bg-slate-800/80 h-1.5 rounded-full overflow-hidden mt-1">
-                  <div className="bg-gradient-to-r from-indigo-500 via-emerald-400 to-indigo-500 h-full w-full animate-pulse" />
+                <div className="w-44 bg-[var(--surface-2)] h-1.5 rounded-full overflow-hidden mt-1 border border-[var(--border)]">
+                  <div className="bg-[var(--accent)] h-full w-full animate-pulse" />
                 </div>
               </div>
             </div>
             
-            <div className="p-3 bg-slate-900/80 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div className="p-3 bg-[var(--surface-2)]/90 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted)]">
               <span className="flex items-center gap-1.5">
-                <LoaderCircle size={13} className="animate-spin text-indigo-400" />
+                <LoaderCircle size={13} className="animate-spin text-[var(--accent)]" />
                 {label}
               </span>
-              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">
-                FLUX ULTRA HD
+              <span className="text-[10px] font-mono text-[var(--accent)] uppercase font-semibold">
+                8K ULTRA HD
               </span>
             </div>
           </div>
@@ -83,21 +78,39 @@ export function StreamingIndicator({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, x: slideX }}
-      animate={{ opacity: 1, y: 0, x: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="streaming flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-emerald-400 text-xs shadow-lg backdrop-blur-md"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="message-row w-full text-start"
+      role="status"
+      aria-live="polite"
     >
-      <LoaderCircle size={14} className="spin text-emerald-400" />
-      <span className="font-semibold tracking-wide">
-        {isAr ? '⚡ ADEM Agentic AI • جاري التحليل والتنفيذ الذاتي...' : '⚡ ADEM Agentic AI • Autonomous ReAct Execution...'}
-      </span>
-      {label && label !== 'جاري التوليد…' && label !== 'Generating…' && (
-        <span className="text-[11px] text-[var(--muted)] font-normal border-s border-slate-700 ps-2">
-          {label}
-        </span>
-      )}
+      <div className="message-avatar">
+        <Bot size={17} className="text-[var(--accent)] animate-pulse" />
+      </div>
+      <div className="message-body">
+        <div className="message-meta">
+          <span className="font-bold text-[var(--text)] tracking-tight">ADEM</span>
+          <span className="text-[10px] text-[var(--accent)] font-semibold px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] border border-[var(--border)] leading-tight select-none">
+            AI
+          </span>
+          <span className="text-[11px] text-[var(--muted)] font-normal">
+            {isAr ? 'يكتب الآن…' : 'Thinking…'}
+          </span>
+        </div>
+
+        <div className="inline-flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xs w-fit">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:-0.3s]" />
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:-0.15s]" />
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" />
+          </div>
+          <span className="text-xs text-[var(--text-secondary)] font-medium">
+            {label || (isAr ? 'ADEM يصيغ الإجابة بدقة…' : 'Formulating response…')}
+          </span>
+        </div>
+      </div>
     </motion.div>
   );
 }

@@ -615,11 +615,13 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
 
     const modelVariants = [
       modelDesc.id,
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
       'gemini-3.8-flash',
       'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
-    const uniqueModels = [...new Set(modelVariants.filter(m => Boolean(m) && !m.includes('-pro')))];
+    const uniqueModels = [...new Set(modelVariants.filter(Boolean))];
 
     for (const modelId of uniqueModels) {
       // Try with search if available and requested, then fallback to tool-free

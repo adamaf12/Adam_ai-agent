@@ -95,6 +95,10 @@ export function getCachedUser(): AppUser | null {
       return null;
     }
     const parsed = JSON.parse(raw);
+    if (parsed?.displayName === 'Elias R.') {
+      localStorage.removeItem(LOCAL_USER_KEY);
+      return null;
+    }
     // Security check: If previously cached profile had hardcoded email, purge it immediately
     if (parsed?.email === 'maamarfeidat@gmail.com') {
       localStorage.removeItem(LOCAL_USER_KEY);

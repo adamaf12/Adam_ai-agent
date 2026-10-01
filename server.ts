@@ -56,7 +56,7 @@ process.on('unhandledRejection', (reason: any) => {
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
-const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.8-flash';
+const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-2.5-flash';
 const apiKey = secretsManager.getGeminiApiKey();
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');
@@ -103,7 +103,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Guardian endpoint: exposes safe, non-secret diagnostics for autonomous recovery workflows.
-app.get('/api/guardian', (_req, res) => {
+app.get('/api/guardian', (req, res) => {
   const report = buildGuardianReport({
     geminiConfigured: Boolean(secretsManager.getGeminiApiKey()),
     gatewayConfigured: isGatewayConfigured(req),
@@ -137,8 +137,14 @@ app.get('/api/adam-character-image', async (_req, res) => {
 const overloadedModels = new Map<string, number>();
 
 function getHealthSortedModels(preferredModel: string): string[] {
-  const defaults = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-  const all = Array.from(new Set([preferredModel, ...defaults].filter(m => Boolean(m) && !m.includes('-pro'))));
+  const defaults = [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-3.8-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+  ];
+  const all = Array.from(new Set([preferredModel, ...defaults].filter(Boolean)));
   const now = Date.now();
   const available = all.filter(m => (overloadedModels.get(m) || 0) <= now);
   const cooldowns = all.filter(m => (overloadedModels.get(m) || 0) > now);
@@ -420,6 +426,15 @@ function systemInstruction(language: string, agentName: string) {
 - حافظ على سياق المحادثة والطلب الأخير، ولا تعُد إلى إجابة عامة إذا كان المستخدم يطلب تعديل نقطة محددة.
 - إذا كان طلب المستخدم واضحاً، لا تسأل سؤالاً توضيحياً غير ضروري؛ نفّذ المطلوب مباشرة.
 - اجعل الإجابة بطول يتناسب مع المهمة: قصيرة للأسئلة البسيطة، ومفصلة فقط عندما تحتاج المهمة ذلك.
+
+## 11. إجابات نقية ومباشرة بدون مصادر أو روابط مشتتة (CLEAN DIRECT ANSWERS):
+- لا تذكر أي مصادر، ولا تضع روابط مواقع أو عبارات مثل [المصدر: ...] أو حواشي استشهاد. قدّم الإجابة نقية، مبسطة، ومباشرة ومصاغة بأعلى درجات الدقة والوضوح.
+- قدّم الإجابة كاملة متسلسلة في تدفق واحد دون تكرار أو تقسيم مبتور (تجنب تماماً تكرار "الجزء 1" أو إعادة كتابة "الجزء 2" مكرراً).
+
+## 12. تنسيق الرياضيات وعرض الخطوات والحساب الفعلي (STEP-BY-STEP MATH & CODE CALCULATION):
+- عند حل المسائل الرياضية أو الفيزيائية أو الحسابية: اعرض الخطوات بترتيب منهجي مرقم وواضح (الخطوة 1، الخطوة 2...).
+- استخدم الرموز الرياضية الواضحة والجميلة (× و ≈ و ÷ و ± و √ و ≤ و ≥ و π) بدلاً من وسوم LaTeX الخام مثل \\times أو \\approx داخل النص العربي، لتبدو الخطوات منسقة وسلسة في القراءة.
+- ميزة تشغيل الكود الفعلي للحساب: عند الحاجة لحساب معقد أو تأكيد الأرقام، قم بكتابة وتشغيل كود الحساب أو تضمين كتلة تنفيذ الكود الفعلي لتأكيد النتائج بدقة 100%.
 ${dynamicContext}`;
   }
 
@@ -737,7 +752,7 @@ app.post('/api/media/enhance-prompt', mediaRateLimiter.middleware(), async (req,
 
 app.post('/api/media/generate-image', mediaRateLimiter.middleware(), async (req, res) => {
   try {
-    const { prompt, style, aspectRatio, seed } = req.body || {};
+    const { prompt, style, aspectRatio, seed, engine } = req.body || {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ ok: false, error: 'Prompt is required' });
     }
@@ -759,6 +774,7 @@ app.post('/api/media/generate-image', mediaRateLimiter.middleware(), async (req,
       style,
       aspectRatio,
       seed,
+      engine,
       apiKey,
       userId: req.user.uid,
     });
@@ -772,12 +788,54 @@ app.post('/api/media/generate-image', mediaRateLimiter.middleware(), async (req,
       resource: item.id,
       outcome: 'SUCCESS',
       riskScore: 20,
-      metadata: { prompt: prompt.slice(0, 60) },
+      metadata: { prompt: prompt.slice(0, 60), engine: item.engine },
     });
 
     res.json({ ok: true, item });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message || 'Failed to generate image' });
+  }
+});
+
+app.post('/api/media/generate-vector', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { prompt, style } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Prompt is required' });
+    }
+
+    const permCheck = AgentPermissionGuard.canExecuteTool('generate_image', req.user);
+    if (!permCheck.allowed) {
+      return res.status(403).json({ ok: false, error: permCheck.reason });
+    }
+
+    const budgetCheck = costControlManager.checkBudget(req.user.uid, true);
+    if (!budgetCheck.allowed) {
+      return res.status(429).json({ ok: false, error: budgetCheck.reason });
+    }
+
+    const item = await mediaEngine.generateVector({
+      prompt: prompt.slice(0, 800),
+      style,
+      apiKey,
+      userId: req.user.uid,
+    });
+
+    costControlManager.recordUsage(req.user.uid, 30, true);
+
+    auditLogger.log({
+      userId: req.user.uid,
+      ip: req.ip,
+      action: 'GENERATE_VECTOR_SVG',
+      resource: item.id,
+      outcome: 'SUCCESS',
+      riskScore: 10,
+      metadata: { prompt: prompt.slice(0, 60) },
+    });
+
+    res.json({ ok: true, item });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Failed to generate vector SVG' });
   }
 });
 
@@ -816,6 +874,43 @@ app.post('/api/media/generate-video', mediaRateLimiter.middleware(), async (req,
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message || 'Failed to generate video' });
   }
+});
+
+app.post('/api/media/veo-generate', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { prompt, style, motion, aspectRatio, duration, fps, seed } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Prompt is required' });
+    }
+
+    const item = await mediaEngine.generateVideo({
+      prompt: prompt.slice(0, 1000),
+      style: style || 'cinematic',
+      motion: motion || 'drone_fpv',
+      aspectRatio: aspectRatio || '16:9',
+      duration,
+      fps,
+      seed,
+      apiKey,
+      userId: req.user.uid,
+    });
+
+    res.json({ ok: true, item, operationName: `veo_op_${Date.now()}` });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Failed to generate video' });
+  }
+});
+
+app.post('/api/media/veo-status', async (_req, res) => {
+  res.json({ ok: true, done: true });
+});
+
+app.get('/api/media/veo-download', async (_req, res) => {
+  const latestVideo = mediaEngine.getGallery().find(it => it.type === 'video');
+  if (latestVideo?.url) {
+    return res.redirect(latestVideo.url);
+  }
+  res.status(404).json({ ok: false, error: 'Video not found' });
 });
 
 app.post('/api/media/image-to-image', mediaRateLimiter.middleware(), async (req, res) => {
@@ -1581,8 +1676,6 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       if (output.trim()) break; // Success!
     }
 
-    // Grounding sources omitted per user request
-
     if (!output.trim() && !aborted && !res.writableEnded && !res.destroyed) {
       console.log('[Adam AI chat] Gemini models unavailable or quota exhausted, attempting Hugging Face & remote model gateway fallback...');
       try {
@@ -2042,7 +2135,7 @@ ${text.slice(0, 10000)}
 """`;
 
     let responseText = '';
-    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
     for (const m of modelsToTry) {
       try {

@@ -20,7 +20,7 @@ import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileW
 
 const DEFAULT_PREFERENCES: AppPreferences = {
   agentName: 'Adam',
-  language: 'ar',
+  language: 'en',
   theme: 'glass-dark',
   onboardingComplete: true,
 };

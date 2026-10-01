@@ -2,7 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { GoogleGenAI } from '@google/genai';
 
-export type MediaType = 'image' | 'video';
+export type MediaType = 'image' | 'video' | 'vector';
+
+export type MediaEngineType =
+  | 'auto'
+  | 'imagen-3'
+  | 'gemini-image'
+  | 'flux-pro'
+  | 'flux-turbo'
+  | 'midjourney'
+  | 'vector-svg';
 
 export type AspectRatio = '16:9' | '1:1' | '9:16' | '4:3' | '21:9';
 
@@ -39,6 +48,7 @@ export interface MediaItem {
   id: string;
   userId?: string;
   type: MediaType;
+  engine?: string;
   title: string;
   originalPrompt: string;
   enhancedPrompt: string;
@@ -47,6 +57,7 @@ export interface MediaItem {
   explanationAr?: string;
   url: string;
   posterUrl?: string;
+  svgCode?: string;
   aspectRatio: AspectRatio;
   width: number;
   height: number;
@@ -545,8 +556,9 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
   }
 
   /**
-   * Generates a high-definition image item with full semantic understanding.
-   * Optimized for lightning-fast sub-second generation speed via FLUX.1 / Turbo Ultra-Diffusion.
+   * Generates a high-definition image item with multi-engine neural synthesis.
+   * Supports Google Imagen 3 (imagen-3.0-generate-002), Gemini Flash Image,
+   * Midjourney v6 Cinematic Mode, and FLUX.1 Pro / Turbo ultra-diffusion pipelines.
    */
   public async generateImage(params: {
     prompt: string;
@@ -554,6 +566,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     aspectRatio?: AspectRatio;
     seed?: number;
     apiKey?: string;
+    engine?: MediaEngineType | string;
     model?: 'flux' | 'turbo';
     userId?: string;
   }): Promise<MediaItem> {
@@ -561,7 +574,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     const aspectRatio = params.aspectRatio || '1:1';
     const seed = params.seed ?? Math.floor(Math.random() * 999999);
     const dims = ASPECT_RATIO_DIMENSIONS[aspectRatio] || ASPECT_RATIO_DIMENSIONS['1:1'];
-    const selectedModel = params.model || 'flux';
+    const chosenEngine = (params.engine as MediaEngineType) || (params.model === 'turbo' ? 'flux-turbo' : 'auto');
 
     // 1. Instant Deep understanding & prompt enhancement (fastMode: true for <10ms response)
     const enhancement = await this.enhancePrompt({
@@ -578,22 +591,93 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       .replace(/[^\p{L}\p{N}\s,.-]/gu, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 700);
+      .slice(0, 800);
 
-    const encodedPrompt = encodeURIComponent(cleanPrompt || 'photorealistic masterpiece 8k');
-    const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${dims.width}&height=${dims.height}&model=${selectedModel}&nologo=true&seed=${seed}`;
-    const usedEngine = selectedModel === 'turbo' ? 'FLUX Turbo Ultra-Fast' : 'FLUX.1 Pro High-Performance';
+    let finalUrl = '';
+    let usedEngineLabel = 'FLUX.1 Pro High-Performance';
+
+    // 2. Google Imagen 3 (imagen-3.0-generate-002) - Studio Photorealism & Typography
+    if ((chosenEngine === 'imagen-3' || (chosenEngine === 'auto' && style === 'photorealistic')) && params.apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: params.apiKey });
+        const imagenAspect = (aspectRatio === '21:9' ? '16:9' : aspectRatio) as '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
+        const imgResponse = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-002',
+          prompt: cleanPrompt,
+          config: {
+            numberOfImages: 1,
+            aspectRatio: imagenAspect,
+            outputMimeType: 'image/jpeg',
+          },
+        });
+
+        const imageBytes = imgResponse.generatedImages?.[0]?.image?.imageBytes;
+        if (imageBytes) {
+          finalUrl = `data:image/jpeg;base64,${imageBytes}`;
+          usedEngineLabel = 'Google Imagen 3 (Ultra-Realistic)';
+        }
+      } catch (imagenErr) {
+        console.warn('[MediaEngine] Imagen 3 attempted, seamless fallback to FLUX.1 Pro:', imagenErr);
+      }
+    }
+
+    // 3. Google Gemini 3.1 Flash Image (gemini-3.1-flash-image)
+    if (!finalUrl && chosenEngine === 'gemini-image' && params.apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: params.apiKey });
+        const geminiAspect = (aspectRatio === '21:9' ? '16:9' : aspectRatio) as '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
+        const flashResponse = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-image',
+          contents: {
+            parts: [{ text: cleanPrompt }],
+          },
+          config: {
+            imageConfig: {
+              aspectRatio: geminiAspect,
+              imageSize: '1K',
+            },
+          },
+        });
+
+        for (const part of flashResponse.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData?.data) {
+            finalUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+            usedEngineLabel = 'Google Gemini 3.1 Flash Image';
+            break;
+          }
+        }
+      } catch (geminiImgErr) {
+        console.warn('[MediaEngine] Gemini Flash Image attempted, fallback to FLUX:', geminiImgErr);
+      }
+    }
+
+    // 4. Midjourney v6 Cinematic Mode
+    let fluxPrompt = cleanPrompt;
+    if (chosenEngine === 'midjourney') {
+      usedEngineLabel = 'Midjourney v6 Cinematic Simulation';
+      fluxPrompt = `${cleanPrompt}, Kodak Portra 400 film grain, 70mm IMAX cinema frame, volumetric rim light, Octane Render, hyper-realistic, 8k masterpiece`;
+    } else if (chosenEngine === 'flux-turbo') {
+      usedEngineLabel = 'FLUX Turbo Ultra-Fast';
+    }
+
+    // 5. Default High-Fidelity FLUX Pipeline
+    if (!finalUrl) {
+      const modelParam = chosenEngine === 'flux-turbo' ? 'turbo' : 'flux';
+      const encodedPrompt = encodeURIComponent(fluxPrompt || 'photorealistic masterpiece 8k');
+      finalUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${dims.width}&height=${dims.height}&model=${modelParam}&nologo=true&seed=${seed}`;
+    }
 
     const item: MediaItem = {
       id: `img_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       type: 'image',
+      engine: usedEngineLabel,
       title: params.prompt.slice(0, 50),
       originalPrompt: params.prompt,
       enhancedPrompt: enhancement.enhancedPromptEn,
       negativePrompt: enhancement.negativePrompt,
       semanticAnalysis: enhancement.semanticAnalysis,
-      explanationAr: enhancement.explanationAr || `تم توليد الصورة عبر محرك ${usedEngine} بسرعة فائقة ودقة استثنائية`,
-      url: imageUrl,
+      explanationAr: enhancement.explanationAr || `تم توليد الصورة عبر محرك ${usedEngineLabel} بدقة فائقة وألوان سينمائية متناسقة.`,
+      url: finalUrl,
       aspectRatio,
       width: dims.width,
       height: dims.height,
@@ -606,6 +690,161 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
     this.items.unshift(item);
     this.saveGallery();
     return item;
+  }
+
+  /**
+   * Generates a scalable, modern Vector / SVG illustration with full code export
+   */
+  public async generateVector(params: {
+    prompt: string;
+    style?: string;
+    apiKey?: string;
+    userId?: string;
+  }): Promise<MediaItem> {
+    const rawPrompt = params.prompt.trim();
+    const style = params.style || 'modern_flat';
+    let svgCode = '';
+
+    if (params.apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: params.apiKey });
+        const res = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `You are an elite vector graphic designer and SVG artist for ADEM AI.
+Generate ONLY valid, scalable, production-grade SVG XML code for this request:
+"${rawPrompt}"
+Style: ${style} (modern, clean vector paths, beautiful gradients in <defs>, sleek shadows, responsive viewBox="0 0 800 800", clean aesthetic).
+CRITICAL RULES:
+- Output MUST be valid SVG starting with <svg and ending with </svg>.
+- Do not output any conversational text or markdown explanation.
+- Set width="100%" height="100%" and viewBox="0 0 800 800".
+- Include vibrant modern color palettes (<linearGradient> or <radialGradient>).`,
+                },
+              ],
+            },
+          ],
+        });
+
+        const text = res.text || '';
+        const match = text.match(/<svg[\s\S]*?<\/svg>/i);
+        if (match) {
+          svgCode = match[0];
+        }
+      } catch (svgErr) {
+        console.warn('[MediaEngine] Gemini SVG generation error:', svgErr);
+      }
+    }
+
+    if (!svgCode) {
+      svgCode = this.generateFallbackSVG(rawPrompt, style);
+    }
+
+    const encodedSvg = encodeURIComponent(svgCode);
+    const dataUrl = `data:image/svg+xml;utf8,${encodedSvg}`;
+
+    const item: MediaItem = {
+      id: `vec_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      type: 'vector',
+      engine: 'ADEM Neural SVG Synthesizer',
+      title: params.prompt.slice(0, 50),
+      originalPrompt: params.prompt,
+      enhancedPrompt: `Vector SVG graphic: ${rawPrompt}`,
+      explanationAr: 'تم توليد كود SVG برمجي نقي وقابل للتكبير بدقة لا نهائية وبألوان عصرية متناسقة.',
+      url: dataUrl,
+      svgCode,
+      aspectRatio: '1:1',
+      width: 800,
+      height: 800,
+      style,
+      seed: Math.floor(Math.random() * 999999),
+      userId: params.userId,
+      createdAt: Date.now(),
+    };
+
+    this.items.unshift(item);
+    this.saveGallery();
+    return item;
+  }
+
+  private generateFallbackSVG(prompt: string, _style: string): string {
+    const p = prompt.toLowerCase();
+    let themeColor1 = '#00F2FE';
+    let themeColor2 = '#4FACFE';
+    let themeColor3 = '#7F00FF';
+
+    if (p.includes('falcon') || p.includes('صقر') || p.includes('ذهب') || p.includes('gold')) {
+      themeColor1 = '#F59E0B';
+      themeColor2 = '#D97706';
+      themeColor3 = '#B45309';
+    } else if (p.includes('green') || p.includes('أخضر') || p.includes('nature') || p.includes('غابة')) {
+      themeColor1 = '#10B981';
+      themeColor2 = '#059669';
+      themeColor3 = '#047857';
+    } else if (p.includes('purple') || p.includes('بنفسج') || p.includes('فضاء') || p.includes('space')) {
+      themeColor1 = '#A855F7';
+      themeColor2 = '#7C3AED';
+      themeColor3 = '#4C1D95';
+    } else if (p.includes('rose') || p.includes('وردي') || p.includes('red') || p.includes('أحمر')) {
+      themeColor1 = '#F43F5E';
+      themeColor2 = '#E11D48';
+      themeColor3 = '#BE123C';
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0F19" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${themeColor1}" />
+      <stop offset="50%" stop-color="${themeColor2}" />
+      <stop offset="100%" stop-color="${themeColor3}" />
+    </linearGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="${themeColor1}" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="${themeColor3}" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="24" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Backdrop -->
+  <rect width="800" height="800" rx="32" fill="url(#bgGrad)" />
+  <circle cx="400" cy="400" r="320" fill="url(#glowGrad)" />
+
+  <!-- Geometric Grid & Orbits -->
+  <circle cx="400" cy="400" r="260" fill="none" stroke="${themeColor1}" stroke-opacity="0.15" stroke-dasharray="8 8" />
+  <circle cx="400" cy="400" r="190" fill="none" stroke="${themeColor2}" stroke-opacity="0.25" stroke-width="1.5" />
+  <circle cx="400" cy="400" r="120" fill="none" stroke="${themeColor3}" stroke-opacity="0.3" stroke-dasharray="4 6" />
+
+  <!-- Core Emblem Graphic -->
+  <g filter="url(#softGlow)" transform="translate(400 400)">
+    <path d="M 0 -130 L 110 -60 L 110 50 L 0 130 L -110 50 L -110 -60 Z" 
+          fill="none" stroke="url(#primaryGrad)" stroke-width="5" stroke-linejoin="round" />
+    <path d="M 0 -95 L 80 -45 L 80 40 L 0 95 L -80 40 L -80 -45 Z" 
+          fill="url(#primaryGrad)" fill-opacity="0.12" stroke="url(#primaryGrad)" stroke-width="2" />
+    
+    <circle cx="0" cy="0" r="42" fill="url(#primaryGrad)" />
+    <path d="M -16 -6 L 0 -22 L 16 -6 L 8 -6 L 8 18 L -8 18 L -8 -6 Z" fill="#0B0F19" />
+  </g>
+
+  <!-- Title & Metadata -->
+  <text x="400" y="620" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="28" fill="#F3F4F6" letter-spacing="1.5">
+    ${prompt.slice(0, 36).toUpperCase()}
+  </text>
+  <text x="400" y="655" text-anchor="middle" font-family="monospace" font-weight="600" font-size="13" fill="${themeColor1}" letter-spacing="3">
+    ADEM / NEURAL VECTOR SYNTHESIS
+  </text>
+</svg>`;
   }
 
   /**

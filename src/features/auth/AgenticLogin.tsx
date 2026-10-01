@@ -78,15 +78,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
             transformPerspective: 1100,
           }}
         >
-          <motion.div
-            className="agentic-login__character-idle"
-            animate={{ y: [0, -8, 0], rotateZ: [-0.6, 0.6, -0.6], scale: [1, 1.018, 1] }}
-            transition={{
-              y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
-              rotateZ: { duration: 5.4, repeat: Infinity, ease: 'easeInOut' },
-              scale: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
-            }}
-          >
+          <div className="agentic-login__character-idle">
             <img
               className="agentic-login__character-image"
               src="/adam-character.svg"
@@ -94,8 +86,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
               draggable={false}
               loading="eager"
             />
-
-          </motion.div>
+          </div>
         </motion.div>
 
         <div className="agentic-login__character-hud">

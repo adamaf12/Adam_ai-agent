@@ -67,7 +67,7 @@ export function normalizePreferences(input: Partial<AppPreferences> | null | und
   const theme = THEMES.includes(source.theme as Theme) ? source.theme as Theme : 'glass-dark';
   return {
     agentName: typeof source.agentName === 'string' && source.agentName.trim() ? source.agentName.trim().slice(0, 40) : 'Adam',
-    language: source.language === 'en' ? 'en' : 'ar',
+    language: source.language === 'ar' ? 'ar' : 'en',
     theme,
     onboardingComplete: source.onboardingComplete === true,
   };
@@ -259,7 +259,7 @@ export function saveConversation(conversation: ChatConversation): void {
   writeEnvelope(CONVERSATION_KEY, updated);
 }
 
-export function createNewConversation(initialTitle?: string, language: 'ar' | 'en' = 'ar'): ChatConversation {
+export function createNewConversation(initialTitle?: string, language: 'ar' | 'en' = 'en'): ChatConversation {
   const all = loadAllConversations();
   // Reuse existing empty conversation if active or first
   const existingEmpty = all.find(c => c.messages.length === 0);

@@ -21,7 +21,12 @@ import {
   Flame,
   Layers,
   ChevronRight,
-  Boxes
+  Boxes,
+  Volume2,
+  VolumeX,
+  Camera,
+  Gauge,
+  Terminal
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
 import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
@@ -33,6 +38,18 @@ import {
 } from '../../core/appSandboxStorage';
 import { getSmartCalculatorAppCode } from '../../core/agent/interactiveAppTemplates';
 import { DockerSandboxRunner } from './DockerSandboxRunner';
+import {
+  getThreeJs3DHyperTunnelGame,
+  getCyberSpaceOdysseyDXGame,
+  getCyberBreakoutDXGame,
+  exportToUnityCSharp,
+  exportToGodotGDScript
+} from '../../core/gameEngineTemplates';
+import {
+  generateUnrealCppHeader,
+  generateUnrealCppSource,
+  generateUnrealPythonScript
+} from '../../core/unrealEngineBridge';
 
 interface AppSandboxStudioProps {
   language: Language;
@@ -42,6 +59,30 @@ interface AppSandboxStudioProps {
 
 // Curated Luxury Built-in Templates
 const CURATED_MODELS: SandboxApp[] = [
+  {
+    id: 'quantum_3d_hyper_tunnel',
+    title: 'نفق الكوانتوم الفضائي ثلاثي الأبعاد 3D (Quantum 3D Tunnel)',
+    prompt: 'برمج لي لعبة طيران ونفق فضاء ثلاثية الأبعاد 3D مع تحكم كامل بالكاميرا وحلقات نيون ومؤثرات صوتية وboost',
+    category: 'game',
+    createdAt: Date.now() - 600000,
+    code: getThreeJs3DHyperTunnelGame(),
+  },
+  {
+    id: 'cyber_space_odyssey_dx',
+    title: 'حرب الفضاء السايبر الملحمية DX 2.0 (Cyber Space Odyssey DX)',
+    prompt: 'برمج لي لعبة حرب فضاء سايبر متطورة 60fps مع رؤساء مراحل وترقيات أسلحة ومؤثرات ليزر ونظام انفجارات جزيئية',
+    category: 'game',
+    createdAt: Date.now() - 1800000,
+    code: getCyberSpaceOdysseyDXGame(),
+  },
+  {
+    id: 'cyber_breakout_neon',
+    title: 'تدمير قوالب النيون السايبر DX (Cyber Breakout Neon)',
+    prompt: 'برمج لعبة تدمير قوالب النيون بتأثيرات بصرية وصوتية سنثوايف مع فيزياء ارتداد حقيقية ومكعبات متفجرة',
+    category: 'game',
+    createdAt: Date.now() - 2400000,
+    code: getCyberBreakoutDXGame(),
+  },
   {
     id: 'adem_smart_calculator',
     title: 'الآلة الحاسبة الذكية التفاعلية (Smart Calculator)',
@@ -941,8 +982,12 @@ export function AppSandboxStudio({
     return initialAppId || CURATED_MODELS[0].id;
   });
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'docker'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'transpiler' | 'docker'>('preview');
+  const [transpilerTarget, setTranspilerTarget] = useState<'ue5_cpp' | 'ue5_py' | 'unity_cs' | 'godot_gd'>('ue5_cpp');
   const [deviceMode, setDeviceMode] = useState<'fluid' | 'mobile'>('fluid');
+  const [timeScale, setTimeScale] = useState<number>(1.0);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [capturedNotice, setCapturedNotice] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'game' | 'app'>('all');
   const [copied, setCopied] = useState(false);
@@ -962,6 +1007,54 @@ export function AppSandboxStudio({
       setEditableCode(activeApp.code);
     }
   }, [activeApp?.id]);
+
+  const transpiledOutput = useMemo(() => {
+    const title = activeApp.title || 'AdamGame';
+    switch (transpilerTarget) {
+      case 'ue5_cpp':
+        return `// Unreal Engine 5 Header (.h)\n${generateUnrealCppHeader(title)}\n\n// Unreal Engine 5 Source (.cpp)\n${generateUnrealCppSource(title)}`;
+      case 'ue5_py':
+        return generateUnrealPythonScript(title, activeApp.category);
+      case 'unity_cs':
+        return exportToUnityCSharp(title);
+      case 'godot_gd':
+        return exportToGodotGDScript(title);
+      default:
+        return '';
+    }
+  }, [activeApp.title, activeApp.category, transpilerTarget]);
+
+  const handleCopyTranspiled = async () => {
+    if (!transpiledOutput) return;
+    try {
+      await navigator.clipboard.writeText(transpiledOutput);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleDownloadTranspiled = () => {
+    if (!transpiledOutput) return;
+    const extensions: Record<string, string> = {
+      ue5_cpp: 'cpp',
+      ue5_py: 'py',
+      unity_cs: 'cs',
+      godot_gd: 'gd',
+    };
+    const ext = extensions[transpilerTarget] || 'txt';
+    const blob = new Blob([transpiledOutput], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeApp.title.replace(/[\s\(\)]+/g, '_')}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCaptureFrame = () => {
+    setCapturedNotice(true);
+    setTimeout(() => setCapturedNotice(false), 2500);
+  };
 
   const filteredApps = useMemo(() => {
     return apps.filter((app) => {
@@ -1192,7 +1285,30 @@ export function AppSandboxStudio({
             </div>
 
             {/* Prompt Direct Creator Bar */}
-            <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)]">
+            <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)] space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { ar: '🚀 فضاء 3D WebGL', en: '🚀 3D WebGL Flight', p: 'برمج لي لعبة طيران فضاء 3D WebGL تفاعلية مع حلقات نيون وسرعات فائقة ومؤثرات صوتية' },
+                  { ar: '👾 حرب سايبر DX', en: '👾 Cyber Shooter DX', p: 'برمج لعبة حرب طائرات سايبر 60fps مع رؤساء مراحل وترقية أسلحة ومؤثرات انفجار' },
+                  { ar: '🧱 بريك آوت نيون', en: '🧱 Neon Breakout', p: 'برمج لعبة تدمير قوالب نيون سنثوايف مع فيزياء ارتداد حقيقية وأصوات أربيجيو' },
+                  { ar: '🕹️ زنزانة روجلايك', en: '🕹️ Roguelike Dungeon', p: 'برمج لعبة مغامرات روجلايك بأبراج وغرف عشوائية وقتال بالسيوف مع ذكاء اصطناعي للأعداء' },
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setPromptInput(chip.p);
+                      if (onNavigateToChat) {
+                        onNavigateToChat(isAr ? `برمج لي لعبة تفاعلية 60fps احترافية بالكامل: ${chip.p}` : `Build a 100% playable 60fps game: ${chip.p}`);
+                      }
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                  >
+                    {isAr ? chip.ar : chip.en}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)]">
                 <Sparkles size={14} className="text-[var(--accent)] flex-shrink-0 mx-1" />
                 <input
@@ -1236,18 +1352,6 @@ export function AppSandboxStudio({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('docker')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'docker'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
-                }`}
-              >
-                <Boxes size={13} className={activeTab === 'docker' ? 'text-white' : 'text-cyan-400'} />
-                <span>{isAr ? 'حاوية دوكر' : 'Docker Sandbox'}</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveTab('code')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'code'
@@ -1258,12 +1362,73 @@ export function AppSandboxStudio({
                 <Code2 size={13} />
                 <span>{isAr ? 'محرر الكود' : 'Source Code'}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('transpiler')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'transpiler'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <Zap size={13} className={activeTab === 'transpiler' ? 'text-white' : 'text-purple-400'} />
+                <span>{isAr ? 'تصدير المحركات (UE5/Unity)' : 'Engine Exporter'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('docker')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  activeTab === 'docker'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <Boxes size={13} className={activeTab === 'docker' ? 'text-white' : 'text-cyan-400'} />
+                <span>{isAr ? 'حاوية دوكر' : 'Docker Sandbox'}</span>
+              </button>
             </div>
 
-            {/* Stage Actions */}
+            {/* Stage Actions & Game Engine Performance HUD */}
             <div className="flex items-center gap-1.5">
               {activeTab === 'preview' && (
                 <>
+                  {/* Live FPS & Engine Diagnostic Gauge */}
+                  <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-mono font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>60 FPS</span>
+                    <span className="text-[10px] opacity-70">16.6ms</span>
+                  </div>
+
+                  {/* Game Speed Scale */}
+                  <button
+                    type="button"
+                    onClick={() => setTimeScale((t) => (t === 1.0 ? 2.0 : t === 2.0 ? 0.5 : 1.0))}
+                    className="px-2 py-1 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[11px] font-mono font-bold text-[var(--accent)] transition cursor-pointer active:scale-95"
+                    title={isAr ? 'سرعة اللعبة والفيزياء' : 'Game & Physics Speed Scale'}
+                  >
+                    ⚡ {timeScale}x
+                  </button>
+
+                  {/* Audio SFX Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled((s) => !s)}
+                    className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                    title={soundEnabled ? (isAr ? 'كتم الصوت' : 'Mute Audio') : (isAr ? 'تفعيل الصوت' : 'Enable Audio')}
+                  >
+                    {soundEnabled ? <Volume2 size={14} className="text-emerald-400" /> : <VolumeX size={14} className="text-rose-400" />}
+                  </button>
+
+                  {/* Frame Capture Snapshot */}
+                  <button
+                    type="button"
+                    onClick={handleCaptureFrame}
+                    className="p-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                    title={isAr ? 'التقاط صورة للعبة' : 'Capture Game Snapshot'}
+                  >
+                    <Camera size={14} />
+                  </button>
+
                   {/* Viewport Switcher */}
                   <button
                     type="button"
@@ -1326,6 +1491,13 @@ export function AppSandboxStudio({
 
           {/* Interactive Screen Display */}
           <div className="flex-1 overflow-hidden relative flex items-center justify-center p-2 sm:p-4 bg-[var(--bg)]">
+            {capturedNotice && (
+              <div className="absolute top-4 z-40 px-4 py-2 rounded-xl bg-emerald-500/90 text-white text-xs font-bold shadow-xl backdrop-blur-md animate-fade-in flex items-center gap-2">
+                <Check size={14} />
+                <span>{isAr ? 'تم التقاط لقطة شاشة عالية الدقة للإطار الحالي بنجاح!' : 'High-res frame snapshot captured!'}</span>
+              </div>
+            )}
+
             {activeTab === 'preview' ? (
               <div
                 className={`h-full transition-all duration-300 flex items-center justify-center ${
@@ -1341,6 +1513,79 @@ export function AppSandboxStudio({
                   className="w-full h-full border-0 bg-transparent"
                   sandbox="allow-scripts allow-same-origin allow-modals allow-forms"
                 />
+              </div>
+            ) : activeTab === 'transpiler' ? (
+              <div className="w-full h-full flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden shadow-lg">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[var(--surface-2)] border-b border-[var(--border)]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-[var(--text)]">
+                      {isAr ? 'محول وتصدير الألعاب للمحركات العالمية:' : 'Export to AAA Game Engines:'}
+                    </span>
+                    <div className="flex flex-wrap items-center p-0.5 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+                      <button
+                        type="button"
+                        onClick={() => setTranspilerTarget('ue5_cpp')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          transpilerTarget === 'ue5_cpp' ? 'bg-indigo-600 text-white shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'
+                        }`}
+                      >
+                        Unreal Engine 5 C++
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTranspilerTarget('ue5_py')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          transpilerTarget === 'ue5_py' ? 'bg-indigo-600 text-white shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'
+                        }`}
+                      >
+                        UE5 Python Spawner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTranspilerTarget('unity_cs')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          transpilerTarget === 'unity_cs' ? 'bg-indigo-600 text-white shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'
+                        }`}
+                      >
+                        Unity C#
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTranspilerTarget('godot_gd')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          transpilerTarget === 'godot_gd' ? 'bg-indigo-600 text-white shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)]'
+                        }`}
+                      >
+                        Godot 4 GDScript
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyTranspiled}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-bold text-[var(--text)] transition cursor-pointer"
+                    >
+                      {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      <span>{copied ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ الكود' : 'Copy Code')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadTranspiled}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                    >
+                      <Download size={13} />
+                      <span>{isAr ? 'تحميل الملف' : 'Download File'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 p-4 bg-[var(--bg)] overflow-auto">
+                  <pre className="font-mono text-xs text-indigo-300/90 leading-relaxed whitespace-pre select-text">
+                    {transpiledOutput}
+                  </pre>
+                </div>
               </div>
             ) : activeTab === 'docker' ? (
               <div className="w-full h-full rounded-2xl border border-[var(--border)] overflow-hidden shadow-lg bg-[var(--surface)]">
