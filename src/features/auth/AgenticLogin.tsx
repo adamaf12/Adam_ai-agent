@@ -24,10 +24,10 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
   const fallbackAuth = onOpenFallbackAuth || onOpenAuth;
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
-  const characterX = useSpring(useTransform(cursorX, [-1, 1], [-30, 30]), { stiffness: 120, damping: 18, mass: 0.8 });
-  const characterY = useSpring(useTransform(cursorY, [-1, 1], [-18, 18]), { stiffness: 120, damping: 18, mass: 0.8 });
-  const characterRotateY = useSpring(useTransform(cursorX, [-1, 1], [-18, 18]), { stiffness: 110, damping: 16, mass: 0.9 });
-  const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [14, -14]), { stiffness: 110, damping: 16, mass: 0.9 });
+  const characterX = useSpring(useTransform(cursorX, [-1, 1], [-54, 54]), { stiffness: 125, damping: 16, mass: 0.75 });
+  const characterY = useSpring(useTransform(cursorY, [-1, 1], [-32, 32]), { stiffness: 125, damping: 16, mass: 0.75 });
+  const characterRotateY = useSpring(useTransform(cursorX, [-1, 1], [-27, 27]), { stiffness: 115, damping: 15, mass: 0.85 });
+  const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [22, -22]), { stiffness: 115, damping: 15, mass: 0.85 });
 
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
