@@ -272,12 +272,28 @@ function buildIntentProtocol(prompt: string, history: Array<any>, language: 'ar'
 }
 
 function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
-  // Gemini 3.8 Flash rejects legacy temperature/topP generation fields.
-  if (modelId === 'gemini-3.8-flash') {
-    const { temperature: _temperature, topP: _topP, ...compatible } = baseConfig;
-    return compatible;
+  const config = { ...baseConfig };
+
+  if (modelId.startsWith('gemini-3.8') || modelId.startsWith('gemini-3.')) {
+    delete config.temperature;
+    delete config.topP;
+    if (config.thinkingConfig?.thinkingBudget) {
+      const budget = config.thinkingConfig.thinkingBudget;
+      config.thinkingConfig = {
+        thinkingLevel: budget > 4096 ? 'high' : budget > 1024 ? 'medium' : 'low',
+      };
+    }
+  } else if (modelId.startsWith('gemini-2.5') || modelId.startsWith('gemini-2.')) {
+    if (config.thinkingConfig?.thinkingLevel) {
+      const level = config.thinkingConfig.thinkingLevel;
+      const budget = level === 'high' ? 8192 : level === 'medium' ? 4096 : 1024;
+      config.thinkingConfig = { thinkingBudget: budget };
+    }
+  } else {
+    delete config.thinkingConfig;
   }
-  return baseConfig;
+
+  return config;
 }
 
 function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: string): string {

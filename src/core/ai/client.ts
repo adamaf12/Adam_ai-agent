@@ -42,33 +42,25 @@ export function getLiveServerEndpoints(): string[] {
     endpoints.push(envUrl.replace(/\/$/, ''));
   }
 
-  // 3. Web same-origin (if hosted online on HTTP/HTTPS and not local file/capacitor)
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin || '';
-    if (origin && /^https?:\/\//i.test(origin) && !origin.includes('localhost') && !origin.startsWith('file:') && !origin.startsWith('capacitor:')) {
-      endpoints.push(origin.replace(/\/$/, ''));
-    }
+  // 3. Web same-origin (relative path)
+  if (!isNativeApp()) {
+    endpoints.push('');
   }
 
-  // 4. Canonical production backend. Native APKs must not depend on the local Capacitor origin.
-  endpoints.push(PRODUCTION_API_SERVER);
-
-  // 5. Legacy Cloud Run fallbacks, only after production.
+  // 4. Live Cloud Run fallbacks for Native APK / WebView
   endpoints.push(PRIMARY_CLOUD_SERVER);
   endpoints.push(SECONDARY_CLOUD_SERVER);
+  endpoints.push(PRODUCTION_API_SERVER);
 
-  return Array.from(new Set(endpoints.filter(Boolean)));
+  return Array.from(new Set(endpoints));
 }
 
 export function getResolvedApiBase(): string {
-  const endpoints = getLiveServerEndpoints();
-  if (endpoints.length > 0) {
-    if (!isNativeApp() && typeof window !== 'undefined' && /^https?:\/\//i.test(window.location.origin) && !window.location.origin.includes('localhost') && !window.location.origin.startsWith('file:') && !window.location.origin.startsWith('capacitor:')) {
-      return ''; // Browser deployment uses same-origin relative paths
-    }
-    return endpoints[0];
+  if (!isNativeApp()) {
+    return ''; // Browser deployments always use same-origin relative paths
   }
-  return PRIMARY_CLOUD_SERVER;
+  const endpoints = getLiveServerEndpoints();
+  return endpoints.find((e) => e.length > 0) || PRIMARY_CLOUD_SERVER;
 }
 
 /**
@@ -228,7 +220,7 @@ async function streamRequest(
   // 3. Multi-Server Resilient Failover for APK and Web
   const candidateEndpoints = isNativeApp()
     ? getLiveServerEndpoints()
-    : [getResolvedApiBase(), ...getLiveServerEndpoints()];
+    : Array.from(new Set(['', ...getLiveServerEndpoints()]));
 
   let lastError: unknown = null;
 

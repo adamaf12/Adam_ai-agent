@@ -42,7 +42,6 @@ import { createResponseState, reduceResponseEvent, type ResponseState } from '..
 import { createAssistantMessage, createUserMessage } from './chatModel';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
-import { StreamingIndicator } from './StreamingIndicator';
 import { copy } from '../../core/i18n';
 import {
   loadConversation,
@@ -652,26 +651,6 @@ export function Chat({
                   />
                 );
               })}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {busy && (
-                <StreamingIndicator
-                  key="chat-streaming-indicator"
-                  label={
-                    /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
-                    !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
-                      ? (language === 'ar' ? 'ADEM يولد الصورة ويضبط الإضاءة السينمائية…' : 'ADEM is synthesizing and rendering the image…')
-                      : (language === 'ar' ? 'ADEM يعمل على إجابتك…' : 'ADEM is formulating response…')
-                  }
-                  isImage={
-                    /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(lastPrompt) &&
-                    !/(?:برمج|كود|تطبيق|html|javascript|code|calculator)/i.test(lastPrompt)
-                  }
-                  language={language}
-                  prompt={lastPrompt}
-                />
-              )}
             </AnimatePresence>
           </div>
         )}

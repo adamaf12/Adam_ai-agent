@@ -718,6 +718,17 @@ export function MessageBubble({
                     {displayMarkdown}
                   </ReactMarkdown>
                 </div>
+              ) : !imageCardData && !agentActions.length && !academicData && !mediaData && !iqData && !geoData && !taskData && !translationData && !adkData && !adkPlanData && !appData ? (
+                <div className="flex items-center gap-2 text-xs text-[var(--muted)] py-1 select-none">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce" />
+                  </span>
+                  <span className="text-xs text-[var(--muted)] font-medium ms-1">
+                    {language === 'ar' ? 'ADEM يكتب الرد…' : 'ADEM is formulating response…'}
+                  </span>
+                </div>
               ) : null}
 
               {/* Inline Live Translation Container */}
@@ -749,86 +760,88 @@ export function MessageBubble({
                 </div>
               )}
 
-              {/* Modern Minimalist Action Bar */}
-              <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border)]">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="message-action"
-                    onClick={copy}
-                    title={language === 'ar' ? 'نسخ الإجابة كاملة' : 'Copy entire answer'}
-                  >
-                    {copiedMessage ? (
-                      <>
-                        <Check size={13} className="text-emerald-400" />
-                        <span className="text-[11px] text-emerald-400">{language === 'ar' ? 'تم النسخ' : 'Copied'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={13} />
-                        <span className="text-[11px]">{language === 'ar' ? 'نسخ' : 'Copy'}</span>
-                      </>
-                    )}
-                  </button>
+              {/* Modern Minimalist Action Bar - Only when content is present */}
+              {displayMarkdown && displayMarkdown.trim().length > 0 && (
+                <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border)]">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="message-action"
+                      onClick={copy}
+                      title={language === 'ar' ? 'نسخ الإجابة كاملة' : 'Copy entire answer'}
+                    >
+                      {copiedMessage ? (
+                        <>
+                          <Check size={13} className="text-emerald-400" />
+                          <span className="text-[11px] text-emerald-400">{language === 'ar' ? 'تم النسخ' : 'Copied'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} />
+                          <span className="text-[11px]">{language === 'ar' ? 'نسخ' : 'Copy'}</span>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    className={`message-action ${isSpeaking ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : ''}`}
-                    onClick={toggleSpeak}
-                    title={isSpeaking ? (language === 'ar' ? 'إيقاف القراءة الصوتية' : 'Stop speaking') : (language === 'ar' ? 'قراءة صوتية ذكية' : 'Read aloud')}
-                  >
-                    {isSpeaking ? (
-                      <>
-                        <VolumeX size={13} className="text-amber-400 animate-pulse" />
-                        <span className="text-[11px] text-amber-400">{language === 'ar' ? 'إيقاف' : 'Stop'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Volume2 size={13} />
-                        <span className="text-[11px]">{language === 'ar' ? 'قراءة' : 'Speak'}</span>
-                      </>
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      className={`message-action ${isSpeaking ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : ''}`}
+                      onClick={toggleSpeak}
+                      title={isSpeaking ? (language === 'ar' ? 'إيقاف القراءة الصوتية' : 'Stop speaking') : (language === 'ar' ? 'قراءة صوتية ذكية' : 'Read aloud')}
+                    >
+                      {isSpeaking ? (
+                        <>
+                          <VolumeX size={13} className="text-amber-400 animate-pulse" />
+                          <span className="text-[11px] text-amber-400">{language === 'ar' ? 'إيقاف' : 'Stop'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 size={13} />
+                          <span className="text-[11px]">{language === 'ar' ? 'قراءة' : 'Speak'}</span>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    className={`message-action ${showInlineTranslation ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : ''}`}
-                    onClick={async () => {
-                      if (showInlineTranslation) {
-                        setShowInlineTranslation(false);
-                        return;
-                      }
-                      setShowInlineTranslation(true);
-                      if (!inlineTranslation) {
-                        setIsTranslating(true);
-                        try {
-                          const cleanText = (displayMarkdown || message.content).replace(/```[\s\S]*?```/g, '').trim();
-                          const targetLang = language === 'ar' ? 'en' : 'ar';
-                          const res = await requestTranslation({
-                            text: cleanText.slice(0, 3000),
-                            sourceLang: 'auto',
-                            targetLang,
-                            tone: 'general',
-                          });
-                          setInlineTranslation(res.translatedText);
-                        } catch {
-                          setInlineTranslation(language === 'ar' ? 'تعذرت الترجمة مؤقتاً' : 'Translation failed temporarily');
-                        } finally {
-                          setIsTranslating(false);
+                    <button
+                      type="button"
+                      className={`message-action ${showInlineTranslation ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : ''}`}
+                      onClick={async () => {
+                        if (showInlineTranslation) {
+                          setShowInlineTranslation(false);
+                          return;
                         }
-                      }
-                    }}
-                    title={language === 'ar' ? 'ترجمة فورية للرسالة' : 'Instant translate'}
-                  >
-                    <Languages size={13} />
-                    <span className="text-[11px]">{language === 'ar' ? 'ترجمة' : 'Translate'}</span>
-                  </button>
-                </div>
+                        setShowInlineTranslation(true);
+                        if (!inlineTranslation) {
+                          setIsTranslating(true);
+                          try {
+                            const cleanText = (displayMarkdown || message.content).replace(/```[\s\S]*?```/g, '').trim();
+                            const targetLang = language === 'ar' ? 'en' : 'ar';
+                            const res = await requestTranslation({
+                              text: cleanText.slice(0, 3000),
+                              sourceLang: 'auto',
+                              targetLang,
+                              tone: 'general',
+                            });
+                            setInlineTranslation(res.translatedText);
+                          } catch {
+                            setInlineTranslation(language === 'ar' ? 'تعذرت الترجمة مؤقتاً' : 'Translation failed temporarily');
+                          } finally {
+                            setIsTranslating(false);
+                          }
+                        }
+                      }}
+                      title={language === 'ar' ? 'ترجمة فورية للرسالة' : 'Instant translate'}
+                    >
+                      <Languages size={13} />
+                      <span className="text-[11px]">{language === 'ar' ? 'ترجمة' : 'Translate'}</span>
+                    </button>
+                  </div>
 
-                <div className="text-[11px] text-[var(--muted)] font-normal select-none">
-                  {displayMarkdown && `${displayMarkdown.split(/\s+/).filter(Boolean).length} ${language === 'ar' ? 'كلمة' : 'words'}`}
+                  <div className="text-[11px] text-[var(--muted)] font-normal select-none">
+                    {displayMarkdown && `${displayMarkdown.split(/\s+/).filter(Boolean).length} ${language === 'ar' ? 'كلمة' : 'words'}`}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
