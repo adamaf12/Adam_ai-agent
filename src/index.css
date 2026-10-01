@@ -1346,3 +1346,65 @@ body {
 @media(prefers-reduced-motion:reduce){
   .agentic-login__character{transform:none!important}
 }
+
+
+/* ===== CHARACTER MOUSE FOLLOW v4 — visible cursor-reactive 3D character ===== */
+.agentic-login__character{
+  transform-origin:50% 72%!important;
+  will-change:transform,filter!important;
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+.agentic-login__character-idle{
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+.agentic-login__character-image{
+  transform-origin:50% 70%!important;
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+.agentic-login__scene::after{
+  content:'';
+  position:absolute;
+  width:clamp(180px,22vw,320px);
+  height:clamp(36px,5vw,72px);
+  left:45%;
+  top:79%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.48),transparent 70%);
+  filter:blur(12px);
+  opacity:.72;
+  pointer-events:none;
+  transition:transform .18s ease-out,opacity .25s ease;
+}
+.agentic-login__scene::before{
+  content:'';
+  position:absolute;
+  left:44%;
+  top:48%;
+  width:180px;
+  height:180px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,178,92,.14),transparent 68%);
+  filter:blur(20px);
+  pointer-events:none;
+  animation:adam-character-aura 4.5s ease-in-out infinite;
+}
+@keyframes adam-character-aura{
+  0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(.94)}
+  50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}
+}
+@media(max-width:899px){
+  .agentic-login__scene::after{left:76%;top:73%}
+  .agentic-login__scene::before{left:76%;top:48%}
+}
+@media(max-width:600px){
+  .agentic-login__scene::after{left:79%;top:69%;width:150px;height:40px}
+  .agentic-login__scene::before{left:79%;top:43%;width:130px;height:130px}
+}
+@media(prefers-reduced-motion:reduce){
+  .agentic-login__scene::before{animation:none}
+}
