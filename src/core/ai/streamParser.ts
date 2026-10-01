@@ -8,7 +8,7 @@ export interface ParsedStream {
   remainder: string;
 }
 
-function parseEvent(line: string): StreamEvent {
+function parseEvent(line: string): StreamEvent | null {
   let value: unknown;
   try {
     value = JSON.parse(line);
@@ -16,34 +16,57 @@ function parseEvent(line: string): StreamEvent {
     throw new Error('INVALID_STREAM_JSON');
   }
 
-  if (!value || typeof value !== 'object' || !('type' in value)) throw new Error('INVALID_STREAM_EVENT');
+  if (!value || typeof value !== 'object' || !('type' in value)) return null;
   const event = value as Record<string, unknown>;
 
-  if (event.type === 'delta' && typeof event.text === 'string') return { type: 'delta', text: event.text };
-  if (event.type === 'done') return { type: 'done' };
-  if (event.type === 'error' && typeof event.code === 'string' && typeof event.message === 'string') {
-    return { type: 'error', code: event.code, message: event.message };
+  if (event.type === 'delta') {
+    return { type: 'delta', text: typeof event.text === 'string' ? event.text : '' };
   }
-  throw new Error('INVALID_STREAM_EVENT');
+  if (event.type === 'done') {
+    return { type: 'done' };
+  }
+  if (event.type === 'error') {
+    return {
+      type: 'error',
+      code: typeof event.code === 'string' ? event.code : 'AI_ERROR',
+      message: typeof event.message === 'string' ? event.message : 'Unknown AI error',
+    };
+  }
+  return null;
 }
 
 export function parseStreamLines(input: string): ParsedStream {
   const lines = input.split('\n');
   const tail = lines.pop() ?? '';
-  const events = lines
-    .map((line) => line.replace(/\r$/, '').trim())
-    .filter(Boolean)
-    .map(parseEvent);
+  const events: StreamEvent[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\r$/, '').trim();
+    if (!line) continue;
+    try {
+      const evt = parseEvent(line);
+      if (evt) events.push(evt);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'INVALID_STREAM_JSON') {
+        // Skip malformed unparseable line
+        continue;
+      }
+    }
+  }
 
   const normalizedTail = tail.replace(/\r$/, '').trim();
   if (!normalizedTail) return { events, remainder: '' };
 
   try {
-    return { events: [...events, parseEvent(normalizedTail)], remainder: '' };
+    const evt = parseEvent(normalizedTail);
+    if (evt) {
+      return { events: [...events, evt], remainder: '' };
+    }
+    return { events, remainder: '' };
   } catch (error) {
     if (error instanceof Error && error.message === 'INVALID_STREAM_JSON') {
       return { events, remainder: tail };
     }
-    throw error;
+    return { events, remainder: '' };
   }
 }

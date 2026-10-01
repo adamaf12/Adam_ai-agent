@@ -813,11 +813,11 @@ export function Composer({
       )}
 
       {/* Main Luxury Composer Box */}
-      <div className="composer flex items-end gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
+      <div className="composer flex items-end gap-1 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
         {/* Quick Power Tools Toggle */}
         <button
           type="button"
-          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             showQuickModes
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -826,13 +826,13 @@ export function Composer({
           aria-label="Toggle prompt tools"
           title={isAr ? 'أدوات مساعدة سريعة' : 'Quick Prompt Tools'}
         >
-          <Sparkles size={17} />
+          <Sparkles size={16} />
         </button>
 
         {/* Attach Image Button */}
         <button
           type="button"
-          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
@@ -843,16 +843,16 @@ export function Composer({
           disabled={processingImages}
         >
           {processingImages ? (
-            <Loader2 size={17} className="animate-spin text-[var(--accent)]" />
+            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
           ) : (
-            <Camera size={17} />
+            <Camera size={16} />
           )}
         </button>
 
         {/* Dedicated Instant Translation Trigger Button (Desktop / Tablet) */}
         <button
           type="button"
-          className={`hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             showTranslateModal
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-emerald-400 hover:bg-[var(--surface-2)]'
@@ -893,7 +893,7 @@ export function Composer({
             }
             rows={1}
             disabled={busy}
-            className="w-full bg-transparent border-0 outline-none text-[14px] sm:text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1 sm:py-1.5 px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
+            className="w-full bg-transparent border-0 outline-none text-[16px] sm:text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1 sm:py-1.5 px-1.5 sm:px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
           />
         </div>
 
@@ -925,7 +925,7 @@ export function Composer({
         {/* Voice Input Microphone (gemini-3.5-transcribe) */}
         <button
           type="button"
-          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
@@ -945,16 +945,16 @@ export function Composer({
           }
         >
           {isRecordingAudio ? (
-            <MicOff size={17} className="text-rose-400" />
+            <MicOff size={16} className="text-rose-400" />
           ) : (
-            <Mic size={17} />
+            <Mic size={16} />
           )}
         </button>
 
         {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg ${
+          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg touch-manipulation ${
             busy
               ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
               : draft.trim() || images.length > 0
@@ -965,7 +965,7 @@ export function Composer({
           aria-label={busy ? t.stop : t.send}
           disabled={!busy && !draft.trim() && images.length === 0}
         >
-          {busy ? <Square size={14} fill="currentColor" /> : <Send size={16} />}
+          {busy ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
         </button>
       </div>
 

@@ -697,7 +697,7 @@ export function Chat({
       </div>
 
       {/* Pinned Bottom Input Shelf (رف الكتابة السفلي المثبت في قاع الشاشة) */}
-      <footer className="w-full max-w-4xl mx-auto px-3 sm:px-6 pb-2.5 sm:pb-4 pt-1 shrink-0 mt-auto z-20">
+      <footer className="w-full max-w-4xl mx-auto px-2 sm:px-6 pb-[calc(env(safe-area-inset-bottom,0px)+10px)] sm:pb-4 pt-1 shrink-0 mt-auto z-20">
         <Composer language={language} busy={busy} onSend={send} onStop={stop} />
       </footer>
 

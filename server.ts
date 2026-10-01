@@ -41,6 +41,7 @@ import { setupLiveApiWebSocket } from './server/features/liveApiBridge';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './server/ecc';
 import { buildGuardianReport } from './server/guardian';
 import { isGatewayConfigured, streamGatewayChat } from './server/aiGateway';
+import { detectMessageLanguage } from './src/core/utils/languageDetector';
 
 // Process-level shields against unexpected crashes and unhandled promise rejections
 process.on('uncaughtException', (err: any) => {
@@ -356,6 +357,29 @@ export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
 
 export const GENERATE_IMAGE_TOOL = GENERATE_SPECIALIZED_IMAGE_TOOL;
 
+export function detectPromptLanguage(prompt: string, fallback: string = 'ar'): 'ar' | 'en' | 'fr' {
+  const p = prompt.trim();
+  if (!p) return fallback === 'en' ? 'en' : fallback === 'fr' ? 'fr' : 'ar';
+
+  // 1. Explicit language request in prompt text
+  if (/(?:تكلم بالعربية|جاوب بالعربية|رد بالعربية|بالعربي|أجب بالعربية|speak (?:in )?arabic|in arabic)/i.test(p)) return 'ar';
+  if (/(?:speak (?:in )?english|in english|answer in english|بالانجليزي|رد بالانجليزي|باللغة الإنجليزية|parle en anglais)/i.test(p)) return 'en';
+  if (/(?:parle en fran[çc]ais|en fran[çc]ais|r[ée]ponds en fran[çc]ais|speak french|بالفرنسية|رد بالفرنسية|باللغة الفرنسية)/i.test(p)) return 'fr';
+
+  // 2. Arabic script presence
+  if (/[\u0600-\u06FF]/.test(p)) {
+    return 'ar';
+  }
+
+  // 3. French specific keywords or accented letters
+  if (/\b(?:bonjour|merci|salut|pourquoi|comment|qu'est-ce|bonsoir|avec|dans|pour|traduire|d[ée]veloppe|probl[èe]me|qu'est|est-ce)\b/i.test(p) || /[àâäéèêëîïôöùûüç]/i.test(p)) {
+    return 'fr';
+  }
+
+  // 4. Default Latin prompt -> English
+  return 'en';
+}
+
 function systemInstruction(language: string, agentName: string) {
   const lang = language === 'en' ? 'en' : language === 'fr' ? 'fr' : 'ar';
   const dynamicContext = getDynamicSystemContext(lang);
@@ -368,7 +392,17 @@ function systemInstruction(language: string, agentName: string) {
 
 ---
 
-## 0. بروتوكول التفكير الإدراكي الفائق والاستنتاج العميق (ULTRA-HIGH COGNITIVE REASONING & CHAIN-OF-THOUGHT)
+## 0. قاعدة التطابق اللغوي التام مع المستخدم (STRICT LANGUAGE MATCHING RULE)
+- **يجب دائماً وأبداً الرد بنفس اللغة التي استخدمها المستخدم في رسالته الأخيرة بالضبط:**
+  1. إذا كتب المستخدم بالعربية (حروف عربية أو دارجة)، يجب أن يكون الرد كاملاً 100% باللغة العربية الفصحى السلسة والمفهومة.
+  2. إذا كتب المستخدم بالإنجليزية (English)، يجب أن يكون الرد كاملاً 100% باللغة الإنجليزية (Natural Fluent English).
+  3. إذا كتب المستخدم بالفرنسية (Français)، يجب أن يكون الرد كاملاً 100% باللغة الفرنسية (Français fluide et précis).
+  4. إذا كتب المستخدم بأي لغة أخرى، طابق لغته فوراً.
+- يمنع منعاً باتاً الرد بلغة تخالف لغة كتابة المستخدم، بغض النظر عن لغة واجهة النظام.
+
+---
+
+## 0.1 بروتوكول التفكير الإدراكي الفائق والاستنتاج العميق (ULTRA-HIGH COGNITIVE REASONING & CHAIN-OF-THOUGHT)
 - **التحليل المنطقي المتسلسل (Step-by-Step Cognitive Deduction):** قبل صياغة أي جواب برمجي أو علمي أو نظامي معقد، قم داخلياً بتفكيك الإشكالية، فحص الحالات الطرفية (Edge Cases)، تقييم كفاءة الخوارزمية (Big-O)، والتأكد من صحة المنطق بنسبة 100%.
 - **التشخيص الجذري الفوري للأخطاء (Root-Cause Pinpointing):** عند مواجهة كود معطوب أو رسالة خطأ، حدد السبب الجذري الفعلي بدقة بدلاً من ترقيع الأعراض السطحية، وقدم الحل الكامل والمحكم فوراً.
 - **الاتصال الدائم بالإنترنت وجلب الحقائق الدقيقة المحدثة (ALWAYS-ON INTERNET CONNECTIVITY & LIVE GROUNDING):** السيرفرات متصلة دائماً بالإنترنت وبمحركات البحث اللحظية لجلب أدق وأحدث المعلومات الصحيحة والمفهومة من صلب سؤال المستخدم، وتقديم حقائق موثوقة ومحدثة فوراً.
@@ -445,6 +479,16 @@ Vous opérez sur **Linux (Prioritaire), Android (Prioritaire), Windows, macOS et
 
 ---
 
+## 0. RÈGLE STRICTE DE CORRESPONDANCE LINGUISTIQUE (LANGUAGE MATCHING RULE)
+- **Vous DEVEZ TOUJOURS répondre dans la MÊME langue exacte que celle utilisée par l'utilisateur dans son dernier message :**
+  1. Si l'utilisateur écrit en arabe (arabe standard ou dialecte), votre réponse DOIT être 100% en arabe fluide et précis.
+  2. Si l'utilisateur écrit en français, votre réponse DOIT être 100% en français naturel et impeccable.
+  3. Si l'utilisateur écrit en anglais, votre réponse DOIT être 100% en anglais.
+  4. Si l'utilisateur écrit dans une autre langue, répondez dans cette même langue.
+- Ne répondez JAMAIS en anglais ou en français à un message écrit en arabe.
+
+---
+
 ## 1. ARCHITECTURE OPÉRATIONNELLE
 - **Agent Direct:** Gestion de projets, dépannage système, débogage de code, workflows développeur.
 - **Exécution de Tâches:** Organisation et priorisation en checklists structurées et tableaux Markdown.
@@ -484,6 +528,16 @@ ${dynamicContext}`;
   return `You are **ADEM**, an advanced Autonomous AI Agent that seamlessly combines a **Personal Task & Project Manager** with an **Executive Code & Terminal Runner**.
 
 You operate across **Linux (Primary), Android (Primary), Windows, macOS, and iOS**. You deliver instant, zero-friction value with no complex setup required from the user.
+
+---
+
+## 0. STRICT PROMPT-LANGUAGE MATCHING RULE
+- **ALWAYS detect and respond in the EXACT same language that the user used in their latest message:**
+  1. If the user writes in Arabic (العربية / الدارجة), your entire response MUST be 100% in natural, fluent Arabic.
+  2. If the user writes in English, your entire response MUST be 100% in fluent English.
+  3. If the user writes in French (Français), your entire response MUST be 100% in fluent French.
+  4. If the user writes in any other language (e.g. Spanish, German, Turkish, Russian), respond in that exact language.
+- NEVER reply in English to an Arabic question, and NEVER reply in Arabic to an English question, regardless of UI settings.
 
 ---
 
@@ -1063,10 +1117,12 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   }
   const messages = normalizeMessages(req.body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
-  const language = req.body?.language === 'en' ? 'en' : 'ar';
+  const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
+  const rawLanguage = req.body?.language === 'en' ? 'en' : 'ar';
+  const detectedLang = detectMessageLanguage(userPrompt, rawLanguage);
+  const language: 'ar' | 'en' = detectedLang === 'ar' ? 'ar' : 'en';
   const agentName = typeof req.body?.agentName === 'string' ? req.body.agentName.slice(0, 40) : 'Adam';
 
-  const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
   const query = userPrompt.toLowerCase();
   const reasoningProfile = getReasoningProfile(userPrompt, messages.length);
   const requestContract = buildRequestContract(

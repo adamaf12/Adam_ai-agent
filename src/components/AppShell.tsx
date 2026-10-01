@@ -402,7 +402,7 @@ export function AppShell({
                         mass: 0.7,
                       }}
                       style={{ transformOrigin: 'top center' }}
-                      className="absolute top-full mt-2.5 z-50 min-w-[290px] sm:min-w-[340px] p-2.5 rounded-3xl bg-[var(--surface)]/95 backdrop-blur-3xl border border-[var(--border-strong)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_35px_rgba(0,242,254,0.14)] left-1/2 -translate-x-1/2 rtl:translate-x-1/2 overflow-hidden select-none"
+                      className="fixed sm:absolute top-14 sm:top-full left-1/2 -translate-x-1/2 mt-1 sm:mt-2.5 z-50 w-[calc(100vw-24px)] sm:w-auto sm:min-w-[340px] max-w-[360px] p-2.5 rounded-3xl bg-[var(--surface)]/98 backdrop-blur-3xl border border-[var(--border-strong)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_35px_rgba(0,242,254,0.14)] overflow-hidden select-none"
                     >
                       {/* Top Specular Neon Light Beam */}
                       <motion.div

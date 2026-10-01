@@ -32,8 +32,8 @@
         "Handle window resize and device touch gracefully"
       ],
       "acquiredAt": 1788559126719,
-      "lastUsedAt": 1789931703196,
-      "usageCount": 48,
+      "lastUsedAt": 1790892048138,
+      "usageCount": 50,
       "successRate": 0.98,
       "level": 9,
       "origin": "builtin"
@@ -66,8 +66,8 @@
         "Structure answers logically with Markdown"
       ],
       "acquiredAt": 1788731926719,
-      "lastUsedAt": 1789931921261,
-      "usageCount": 73,
+      "lastUsedAt": 1790892048138,
+      "usageCount": 75,
       "successRate": 0.99,
       "level": 10,
       "origin": "builtin"
@@ -231,8 +231,64 @@
       "successRate": 0.95,
       "level": 2,
       "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_f207fbe9",
+      "name": "Dynamic Heuristic (Hello who are you)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: Hello who are you",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"Hello who are you\".",
+      "triggers": [
+        "hello",
+        "who",
+        "are",
+        "you"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [Hello, who, are, you]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1790892040845,
+      "lastUsedAt": 1790892040845,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_584578d1",
+      "name": "Dynamic Heuristic (Bonjour qui estu que)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: Bonjour qui estu que",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"Bonjour qui estu que\".",
+      "triggers": [
+        "bonjour",
+        "qui",
+        "estu",
+        "que"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [Bonjour, qui, estu, que]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1790892053903,
+      "lastUsedAt": 1790892053903,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
     }
   ],
-  "totalExecutions": 8,
-  "lastSavedAt": 1789931924438
+  "totalExecutions": 10,
+  "lastSavedAt": 1790892053903
 }

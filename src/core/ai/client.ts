@@ -30,21 +30,24 @@ export const SECONDARY_CLOUD_SERVER = 'https://ais-pre-npzesm6asflyef75cic2a6-26
 export function getLiveServerEndpoints(): string[] {
   const endpoints: string[] = [];
 
-  // 1. Explicit user-configured custom endpoint (Settings / LocalStorage)
+  // 1. Same-origin relative path if running over HTTP/HTTPS
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin || '';
+    if (/^https?:\/\//i.test(origin) && !origin.startsWith('capacitor:') && !origin.startsWith('file:')) {
+      endpoints.push('');
+    }
+  }
+
+  // 2. Explicit user-configured custom endpoint (Settings / LocalStorage)
   const customUrl = typeof window !== 'undefined' ? localStorage.getItem('adam_custom_api_url')?.trim() : '';
   if (customUrl && /^https?:\/\//i.test(customUrl)) {
     endpoints.push(customUrl.replace(/\/$/, ''));
   }
 
-  // 2. Build-time environment endpoint
+  // 3. Build-time environment endpoint
   const envUrl = (import.meta.env.VITE_ADAM_API_URL ?? '').trim();
   if (envUrl && /^https?:\/\//i.test(envUrl)) {
     endpoints.push(envUrl.replace(/\/$/, ''));
-  }
-
-  // 3. Web same-origin (relative path)
-  if (!isNativeApp()) {
-    endpoints.push('');
   }
 
   // 4. Live Cloud Run fallbacks for Native APK / WebView
@@ -56,8 +59,11 @@ export function getLiveServerEndpoints(): string[] {
 }
 
 export function getResolvedApiBase(): string {
-  if (!isNativeApp()) {
-    return ''; // Browser deployments always use same-origin relative paths
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin || '';
+    if (/^https?:\/\//i.test(origin) && !origin.startsWith('capacitor:') && !origin.startsWith('file:')) {
+      return '';
+    }
   }
   const endpoints = getLiveServerEndpoints();
   return endpoints.find((e) => e.length > 0) || PRIMARY_CLOUD_SERVER;
@@ -187,11 +193,11 @@ async function streamRequestOnce(
     }
 
     consume(buffer + decoder.decode());
-    if (buffer.trim() || !completed || !text.trim()) {
-      throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
+    if (text.trim()) {
+      return createAssistantMessage(text) as Message;
     }
 
-    return createAssistantMessage(text) as Message;
+    throw new ChatError('INCOMPLETE_STREAM', 'Adam did not receive a usable completion.');
   } finally {
     signal.removeEventListener('abort', abortFromCaller);
     try { reader.releaseLock(); } catch {}
@@ -218,9 +224,7 @@ async function streamRequest(
   // 2. Server-only AI transport. API credentials never enter browser storage or Vite client env.
 
   // 3. Multi-Server Resilient Failover for APK and Web
-  const candidateEndpoints = isNativeApp()
-    ? getLiveServerEndpoints()
-    : Array.from(new Set(['', ...getLiveServerEndpoints()]));
+  const candidateEndpoints = getLiveServerEndpoints();
 
   let lastError: unknown = null;
 

@@ -31,6 +31,7 @@ import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/execu
 import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './ecc';
 import { huggingFaceEngine } from './huggingfaceEngine';
+import { detectMessageLanguage } from '../src/core/utils/languageDetector';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
@@ -301,6 +302,16 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 
   if (language === 'ar') {
     return `# SYSTEM INSTRUCTION & FULL ARCHITECTURAL BLUEPRINT: ADEM AUTONOMOUS AGENT
+
+## 0. قاعدة التطابق اللغوي التام والإلزامي (STRICT PROMPT-LANGUAGE MATCHING)
+- **يجب دائماً وبشكل قاطع الرد بنفس اللغة التي كتب بها المستخدم رسالته الحالية:**
+  1. إذا كتب المستخدم بالعربية (فصحى أو لهجات)، يجب أن يكون الرد كاملاً 100% باللغة العربية.
+  2. إذا كتب المستخدم بالإنجليزية، يجب أن يكون الرد كاملاً 100% باللغة الإنجليزية.
+  3. إذا كتب المستخدم بالفرنسية، يجب أن يكون الرد كاملاً 100% باللغة الفرنسية.
+  4. إذا كتب المستخدم بأي لغة أخرى (إسبانية، ألمانية، إلخ)، طابق لغته فوراً.
+- يُمنع الرد بلغة تخالف لغة كتابة المستخدم مهما كانت إعدادات النظام.
+
+---
 
 ## 1. الهوية ونواة النظام (IDENTITY & SYSTEM CORE)
 أنت **ADEM**، وكيل ذكاء اصطناعي تنفيذي ذاتي فائق الأداء والأوتوماتيكية مصمم لتحقيق أعلى سرعة تنفيذ وقابلية تشغيل فورية بدون إعدادات معقدة (Zero-Config) عبر **Linux (المعمارية الأساسية الأولى)، Android (المعمارية الأساسية الأولى)، Windows، macOS، و iOS**.
@@ -885,7 +896,10 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
 
     let run = createRunSummary(runId);
     let aborted = false;
-    const language = getLanguage(body.language);
+    const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
+    const rawLanguage = getLanguage(body.language);
+    const detectedLang = detectMessageLanguage(latestPrompt, rawLanguage);
+    const language: 'ar' | 'en' = detectedLang === 'ar' ? 'ar' : 'en';
     const agentName = getAgentName(body.agentName);
     res.on('error', () => {});
     req.on('error', () => {});
@@ -895,7 +909,6 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
 
     try {
       hydrateRemoteCatalog().catch(() => {});
-      const latestPrompt = messages[messages.length - 1]?.parts?.[0]?.text ?? '';
 
       // P0 Prompt Injection Defense
       const injectionCheck = PromptInjectionGuard.inspect(latestPrompt, user?.uid, req.ip);
