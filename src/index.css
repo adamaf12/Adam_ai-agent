@@ -1408,3 +1408,30 @@ body {
 @media(prefers-reduced-motion:reduce){
   .agentic-login__scene::before{animation:none}
 }
+
+/* ADAM LOGIN CINEMATIC V5 */
+.agentic-login{display:grid!important;grid-template-columns:minmax(0,1.08fr) minmax(390px,.82fr)!important;align-items:center!important;gap:clamp(20px,4vw,70px)!important;padding:clamp(24px,4vw,58px) clamp(22px,5vw,76px)!important;background:radial-gradient(circle at 30% 45%,rgba(255,139,31,.16),transparent 27%),radial-gradient(circle at 80% 55%,rgba(40,190,140,.07),transparent 30%),linear-gradient(135deg,#050706,#0a0d0c 55%,#11100c)!important}
+.agentic-login__scene{position:relative!important;inset:auto!important;width:100%!important;height:min(86vh,820px)!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:5!important;perspective:1200px!important}
+.agentic-login__character{position:absolute!important;left:50%!important;top:50%!important;width:min(510px,39vw)!important;filter:drop-shadow(0 38px 28px rgba(0,0,0,.55)) drop-shadow(0 0 34px rgba(255,137,32,.12))!important}
+.agentic-login__character-idle{width:100%!important;display:flex!important;justify-content:center!important}
+.agentic-login__character-image{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;transform:translateZ(20px)!important}
+.agentic-login__character-hud{position:absolute!important;left:3%!important;top:18%!important;width:min(285px,23vw)!important;padding:18px 20px!important;border:1px solid rgba(255,151,50,.28)!important;border-radius:20px!important;background:linear-gradient(145deg,rgba(14,17,16,.84),rgba(12,12,10,.5))!important;backdrop-filter:blur(18px)!important;box-shadow:0 18px 55px rgba(0,0,0,.35)!important;text-align:left!important}
+.agentic-login__character-hud-kicker{display:block!important;color:#f0a04d!important;font-size:11px!important;letter-spacing:.12em!important;margin-bottom:10px!important}
+.agentic-login__character-hud strong{display:block!important;color:#f5f8f6!important;font-size:16px!important;margin-bottom:8px!important}
+.agentic-login__character-hud small{display:flex!important;gap:7px!important;align-items:center!important;color:#9da8a3!important;font-size:11px!important}
+.agentic-login__card{position:relative!important;z-index:10!important;width:100%!important;max-width:540px!important;justify-self:end!important;margin:0!important;padding:34px!important;border:1px solid rgba(255,143,43,.32)!important;border-radius:30px!important;background:linear-gradient(145deg,rgba(28,31,29,.86),rgba(10,12,11,.72))!important;backdrop-filter:blur(28px)!important;box-shadow:0 34px 90px rgba(0,0,0,.58),0 0 70px rgba(255,129,22,.08),inset 0 1px rgba(255,255,255,.1)!important}
+.agentic-login__card::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(125deg,rgba(255,164,81,.12),transparent 28%,transparent 70%,rgba(50,220,160,.05))}
+.agentic-login__logo{width:48px!important;height:48px!important;border-radius:15px!important;background:linear-gradient(145deg,#ff9b35,#f36b16)!important;color:#fff!important;box-shadow:0 10px 28px rgba(255,123,26,.28)!important}
+.agentic-login__name{font-size:24px!important;font-weight:800!important}
+.agentic-login__headline{margin-top:34px!important}
+.agentic-login__eyebrow{color:#e99040!important}
+.agentic-login__headline h1{font-size:clamp(31px,3.1vw,48px)!important;line-height:1.05!important;letter-spacing:-.045em!important}
+.agentic-login__headline p{font-size:14px!important;line-height:1.75!important;color:#a6afab!important}
+.agentic-login__features{display:none!important}
+.agentic-login__google,.agentic-login__guest{position:relative!important;z-index:2!important;width:100%!important;min-height:58px!important;border-radius:18px!important;font-size:15px!important;font-weight:700!important}
+.agentic-login__google{margin-top:28px!important;background:#f8faf9!important;color:#171b19!important;box-shadow:0 14px 34px rgba(0,0,0,.22)!important}
+.agentic-login__guest{margin-top:12px!important;background:rgba(18,21,20,.72)!important;color:#eef4f1!important;border:1px solid rgba(255,149,53,.38)!important}
+.agentic-login__google:hover,.agentic-login__guest:hover{transform:translateY(-2px)!important}
+.agentic-login__footer{position:absolute!important;left:clamp(24px,5vw,76px)!important;bottom:22px!important;color:#65706b!important;font-size:9px!important;letter-spacing:.15em!important}
+@media(max-width:980px){.agentic-login{grid-template-columns:1fr!important;overflow-y:auto!important}.agentic-login__scene{height:470px!important}.agentic-login__character{width:min(400px,58vw)!important}.agentic-login__character-hud{width:220px!important}.agentic-login__card{justify-self:center!important;max-width:620px!important;margin-bottom:70px!important}}
+@media(max-width:600px){.agentic-login{display:block!important;padding:16px!important}.agentic-login__scene{height:390px!important}.agentic-login__character{width:270px!important;left:55%!important;top:47%!important}.agentic-login__character-hud{left:0!important;top:8%!important;width:170px!important;padding:12px!important}.agentic-login__character-hud strong{font-size:12px!important}.agentic-login__character-hud small{font-size:9px!important}.agentic-login__card{padding:24px 19px!important;border-radius:24px!important;margin:0 0 58px!important}}
