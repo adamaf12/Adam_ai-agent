@@ -47,8 +47,8 @@ export function buildGuardianReport(input: GuardianInput): GuardianReport {
     findings.push({
       code: 'AI_RUNTIME_NOT_CONFIGURED',
       severity: 'critical',
-      message: 'The production runtime has neither a Gemini provider key nor a Vercel AI Gateway credential.',
-      remediation: 'Enable Secure Backend Access with OIDC Federation for the Vercel project, or configure GEMINI_API_KEY for Production, then redeploy.',
+      message: 'The production runtime has no direct Gemini provider key and no explicitly configured Vercel AI Gateway API key.',
+      remediation: 'Configure GEMINI_API_KEY for the Production environment of this Vercel project, then redeploy. AI Gateway OIDC is intentionally not used as an implicit fallback.',
       autoRepairable: false,
     });
   }
