@@ -24,14 +24,12 @@ type StreamGatewayChatArgs = {
 
 const GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 
-function getAuthToken(req: any): string {
-  const oidc = req?.headers?.['x-vercel-oidc-token'];
-  if (typeof oidc === 'string' && oidc.trim()) return oidc.trim();
-
-  const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
-  if (gatewayKey) return gatewayKey;
-
-  return '';
+function getAuthToken(_req: any): string {
+  // Do not silently switch production traffic to Vercel AI Gateway OIDC.
+  // The project has a direct Gemini backend and the Gateway may require
+  // separate customer verification/billing even when OIDC is present.
+  // Gateway usage is therefore explicit: configure AI_GATEWAY_API_KEY.
+  return process.env.AI_GATEWAY_API_KEY?.trim() || '';
 }
 
 export function isGatewayConfigured(req?: any): boolean {
