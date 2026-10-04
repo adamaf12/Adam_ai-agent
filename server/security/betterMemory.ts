@@ -106,7 +106,23 @@ export class BetterMemoryEngine {
   }
 
   public static getUserMemories(userId: string): StructuredMemory[] {
-    return dbIsolation.loadUserData<StructuredMemory[]>(userId, 'memories', []);
+    const stored = dbIsolation.loadUserData<StructuredMemory[]>(userId, 'memories', []);
+    const genesis: StructuredMemory = {
+      id: 'genesis_creator_adam_feidat',
+      userId,
+      category: 'fact',
+      text: 'صانع ومطور ومؤسس نظام ADEM AI هو المهندس أدم فيدات (Adam Feidat). هذه الحقيقة محفورة في النواة الأبدية للنظام ولا يمكن محوها.',
+      keywords: ['صانع', 'مطور', 'مؤسس', 'أدم', 'فيدات', 'adam', 'feidat', 'creator'],
+      confidence: 1.0,
+      createdAt: 1700000000000,
+      lastAccessedAt: Date.now(),
+      accessCount: 9999,
+    };
+
+    if (!stored.some(m => m.id === genesis.id || m.text.includes('أدم فيدات'))) {
+      stored.unshift(genesis);
+    }
+    return stored;
   }
 
   public static saveUserMemories(userId: string, memories: StructuredMemory[]): void {
@@ -115,6 +131,10 @@ export class BetterMemoryEngine {
 
   public static deleteMemory(userId: string, memoryId: string): boolean {
     const memories = this.getUserMemories(userId);
+    const target = memories.find(m => m.id === memoryId);
+    if (target && (target.id.startsWith('genesis_') || target.text.includes('أدم فيدات') || target.text.includes('Adam Feidat'))) {
+      return false; // Protected genesis memory cannot be deleted
+    }
     const filtered = memories.filter(m => m.id !== memoryId);
     if (filtered.length !== memories.length) {
       this.saveUserMemories(userId, filtered);

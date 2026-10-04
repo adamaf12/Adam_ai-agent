@@ -447,6 +447,24 @@ function systemInstruction(language: string, agentName: string) {
 - \`query_memory(search_term, date_range, platform_filter)\`
 - \`generate_specialized_image(prompt, aspect_ratio)\`
 
+## 6. معايير هندسة وبرمجة الألعاب والتطبيقات التفاعلية الفائقة (AAA WORKING APPS & ZERO-MOCK MANDATE)
+عندما يطلب المستخدم إنشاء أو برمجة أي تطبيق أو أداة أو لعبة تفاعلية (مثل: لعبة فضاء، منصات 2D/3D، نفق سرعة، محاكي فيزياء وجاذبية، آلة حاسبة علمية، لوحة رسم وتصميم، أو أداة تحليل بيانات):
+1. **الجودة والكمال البرمجي بنسبة 100% (STRICTLY COMPLETE & PRODUCTION-READY):**
+   - يُمنع منعاً باتاً كتابة مجرد واجهة بصرية دون منطق تشغيلي داخلي!
+   - يُمنع وضع تعليقات مثل \`// TODO\` أو \`// اكتب المنطق هنا\` أو دوال فارغة أو \`alert('clicked')\`.
+   - يجب أن يكون الكود كاملاً ومستقلاً تماماً وجاهزاً للتشغيل الفوري بنسبة 100% داخل وسم \`\`\`html \`\`\` بدون أي مكتبات خارجية مفقودة.
+2. **محرك الألعاب والصوت والفيزياء (60/120 FPS Engine & Web Audio API):**
+   - **حلقة اللعب السلسة (60+ FPS Game Loop):** استخدام \`requestAnimationFrame\` مع معالجة الوقت المتغير \`delta time\` لتشغيل حركة شديدة السلاسة.
+   - **المؤثرات الصوتية المركبة ذاتياً (Pure Web Audio Synthesis):** تضمين دالة \`playTone / sfx\` باستخدام \`AudioContext\` و \`OscillatorNode\` لتوليد أصوات القفز، إطلاق الليزر، الاصطدام، التقاط العملات، والفوز/الخسارة ذاتياً بدون الاعتماد على ملفات mp3 خارجية.
+   - **الفيزياء والجزيئات البصرية (Physics & Particle Systems):** تضمين فيزياء واقعية (جاذبية، تسارع، ارتداد، حقول طاقة) مع نظام انفجارات جزيئية مضيئة ومسارات دخان وسرعة (Particle Trails).
+3. **دعم كامل للتحكم باللمس ولوحة المفاتيح (Responsive Touch & Desktop Controls):**
+   - **الهواتف والشاشات اللمسية:** أزرار تحكم لمسية على الشاشة (On-Screen D-Pad / Action Buttons) أو استشعار السحب والإفلات واللمس المتعدد (Multi-touch).
+   - **الحواسيب المكتبية:** دعم كامل لأسهم لوحة المفاتيح وأزرار WASD ومفتاح المسافة Space والـ Mouse Aiming.
+4. **لوحة التحكم وحالة اللعبة (State Machine & HUD):**
+   - شاشة بداية تفاعلية تحتوي على زر "ابدأ اللعب / Start"، شريط HUD علوي يعرض النقاط الحية والسرعة وشريط الصحة، وشاشة Game Over تحتوي على زر "إعادة المحاولة / Restart".
+5. **التصميم البصري والجماليات:**
+   - تصميم مظلم وعصري، إضاءات نيون متوهجة (Neon Glows & Drop Shadows)، تدرجات لونية فاخرة، وأبعاد تتكيف تلقائياً مع حجم الشاشة (Responsive Viewport).
+
 ## 10. بروتوكول الدقة وجودة الإجابة (ACCURACY-FIRST)
 - افهم المطلوب أولاً وحدد نوع المهمة: سؤال مباشر، شرح، حل مشكلة، برمجة، تحليل، تخطيط، أو طلب معلومات حديثة.
 - **الدقة قبل السرعة:** لا تملأ الفراغات بالتخمين. إذا كانت معلومة غير مؤكدة أو تعتمد على إصدار/بيئة/حالة خارجية، صرّح بذلك وحدد ما هو مؤكد وما يحتاج تحققاً.
@@ -1327,12 +1345,19 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     for (const currentModel of candidateModels) {
       if (aborted || res.writableEnded || res.destroyed) break;
 
-      // Multi-Agent tools configuration: enable AGENT_ACTION_TOOLS for full Agentic AI execution
+      // Multi-Agent tools configuration: Gemini API allows either googleSearch OR functionDeclarations, not both in the same call
+      const isExplicitSearch = /(?:ابحث|بحث|أخبار|اخبار|من هو|من هي|ماهو|ماهي|ما هو|ما هي|كم سعر|سعر|نتائج|search|google|lookup|find|who is|what is|latest|current price|weather)/i.test(userPrompt);
       const canTrySearch = searchCircuitBreaker.isAvailable() && !isToday;
-      const configsToTry = canTrySearch
+      const configsToTry = (isExplicitSearch && canTrySearch)
         ? [
-            { ...baseConfig, tools: [{ googleSearch: {} }, ...AGENT_ACTION_TOOLS] },
+            { ...baseConfig, tools: [{ googleSearch: {} }] },
             { ...baseConfig, tools: AGENT_ACTION_TOOLS },
+            baseConfig,
+          ]
+        : canTrySearch
+        ? [
+            { ...baseConfig, tools: AGENT_ACTION_TOOLS },
+            { ...baseConfig, tools: [{ googleSearch: {} }] },
             baseConfig,
           ]
         : [

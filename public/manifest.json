@@ -1,41 +1,53 @@
 {
   "id": "/",
-  "short_name": "آدم AI",
-  "name": "آدم - وكيل الذكاء الاصطناعي",
-  "description": "تطبيق وكيل ومساعد ذكاء اصطناعي محلي ومكتبي متكامل للكمبيوتر والهاتف",
+  "name": "ADEM AI — Personal Operating System",
+  "short_name": "ADEM AI",
+  "description": "Autonomous AI Agent & Personal Operating System for Desktop and Mobile.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": [
     "standalone",
-    "minimal-ui",
-    "browser"
+    "window-controls-overlay",
+    "minimal-ui"
   ],
-  "background_color": "#0f172a",
-  "theme_color": "#0d9488",
+  "background_color": "#07100c",
+  "theme_color": "#07100c",
   "orientation": "any",
   "categories": [
     "productivity",
     "utilities",
-    "ai"
+    "developer_tools"
   ],
   "icons": [
     {
-      "src": "/assets/icon-192.png",
-      "type": "image/png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/assets/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/app-icon.jpg",
-      "type": "image/jpeg",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

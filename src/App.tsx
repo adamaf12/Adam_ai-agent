@@ -273,12 +273,14 @@ export default function App() {
       <NetworkSentinel language={preferences.language} />
       <InAppBrowserModal language={preferences.language} />
       <AuthModal language={preferences.language} />
-      <AgenticLogin
-        language={preferences.language}
-        open={loginExperienceOpen}
-        onClose={() => setLoginExperienceOpen(false)}
-        onOpenFallbackAuth={() => { setLoginExperienceOpen(false); window.dispatchEvent(new CustomEvent('adam:open-auth-modal')); }}
-      />
+      {loginExperienceOpen && (
+        <AgenticLogin
+          language={preferences.language}
+          open={loginExperienceOpen}
+          onClose={() => setLoginExperienceOpen(false)}
+          onOpenFallbackAuth={() => { setLoginExperienceOpen(false); window.dispatchEvent(new CustomEvent('adam:open-auth-modal')); }}
+        />
+      )}
     </AppShell>
   );
 }

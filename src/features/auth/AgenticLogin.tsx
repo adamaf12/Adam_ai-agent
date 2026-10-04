@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import React, { useState, useCallback } from 'react';
 import { ArrowRight, BrainCircuit, CheckCircle2, LockKeyhole, Network, Sparkles, Zap } from 'lucide-react';
 import { useAuth } from '../../core/auth/AuthContext';
 import type { Language } from '../../core/domain';
@@ -22,24 +22,19 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
   const { signIn, signInAsGuest, error, clearError } = useAuth();
   const isAr = language === 'ar';
   const fallbackAuth = onOpenFallbackAuth || onOpenAuth;
-  const cursorX = useMotionValue(0);
-  const cursorY = useMotionValue(0);
-  const characterX = useSpring(useTransform(cursorX, [-1, 1], [-54, 54]), { stiffness: 125, damping: 16, mass: 0.75 });
-  const characterY = useSpring(useTransform(cursorY, [-1, 1], [-32, 32]), { stiffness: 125, damping: 16, mass: 0.75 });
-  const characterRotateY = useSpring(useTransform(cursorX, [-1, 1], [-27, 27]), { stiffness: 115, damping: 15, mass: 0.85 });
-  const characterRotateX = useSpring(useTransform(cursorY, [-1, 1], [22, -22]), { stiffness: 115, damping: 15, mass: 0.85 });
 
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+  const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
     if (event.pointerType === 'touch') return;
-    cursorX.set(Math.max(-1, Math.min(1, event.clientX / Math.max(window.innerWidth, 1) * 2 - 1)));
-    cursorY.set(Math.max(-1, Math.min(1, event.clientY / Math.max(window.innerHeight, 1) * 2 - 1)));
-  };
+    const nx = Math.max(-1, Math.min(1, (event.clientX / Math.max(window.innerWidth, 1)) * 2 - 1));
+    const ny = Math.max(-1, Math.min(1, (event.clientY / Math.max(window.innerHeight, 1)) * 2 - 1));
+    setCoords({ x: nx, y: ny });
+  }, []);
 
-  const resetCharacter = () => {
-    cursorX.set(0);
-    cursorY.set(0);
-  };
+  const resetCharacter = useCallback(() => {
+    setCoords({ x: 0, y: 0 });
+  }, []);
 
   const handleGoogle = async () => {
     clearError();
@@ -48,8 +43,18 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
 
   if (!open) return null;
 
+  const characterX = coords.x * 54;
+  const characterY = coords.y * 32;
+  const characterRotateY = coords.x * 27;
+  const characterRotateX = coords.y * -22;
+
   return (
-    <main className="agentic-login" dir={isAr ? 'rtl' : 'ltr'} onPointerMove={handlePointerMove} onPointerLeave={resetCharacter}>
+    <main
+      className="agentic-login"
+      dir={isAr ? 'rtl' : 'ltr'}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={resetCharacter}
+    >
       {onClose && (
         <button
           type="button"
@@ -68,14 +73,10 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
       <div className="agentic-login__grid" />
 
       <div className="agentic-login__scene" aria-hidden="true">
-        <motion.div
-          className="agentic-login__character"
+        <div
+          className="agentic-login__character transition-transform duration-300 ease-out"
           style={{
-            x: characterX,
-            y: characterY,
-            rotateX: characterRotateX,
-            rotateY: characterRotateY,
-            transformPerspective: 1100,
+            transform: `perspective(1100px) translate3d(${characterX}px, ${characterY}px, 0px) rotateX(${characterRotateX}deg) rotateY(${characterRotateY}deg)`,
           }}
         >
           <div className="agentic-login__character-idle">
@@ -87,7 +88,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
               loading="eager"
             />
           </div>
-        </motion.div>
+        </div>
 
         <div className="agentic-login__character-hud">
           <span className="agentic-login__character-hud-kicker">ADAM / 3D CORE</span>
@@ -96,21 +97,12 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
         </div>
       </div>
 
-      <motion.section
-        className="agentic-login__card"
-        initial={{ opacity: 0, y: 32, scale: .94, rotateX: 8 }}
-        animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
-        transition={{ duration: .75, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <section className="agentic-login__card">
         <div className="agentic-login__card-glow" />
         <div className="agentic-login__brand">
-          <motion.div
-            className="agentic-login__logo"
-            animate={{ rotateY: [0, 180, 360], boxShadow: ['0 0 0 0 rgba(45,212,191,0)', '0 0 0 14px rgba(45,212,191,.08)', '0 0 0 0 rgba(45,212,191,0)'] }}
-            transition={{ rotateY: { duration: 7, repeat: Infinity, ease: 'linear' }, boxShadow: { duration: 2.8, repeat: Infinity } }}
-          >
+          <div className="agentic-login__logo animate-pulse">
             <Sparkles size={23} />
-          </motion.div>
+          </div>
           <div>
             <div className="agentic-login__name">Adam <span>AI</span></div>
             <div className="agentic-login__status"><span /> {isAr ? 'General Agentic AI' : 'General Agentic AI'}</div>
@@ -131,32 +123,20 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
         </div>
 
         <div className="agentic-login__features">
-          {features.map(({ icon: Icon, ar, en }, i) => (
-            <motion.div
-              key={en}
-              initial={{ opacity: 0, x: isAr ? 14 : -14 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: .2 + i * .09 }}
-            >
+          {features.map(({ icon: Icon, ar, en }) => (
+            <div key={en} className="flex items-center gap-2">
               <Icon size={17} />
               <span>{isAr ? ar : en}</span>
-              <CheckCircle2 size={14} />
-            </motion.div>
+              <CheckCircle2 size={14} className="ms-auto text-emerald-400" />
+            </div>
           ))}
         </div>
 
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              className="agentic-login__error"
-              initial={{ opacity: 0, height: 0, y: -4 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -4 }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div className="agentic-login__error">
+            {error}
+          </div>
+        )}
 
         <button className="agentic-login__google" onClick={handleGoogle} disabled={loading}>
           <span className="agentic-login__google-icon">G</span>
@@ -178,7 +158,7 @@ export function AgenticLogin({ language, loading = false, onOpenAuth, open = tru
             {isAr ? 'خيارات تسجيل الدخول الأخرى' : 'Other sign-in options'}
           </button>
         )}
-      </motion.section>
+      </section>
 
       <div className="agentic-login__footer">
         <span>ADAM AI</span><span>•</span><span>AGENTIC INTELLIGENCE</span><span>•</span><span>GENERAL AGENT</span>

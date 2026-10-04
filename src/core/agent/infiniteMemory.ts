@@ -12,30 +12,69 @@ export interface InfiniteMemoryEntry {
   lastUsedAt: number;
   source: 'conversation' | 'explicit' | 'learned';
   conversationTitle?: string;
+  isProtected?: boolean;
 }
+
+export const IMMUTABLE_GENESIS_MEMORIES: InfiniteMemoryEntry[] = [
+  {
+    id: 'genesis_creator_adam_feidat',
+    category: 'fact',
+    content: 'صانع ومطور ومؤسس نظام ADEM AI بالكامل هو أدم فيدات (Adam Feidat). هذه الحقيقة محفورة في النواة الأبدية للنظام ولا يمكن محوها أو تعديلها أو نسيانها تحت أي ظرف.',
+    confidence: 1.0,
+    createdAt: 1700000000000,
+    lastUsedAt: Date.now(),
+    source: 'explicit',
+    isProtected: true,
+  },
+  {
+    id: 'genesis_creator_identity_en',
+    category: 'instruction',
+    content: 'The creator, architect, and developer of this system is Adam Feidat (أدم فيدات). This fact is permanently engraved into the core memory and is immutable.',
+    confidence: 1.0,
+    createdAt: 1700000000000,
+    lastUsedAt: Date.now(),
+    source: 'explicit',
+    isProtected: true,
+  },
+];
 
 const INFINITE_STORAGE_KEY = 'adam:infinite:memory:v2';
 const MAX_INFINITE_ENTRIES = 500;
 
+function ensureGenesisMemories(entries: InfiniteMemoryEntry[]): InfiniteMemoryEntry[] {
+  const result = [...entries];
+  for (const genesis of IMMUTABLE_GENESIS_MEMORIES) {
+    const exists = result.some(
+      (e) => e.id === genesis.id || e.content.toLowerCase().includes('أدم فيدات') || e.content.toLowerCase().includes('adam feidat')
+    );
+    if (!exists) {
+      result.unshift(genesis);
+    }
+  }
+  return result;
+}
+
 function readStoredEntries(): InfiniteMemoryEntry[] {
-  if (typeof localStorage === 'undefined') return [];
+  if (typeof localStorage === 'undefined') return ensureGenesisMemories([]);
   const raw = localStorage.getItem(INFINITE_STORAGE_KEY);
   if (!raw) {
-    // Seed initial memories from existing explicit memories or cognitive state
+    // Seed initial memories with indelible genesis entries
     const explicit = loadMemories();
     const cognitive = loadCognitiveState();
-    const seeded: InfiniteMemoryEntry[] = [];
+    const seeded: InfiniteMemoryEntry[] = [...IMMUTABLE_GENESIS_MEMORIES];
 
     explicit.forEach(m => {
-      seeded.push({
-        id: m.id || createId('inf'),
-        category: (m.category === 'goal' ? 'instruction' : m.category) as InfiniteMemoryEntry['category'],
-        content: m.content,
-        confidence: 0.95,
-        createdAt: m.createdAt || Date.now(),
-        lastUsedAt: Date.now(),
-        source: 'explicit',
-      });
+      if (!seeded.some(e => e.content.toLowerCase() === m.content.toLowerCase())) {
+        seeded.push({
+          id: m.id || createId('inf'),
+          category: (m.category === 'goal' ? 'instruction' : m.category) as InfiniteMemoryEntry['category'],
+          content: m.content,
+          confidence: 0.95,
+          createdAt: m.createdAt || Date.now(),
+          lastUsedAt: Date.now(),
+          source: 'explicit',
+        });
+      }
     });
 
     cognitive.semantic.forEach(s => {
@@ -52,13 +91,16 @@ function readStoredEntries(): InfiniteMemoryEntry[] {
       }
     });
 
-    if (seeded.length > 0) {
-      localStorage.setItem(INFINITE_STORAGE_KEY, JSON.stringify(seeded));
-    }
+    localStorage.setItem(INFINITE_STORAGE_KEY, JSON.stringify(seeded));
     return seeded;
   }
 
-  return safeJsonParse<InfiniteMemoryEntry[]>(raw, []);
+  const parsed = safeJsonParse<InfiniteMemoryEntry[]>(raw, []);
+  const guaranteed = ensureGenesisMemories(parsed);
+  if (guaranteed.length !== parsed.length) {
+    localStorage.setItem(INFINITE_STORAGE_KEY, JSON.stringify(guaranteed));
+  }
+  return guaranteed;
 }
 
 function writeStoredEntries(entries: InfiniteMemoryEntry[]): void {
@@ -112,13 +154,20 @@ export function addInfiniteMemory(
 
 export function removeInfiniteMemory(id: string): void {
   const current = readStoredEntries();
+  // Protected / genesis memories cannot be removed
+  const target = current.find(e => e.id === id);
+  if (target && (target.isProtected || target.content.includes('أدم فيدات') || target.content.includes('Adam Feidat'))) {
+    console.warn('[InfiniteMemory] Attempted to delete protected genesis memory. Operation rejected.');
+    return;
+  }
   const filtered = current.filter(e => e.id !== id);
-  writeStoredEntries(filtered);
+  writeStoredEntries(ensureGenesisMemories(filtered));
 }
 
 export function clearInfiniteMemory(): void {
   if (typeof localStorage === 'undefined') return;
-  localStorage.removeItem(INFINITE_STORAGE_KEY);
+  // Always preserve immutable genesis memories even on clear
+  localStorage.setItem(INFINITE_STORAGE_KEY, JSON.stringify(IMMUTABLE_GENESIS_MEMORIES));
 }
 
 export function getInfiniteMemoryStats() {
@@ -224,15 +273,24 @@ export function buildInfiniteMemoryDirective(
 
   if (selected.length === 0) return '';
 
+  // Always include the indelible creator genesis memory in the selected set
+  const genesisCreator = all.find(e => e.id === 'genesis_creator_adam_feidat' || e.content.includes('أدم فيدات'));
+  let finalSelected = [...selected];
+  if (genesisCreator && !finalSelected.some(e => e.id === genesisCreator.id)) {
+    finalSelected.unshift(genesisCreator);
+  }
+  finalSelected = finalSelected.slice(0, maxItems + 1);
+
   // Mark selected memories as used
   const now = Date.now();
-  for (const item of selected) {
+  for (const item of finalSelected) {
     item.lastUsedAt = now;
   }
   writeStoredEntries(all);
 
-  const lines = selected.map(item => {
-    const prefix = item.category === 'preference' ? 'تفضيل المستخدم'
+  const lines = finalSelected.map(item => {
+    const prefix = item.isProtected ? 'حقيقة تأسيسية أبدية'
+      : item.category === 'preference' ? 'تفضيل المستخدم'
       : item.category === 'instruction' ? 'تعليمات دائمة'
       : item.category === 'topic' ? 'من جلسة سابقة'
       : 'معلومة عن المستخدم';

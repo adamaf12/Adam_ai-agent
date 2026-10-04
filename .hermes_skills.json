@@ -32,8 +32,8 @@
         "Handle window resize and device touch gracefully"
       ],
       "acquiredAt": 1788559126719,
-      "lastUsedAt": 1790892048138,
-      "usageCount": 50,
+      "lastUsedAt": 1790959046695,
+      "usageCount": 52,
       "successRate": 0.98,
       "level": 9,
       "origin": "builtin"
@@ -66,8 +66,8 @@
         "Structure answers logically with Markdown"
       ],
       "acquiredAt": 1788731926719,
-      "lastUsedAt": 1790892048138,
-      "usageCount": 75,
+      "lastUsedAt": 1790959046695,
+      "usageCount": 77,
       "successRate": 0.99,
       "level": 10,
       "origin": "builtin"
@@ -287,8 +287,64 @@
       "successRate": 0.95,
       "level": 1,
       "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_7c4ec226",
+      "name": "Dynamic Heuristic (ابحث كوكب المريخ ومعلومات)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: ابحث كوكب المريخ ومعلومات",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"ابحث كوكب المريخ ومعلومات\".",
+      "triggers": [
+        "ابحث",
+        "كوكب",
+        "المريخ",
+        "ومعلومات"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [ابحث, كوكب, المريخ, ومعلومات]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1790959035923,
+      "lastUsedAt": 1790959035923,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_a935e074",
+      "name": "Dynamic Heuristic (search the web for)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: search the web for",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"search the web for\".",
+      "triggers": [
+        "search",
+        "the",
+        "web",
+        "for"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [search, the, web, for]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1790959063492,
+      "lastUsedAt": 1790959063492,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
     }
   ],
-  "totalExecutions": 10,
-  "lastSavedAt": 1790892053903
+  "totalExecutions": 12,
+  "lastSavedAt": 1790959063492
 }

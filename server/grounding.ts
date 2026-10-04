@@ -145,15 +145,22 @@ export function getDynamicSystemContext(language: 'ar' | 'en' | 'fr' | string = 
 - Knowledge Grounding: When answering general questions about the world, provide accurate, simple, and direct answers based on verified web knowledge without unnecessary fluff.`;
 }
 
+export function cleanSearchQuery(query: string): string {
+  let clean = String(query || '').replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim();
+  // Strip conversational search prefixes
+  clean = clean.replace(/^(?:ابحث\s*لي\s*عن|ابحث\s*عن|ابحث\s*في\s*(?:النت|جوجل|الويب)\s*عن|بحث\s*عن|ابحث|بحث|أريد\s*البحث\s*عن|ما\s*هو|ما\s*هي|ماهو|ماهي|من\s*هو|من\s*هي|أخبرني\s*عن|اخبرني\s*عن|search\s*for|search\s*the\s*web\s*for|google\s*for|google|search|look\s*up|find\s*out\s*about|tell\s*me\s*about|what\s*is|who\s*is)\s+/i, '');
+  return clean.trim().slice(0, 150);
+}
+
 /**
- * Fetches real-time web knowledge from DuckDuckGo and Wikipedia APIs in parallel
- * with ultra-fast latency (<600ms), resilient fallback handling, and rich snippet extraction.
+ * Fetches real-time web knowledge from DuckDuckGo, Wikipedia, and live search endpoints in parallel
+ * with ultra-fast latency (<1500ms), resilient fallback handling, and rich snippet extraction.
  */
 export async function fetchLiveWebKnowledge(
   query: string,
   language: 'ar' | 'en' | 'fr' = 'ar'
 ): Promise<{ sources: GroundingSource[]; knowledgeContext: string; queries: string[] }> {
-  const cleanQuery = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().slice(0, 150);
+  const cleanQuery = cleanSearchQuery(query) || query.trim().slice(0, 120);
   if (!cleanQuery || cleanQuery.length < 2) {
     return { sources: [], knowledgeContext: '', queries: [] };
   }
@@ -167,13 +174,14 @@ export async function fetchLiveWebKnowledge(
     : `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&srlimit=4`;
 
   const ddgEndpoint = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`;
+  const ddgHtmlEndpoint = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(cleanQuery)}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2800);
+  const timer = setTimeout(() => controller.abort(), 3200);
 
   try {
-    // Query Wikipedia and DuckDuckGo in parallel
-    const [wikiRes, ddgRes] = await Promise.allSettled([
+    // Query Wikipedia, DuckDuckGo API, and DuckDuckGo HTML in parallel
+    const [wikiRes, ddgRes, ddgHtmlRes] = await Promise.allSettled([
       fetch(wikiEndpoint, {
         headers: { 'User-Agent': 'AdamAI/2.0 (LiveKnowledgeAssistant)' },
         signal: controller.signal,
@@ -182,9 +190,16 @@ export async function fetchLiveWebKnowledge(
         headers: { 'User-Agent': 'AdamAI/2.0 (LiveKnowledgeAssistant)' },
         signal: controller.signal,
       }).then(r => (r.ok ? r.json() : null)),
+      fetch(ddgHtmlEndpoint, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+        },
+        signal: controller.signal,
+      }).then(r => (r.ok ? r.text() : null)),
     ]);
 
-    // Parse DuckDuckGo Abstract & Related Topics
+    // 1. Parse DuckDuckGo Abstract & Related Topics
     if (ddgRes.status === 'fulfilled' && ddgRes.value) {
       const ddgData = ddgRes.value;
       if (ddgData.AbstractText && ddgData.AbstractURL && !seenUrls.has(ddgData.AbstractURL)) {
@@ -198,7 +213,7 @@ export async function fetchLiveWebKnowledge(
       }
 
       if (Array.isArray(ddgData.RelatedTopics)) {
-        for (const topic of ddgData.RelatedTopics.slice(0, 2)) {
+        for (const topic of ddgData.RelatedTopics.slice(0, 3)) {
           if (topic.Text && topic.FirstURL && !seenUrls.has(topic.FirstURL)) {
             seenUrls.add(topic.FirstURL);
             sources.push({
@@ -212,10 +227,10 @@ export async function fetchLiveWebKnowledge(
       }
     }
 
-    // Parse Wikipedia Search Items
+    // 2. Parse Wikipedia Search Items
     if (wikiRes.status === 'fulfilled' && wikiRes.value) {
       const searchItems = Array.isArray(wikiRes.value?.query?.search) ? wikiRes.value.query.search : [];
-      for (const item of searchItems.slice(0, 3)) {
+      for (const item of searchItems.slice(0, 4)) {
         const title = String(item?.title || '').trim();
         if (!title) continue;
         const snippet = String(item?.snippet || '')
@@ -239,6 +254,34 @@ export async function fetchLiveWebKnowledge(
 
           if (snippet) {
             snippets.push(`- **${title}**: ${snippet}`);
+          }
+        }
+      }
+    }
+
+    // 3. Parse DuckDuckGo HTML Search Results as rich fallback
+    if (ddgHtmlRes.status === 'fulfilled' && ddgHtmlRes.value && snippets.length < 3) {
+      const html = ddgHtmlRes.value;
+      const snippetMatches = Array.from(html.matchAll(/<a class="result__snippet[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi));
+      const titleMatches = Array.from(html.matchAll(/<a class="result__url[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi));
+
+      for (let i = 0; i < Math.min(snippetMatches.length, 3); i++) {
+        const rawSnippet = snippetMatches[i]?.[2] || '';
+        const rawUrl = snippetMatches[i]?.[1] || titleMatches[i]?.[1] || '';
+        const cleanText = rawSnippet.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        
+        if (cleanText && cleanText.length > 20 && !snippets.some(s => s.includes(cleanText.slice(0, 30)))) {
+          snippets.push(`- ${cleanText.slice(0, 300)}`);
+          if (rawUrl && !seenUrls.has(rawUrl)) {
+            seenUrls.add(rawUrl);
+            try {
+              const domain = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).hostname.replace(/^www\./, '');
+              sources.push({
+                title: cleanQuery,
+                url: rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`,
+                domain,
+              });
+            } catch {}
           }
         }
       }

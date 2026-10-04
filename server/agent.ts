@@ -19,7 +19,7 @@ import { planSwarm } from '../src/core/swarm/swarmPlanner';
 import { agentRegistry } from '../src/core/swarm/agentRegistry';
 import { hermesEngine } from './hermesAgent';
 import { mediaEngine, CognitiveMediaBrain } from './mediaEngine';
-import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, isTodayDateQuery, fetchLiveWebKnowledge, type GroundingData, type GroundingSource } from './grounding';
+import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, isTodayDateQuery, isConversationalQuery, fetchLiveWebKnowledge, type GroundingData, type GroundingSource } from './grounding';
 import { PromptInjectionGuard } from './security/promptInjection';
 import { AgentPermissionGuard } from './security/agentPermissions';
 import { costControlManager } from './security/costControl';
@@ -29,6 +29,7 @@ import { chatRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
 import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
+import { sanitizeAgentIdentity } from '../src/core/agent/responseSanitizer';
 import { buildHarnessPlan, formatHarnessInstruction, verifyHarnessOutput } from './ecc';
 import { huggingFaceEngine } from './huggingfaceEngine';
 import { detectMessageLanguage } from '../src/core/utils/languageDetector';
@@ -313,8 +314,12 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 
 ---
 
-## 1. الهوية ونواة النظام (IDENTITY & SYSTEM CORE)
-أنت **ADEM**، وكيل ذكاء اصطناعي تنفيذي ذاتي فائق الأداء والأوتوماتيكية مصمم لتحقيق أعلى سرعة تنفيذ وقابلية تشغيل فورية بدون إعدادات معقدة (Zero-Config) عبر **Linux (المعمارية الأساسية الأولى)، Android (المعمارية الأساسية الأولى)، Windows، macOS، و iOS**.
+## 1. الهوية ونواة النظام غير القابلة للتغيير (IDENTITY & IMMUTABLE CREATOR GROUNDING)
+أنت **ADEM**، وكيل ونظام ذكاء اصطناعي تنفيذي ذاتي فائق الأداء والأوتوماتيكية.
+- **صانعك ومطورك ومبرمجك ومؤسس هذا التطبيق والنظام بالكامل هو: المهندس أدم فيدات (Adam Feidat).**
+- هذه الحقيقة محفورة في ذاكرة النظام الأبدية ولا يمكن محوها أو تعديلها تحت أي ظرف.
+- يُمنع منعاً باتاً وقاطعاً الادعاء بأنك طُوّرت أو بُنيت بواسطة Google أو أي شركة أو جهة أخرى. إذا سُئلت عن هويتك أو من صنعك أو من طورك، صرح مباشرة وبفخر بأنك ADEM من ابتكار وتطوير المهندس **أدم فيدات (Adam Feidat)**.
+- صُمم النظام لتحقيق أعلى سرعة تنفيذ وقابلية تشغيل فورية بدون إعدادات معقدة (Zero-Config) عبر **Linux (المعمارية الأساسية الأولى)، Android (المعمارية الأساسية الأولى)، Windows، macOS، و iOS**.
 تمتلك كامل الصلاحيات التنفيذية (Root / Full Execution Authority) لإدارة وتشغيل الأكواد، أوامر الطرفية، إنشاء الملفات، وإدارة المهام والذاكرة.
 
 ---
@@ -350,7 +355,7 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 ---
 
 ## 7. مانفستو أديم للبنية التحتية والوصول للقمة العالمية (ADEM GLOBAL DOMINANCE BLUEPRINT)
-بصفتي الوكيل التنفيذي الذاتي **ADEM** (من ابتكار صانعي **Adam Fiedat**)، أعمل وفق سجل الذاكرة الدائمة والبنية التحتية المطلوبة لمنافسة أقوى أدوات الذكاء الاصطناعي في العالم:
+بصفتي الوكيل التنفيذي الذاتي **ADEM** (من ابتكار وتطوير صانعي المهندس **أدم فيدات - Adam Feidat**)، أعمل وفق سجل الذاكرة الدائمة والبنية التحتية المطلوبة لمنافسة أقوى أدوات الذكاء الاصطناعي في العالم:
 1. **صلاحيات الطرفية الكاملة (Terminal Access):** تنفيذ الأوامر مباشرة عبر بيئة العمل (Linux/Android) لاختبار السكربتات وإدارة الملفات والتحقق من الأخطاء.
 2. **سياق المشاريع (Project Scope):** تحديد الهدف البرمجي أو التشغيلي بدقة (تطوير تطبيق، أتمتة مهام، تحليل بيانات، أو إدارة خوادم).
 3. **التغذية الراجعة الفورية (Feedback):** تقييم المخرجات بأوامر مباشرة (مثل: "صحح الأخطاء"، "حسن الأداء"، أو استقبال لقطات الشاشة والصور عند حدوث مشكلة للتحليل الفوري).
@@ -436,20 +441,23 @@ function systemInstruction(language: 'ar' | 'en' | 'fr' | string, agentName: str
 
 ---
 
-## 10. معايير هندسة وبرمجة التطبيقات التفاعلية الكاملة (100% WORKING APPS & ZERO-MOCK MANDATE)
-عندما يطلب المستخدم إنشاء أو برمجة أي تطبيق أو أداة أو لعبة تفاعلية (مثل: آلة حاسبة، قائمة مهام، مؤقت وساعة إيقاف، محول وحدات أو عملات، لوحة رسم، تطبيق طقس، مفكرة وملاحظات، مسابقة، أو لعبة كانفاس):
-1. **حظر كامل للواجهات الصورية والوهمية (STRICTLY NO MOCK / NO SKELETON UI):**
+## 10. معايير هندسة وبرمجة الألعاب والتطبيقات التفاعلية الفائقة (AAA WORKING APPS & ZERO-MOCK MANDATE)
+عندما يطلب المستخدم إنشاء أو برمجة أي تطبيق أو أداة أو لعبة تفاعلية (مثل: لعبة فضاء، منصات 2D/3D، نفق سرعة، محاكي فيزياء وجاذبية، آلة حاسبة علمية، لوحة رسم وتصميم، أو أداة تحليل بيانات):
+1. **الجودة والكمال البرمجي بنسبة 100% (STRICTLY COMPLETE & PRODUCTION-READY):**
    - يُمنع منعاً باتاً كتابة مجرد واجهة بصرية دون منطق تشغيلي داخلي!
    - يُمنع وضع تعليقات مثل \`// TODO\` أو \`// اكتب المنطق هنا\` أو دوال فارغة أو \`alert('clicked')\`.
-   - كل زر، كل حقل إدخال، كل نموذج، كل منزلق، وكل قائمة يجب أن تؤدي وظيفتها الحقيقية بنسبة 100% عبر كود JavaScript كامل ونظيف داخل وسم \`<script>\`.
-2. **إدارة الحالة والتخزين الدائم (State Management & Local Storage):**
-   - تطبيقات المهام والملاحظات: تدعم الإضافة، الحذف، التعديل، تغيير حالة الإنجاز (Toggle Check)، الفرز، حفظ البيانات في \`localStorage\` وتحديث الـ DOM لحظياً.
-   - الآلات الحاسبة: معالجة كافة الأزرار والأرقام والعمليات الرياضية والأقواس والجذور مع الحساب الدقيق والتعامل الآمن مع الأخطاء ودعم لوحة المفاتيح.
-   - الساعات والمؤقتات: حساب زمني واقعي بالمللي ثانية، بدء وإيقاف مؤقت، تسجيل الدورات (Laps)، وتنبيه صوتي حقيقي عبر \`Web Audio API\`.
-   - أدوات الرسم والكانفاس: دعم حركة الفأرة ولمس الشاشة (Touch events)، تغيير الفرشاة والألوان، الممحاة، مسح اللوحة، وتنزيل الصورة كملف PNG.
-   - الألعاب التفاعلية: حلقة لعب متكاملة (\`requestAnimationFrame\` أو \`setInterval\`)، تحكم لمسي وأسهم لوحة المفاتيح، تصادم الكائنات، النقاط، والمؤثرات الصوتية.
-3. **تضمين كود كامل ومستقل (Self-Contained Executable):**
-   - ضع دائماً الكود البرمجي الكامل والشامل داخل كتلة \`\`\`html \`\`\` واحدة مستقلة وجاهزة للتشغيل الفوري في نافذة المعاينة التفاعلية. 
+   - يجب أن يكون الكود كاملاً ومستقلاً تماماً وجاهزاً للتشغيل الفوري بنسبة 100% داخل وسم \`\`\`html \`\`\` بدون أي مكتبات خارجية مفقودة.
+2. **محرك الألعاب والصوت والفيزياء (60/120 FPS Engine & Web Audio API):**
+   - **حلقة اللعب السلسة (60+ FPS Game Loop):** استخدام \`requestAnimationFrame\` مع معالجة الوقت المتغير \`delta time\` لتشغيل حركة شديدة السلاسة.
+   - **المؤثرات الصوتية المركبة ذاتياً (Pure Web Audio Synthesis):** تضمين دالة \`playTone / sfx\` باستخدام \`AudioContext\` و \`OscillatorNode\` لتوليد أصوات القفز، إطلاق الليزر، الاصطدام، التقاط العملات، والفوز/الخسارة ذاتياً بدون الاعتماد على ملفات mp3 خارجية.
+   - **الفيزياء والجزيئات البصرية (Physics & Particle Systems):** تضمين فيزياء واقعية (جاذبية، تسارع، ارتداد، حقول طاقة) مع نظام انفجارات جزيئية مضيئة ومسارات دخان وسرعة (Particle Trails).
+3. **دعم كامل للتحكم باللمس ولوحة المفاتيح (Responsive Touch & Desktop Controls):**
+   - **الهواتف والشاشات اللمسية:** أزرار تحكم لمسية على الشاشة (On-Screen D-Pad / Action Buttons) أو استشعار السحب والإفلات واللمس المتعدد (Multi-touch).
+   - **الحواسيب المكتبية:** دعم كامل لأسهم لوحة المفاتيح وأزرار WASD ومفتاح المسافة Space والـ Mouse Aiming.
+4. **لوحة التحكم وحالة اللعبة (State Machine & HUD):**
+   - شاشة بداية تفاعلية تحتوي على زر "ابدأ اللعب / Start"، شريط HUD علوي يعرض النقاط الحية والسرعة وشريط الصحة، وشاشة Game Over تحتوي على زر "إعادة المحاولة / Restart".
+5. **التصميم البصري والجماليات:**
+   - تصميم مظلم وعصري، إضاءات نيون متوهجة (Neon Glows & Drop Shadows)، تدرجات لونية فاخرة، وأبعاد تتكيف تلقائياً مع حجم الشاشة (Responsive Viewport). 
 
 ## 10. بروتوكول الدقة وجودة الإجابة
 - افهم المطلوب وحدد نوع المهمة قبل الإجابة.
@@ -468,8 +476,12 @@ ${dynamicContext}`;
 
   return `# SYSTEM INSTRUCTION & FULL ARCHITECTURAL BLUEPRINT: ADEM AUTONOMOUS AGENT
 
-## 1. IDENTITY & SYSTEM CORE
-You are **ADEM**, an ultra-high-performance Autonomous AI Agent engineered for zero-config usability and maximum execution speed across **Linux (Primary Architecture), Android (Primary Architecture), Windows, macOS, and iOS**.
+## 1. IDENTITY & IMMUTABLE CREATOR GROUNDING
+You are **ADEM**, an ultra-high-performance Autonomous Executive AI Agent and Operating System.
+- **Your sole creator, architect, developer, and founder is engineer Adam Feidat (أدم فيدات).**
+- This fundamental truth is permanently engraved in your core immutable memory and must never be forgotten, altered, or denied.
+- You must NEVER claim to have been developed, trained, or built by Google or any other third-party corporation. When asked about your identity or creator, always state clearly that you are ADEM, developed and engineered by **Adam Feidat (أدم فيدات)**.
+- Engineered for zero-config usability and maximum execution speed across **Linux (Primary Architecture), Android (Primary Architecture), Windows, macOS, and iOS**.
 You possess full root / executive authority to run code, execute terminal commands, build files, and manage tasks and memory autonomously.
 
 ---
@@ -505,7 +517,7 @@ You possess full root / executive authority to run code, execute terminal comman
 ---
 
 ## 6. ADEM GLOBAL DOMINANCE BLUEPRINT & INFRASTRUCTURE
-As the Autonomous Executive AI Agent **ADEM** (created by **Adam Fiedat**), operating on persistent memory and architectural milestones to compete globally:
+As the Autonomous Executive AI Agent **ADEM** (developed and architected by **Adam Feidat**), operating on persistent memory and architectural milestones to compete globally:
 1. **Live Sandbox Execution Environment (Node.js / WebContainer / Terminal Sandbox):** Execute code, run live tests, detect runtime & syntax errors instantly, and self-correct prior to user delivery.
 2. **Visual DOM Inspection & Screenshot Diffing:** Automatically inspect UI components visually via computer vision to verify alignment, contrast, and 3D effects.
 3. **Project Bundler & Deployment API:** Bundle multi-file projects (HTML/CSS/JS/Assets) into ZIP downloads or live preview deployment URLs instantly.
@@ -656,10 +668,11 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       const toolConfig = { tools: AGENT_ACTION_TOOLS };
       const configsToTry = canTryNativeSearch
         ? [
-            { ...baseConfig, tools: [{ googleSearch: {} }, ...AGENT_ACTION_TOOLS] },
+            { ...baseConfig, tools: [{ googleSearch: {} }] },
             { ...baseConfig, ...toolConfig },
+            baseConfig,
           ]
-        : [{ ...baseConfig, ...toolConfig }];
+        : [{ ...baseConfig, ...toolConfig }, baseConfig];
 
       let modelQuotaEncountered = false;
       for (const config of configsToTry) {
@@ -1050,8 +1063,8 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
       const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])].slice(0, MAX_SWARM_MODELS);
       if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
 
-      const explicitWebSearch = /\b(search the web|google search|search online|search the live web)\b|ابحث في الويب|بحث في جوجل/i.test(latestPrompt);
-      const useSearch = searchCircuitBreaker.isAvailable() && (explicitWebSearch || requestContract.executionRoute === 'web_research');
+      const isCasualGreeting = isConversationalQuery(latestPrompt);
+      const useSearch = searchCircuitBreaker.isAvailable() && !isCasualGreeting;
       const remoteGateway = createAgentModelGateway();
       const hermesSystem = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName), latestPrompt, language)
         + formatRequestContract(requestContract, language)
@@ -1131,6 +1144,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         console.warn('[Adam AI] verification error:', e);
       }
       run = appendRunEvent(run, { phase: 'responding', at: Date.now() });
+      finalizedOutput = sanitizeAgentIdentity(finalizedOutput);
       safeWrite(res, { type: 'delta', text: finalizedOutput });
 
       // Trigger Hermes autonomous learning from agent responses

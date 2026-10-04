@@ -1202,3 +1202,684 @@ func take_damage(amount: float) -> void:
         print("[ADEM Engine] Game Over Event in Godot 4!")
 `;
 }
+
+/**
+ * 4. Neon Cyber 3D Voxel Infinite Runner (WebGL & Particle FX)
+ */
+export function getNeonVoxel3DRunnerGame(): string {
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Voxel 3D Cyber Runner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #05050d;
+      color: #38bdf8;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .game-box {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      height: 100vh;
+      max-height: 760px;
+      background: #090914;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.25);
+    }
+    .hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(9, 9, 20, 0.95) 0%, rgba(9, 9, 20, 0) 100%);
+      font-size: 13px;
+      font-weight: 800;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .badge {
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 6px 14px;
+      border-radius: 16px;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    .controls {
+      position: absolute;
+      bottom: 20px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .btn {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      padding: 14px 22px;
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 14px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      transition: transform 0.08s, background 0.08s;
+    }
+    .btn:active {
+      transform: scale(0.92);
+      background: rgba(56, 189, 248, 0.35);
+    }
+    .btn-jump {
+      background: linear-gradient(135deg, #0284c7, #9333ea);
+      color: #fff;
+      border: none;
+      box-shadow: 0 0 25px rgba(147, 51, 234, 0.6);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 5, 13, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      padding: 24px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+    .overlay h1 {
+      font-size: 28px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #38bdf8, #f43f5e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-box">
+    <div class="hud">
+      <div class="badge">المسافة: <span id="distVal">0m</span></div>
+      <div class="badge" style="border-color:#f43f5e; color:#fb7185;">السرعة: <span id="speedVal">1x</span></div>
+      <div class="badge" style="border-color:#a855f7; color:#c084fc;">النقود: <span id="coinsVal">0</span></div>
+    </div>
+
+    <canvas id="c"></canvas>
+
+    <div class="controls">
+      <button id="leftBtn" class="btn">◀ يسار</button>
+      <button id="jumpBtn" class="btn btn-jump">⚡ قفز (Space)</button>
+      <button id="rightBtn" class="btn">يمين ▶</button>
+    </div>
+
+    <div id="startModal" class="overlay">
+      <h1>NEON VOXEL 3D RUNNER</h1>
+      <p style="font-size:14px; color:#94a3b8; max-width:340px; margin-bottom:24px; line-height:1.6;">
+        اركض في العالم السايبر ثلاثي الأبعاد! اقفز فوق الحواجز، اجمع كريستالات الطاقة، وتفادَ الاصطدام في مضمار النيون فائق السرعة 60 FPS.
+      </p>
+      <button id="startBtn" class="btn btn-jump" style="padding:16px 40px; font-size:17px;">
+        ابدأ الركض السايبر 🚀
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let actx = null;
+    function beep(f, dur=0.1, type='sine', gain=0.1) {
+      try {
+        if(!actx) actx = new AudioCtx();
+        const osc = actx.createOscillator();
+        const g = actx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f, actx.currentTime);
+        g.gain.setValueAtTime(gain, actx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+        osc.connect(g); g.connect(actx.destination);
+        osc.start(); osc.stop(actx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const distEl = document.getElementById('distVal');
+    const speedEl = document.getElementById('speedVal');
+    const coinsEl = document.getElementById('coinsVal');
+    const modal = document.getElementById('startModal');
+
+    let W = canvas.width = 480;
+    let H = canvas.height = 640;
+    function resize() {
+      W = canvas.width = canvas.parentElement.clientWidth;
+      H = canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let playing = false;
+    let distance = 0;
+    let coins = 0;
+    let lane = 1; // 0: Left, 1: Center, 2: Right
+    let playerY = 0;
+    let playerVy = 0;
+    let isJumping = false;
+    let speed = 18;
+    let obstacles = [];
+    let crystals = [];
+    let particles = [];
+    let stars = [];
+
+    // Init 3D perspective starfield
+    for(let i=0; i<120; i++) {
+      stars.push({ x: (Math.random()-0.5)*W*2, y: (Math.random()-0.5)*H*2, z: Math.random()*1000 + 50 });
+    }
+
+    function spawnObstacle() {
+      const l = Math.floor(Math.random()*3);
+      obstacles.push({ lane: l, z: 1200, type: Math.random() > 0.4 ? 'barrier' : 'spike' });
+    }
+
+    function spawnCrystal() {
+      const l = Math.floor(Math.random()*3);
+      crystals.push({ lane: l, z: 1200, collected: false });
+    }
+
+    let spawnTimer = 0;
+    let crystalTimer = 0;
+
+    function startGame() {
+      playing = true;
+      distance = 0;
+      coins = 0;
+      lane = 1;
+      playerY = 0;
+      playerVy = 0;
+      speed = 18;
+      obstacles = [];
+      crystals = [];
+      particles = [];
+      modal.style.display = 'none';
+      beep(523, 0.15, 'triangle', 0.15);
+      setTimeout(() => beep(659, 0.2, 'triangle', 0.15), 100);
+    }
+
+    function gameOver() {
+      playing = false;
+      beep(150, 0.4, 'sawtooth', 0.25);
+      modal.innerHTML = \`
+        <h1>GAME OVER</h1>
+        <p style="color:#94a3b8; font-size:15px; margin-bottom:16px;">
+          المسافة المحققة: <b style="color:#38bdf8;">\${Math.floor(distance)}m</b><br>
+          الكريستالات المجمعة: <b style="color:#c084fc;">\${coins}</b>
+        </p>
+        <button id="startBtn" class="btn btn-jump" style="padding:16px 40px; font-size:17px;">
+          إعادة المحاولة 🔄
+        </button>
+      \`;
+      modal.style.display = 'flex';
+      document.getElementById('startBtn').onclick = startGame;
+    }
+
+    // Controls
+    function moveLeft() { if(lane > 0) { lane--; beep(400, 0.08, 'sine'); } }
+    function moveRight() { if(lane < 2) { lane++; beep(400, 0.08, 'sine'); } }
+    function jump() {
+      if(!isJumping) {
+        isJumping = true;
+        playerVy = 14;
+        beep(700, 0.15, 'square', 0.1);
+      }
+    }
+
+    document.getElementById('startBtn').onclick = startGame;
+    document.getElementById('leftBtn').onclick = moveLeft;
+    document.getElementById('rightBtn').onclick = moveRight;
+    document.getElementById('jumpBtn').onclick = jump;
+
+    window.addEventListener('keydown', (e) => {
+      if(!playing) return;
+      if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeft();
+      if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRight();
+      if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') jump();
+    });
+
+    // Touch Swipe Detection
+    let touchStartX = 0, touchStartY = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    canvas.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if(Math.abs(dx) > Math.abs(dy)) {
+        if(dx > 30) moveRight();
+        else if(dx < -30) moveLeft();
+      } else {
+        if(dy < -30) jump();
+      }
+    });
+
+    function project(x, y, z) {
+      const scale = 300 / (z || 1);
+      return {
+        x: W/2 + x * scale,
+        y: H/2 + y * scale,
+        scale: Math.max(0, scale)
+      };
+    }
+
+    function loop() {
+      requestAnimationFrame(loop);
+      ctx.fillStyle = '#05050d';
+      ctx.fillRect(0, 0, W, H);
+
+      // Starfield
+      ctx.fillStyle = '#38bdf8';
+      stars.forEach(s => {
+        if(playing) s.z -= speed * 0.8;
+        if(s.z <= 10) s.z = 1000;
+        const p = project(s.x, s.y, s.z);
+        const sz = Math.max(1, p.scale * 4);
+        ctx.fillRect(p.x, p.y, sz, sz);
+      });
+
+      // 3D Grid Track
+      const horizonY = H * 0.45;
+      const trackBottomW = W * 0.88;
+      const trackTopW = W * 0.12;
+
+      ctx.beginPath();
+      ctx.moveTo(W/2 - trackTopW/2, horizonY);
+      ctx.lineTo(W/2 + trackTopW/2, horizonY);
+      ctx.lineTo(W/2 + trackBottomW/2, H);
+      ctx.lineTo(W/2 - trackBottomW/2, H);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, horizonY, 0, H);
+      grad.addColorStop(0, 'rgba(30, 58, 138, 0.1)');
+      grad.addColorStop(1, 'rgba(14, 165, 233, 0.35)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Lane dividers
+      for(let l=1; l<=2; l++) {
+        const topX = W/2 - trackTopW/2 + (trackTopW/3)*l;
+        const botX = W/2 - trackBottomW/2 + (trackBottomW/3)*l;
+        ctx.beginPath();
+        ctx.moveTo(topX, horizonY);
+        ctx.lineTo(botX, H);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.stroke();
+      }
+
+      if(!playing) return;
+
+      distance += speed * 0.08;
+      speed += 0.001;
+      distEl.innerText = Math.floor(distance) + 'm';
+      speedEl.innerText = (speed/18).toFixed(1) + 'x';
+      coinsEl.innerText = coins;
+
+      // Physics
+      if(isJumping) {
+        playerY += playerVy;
+        playerVy -= 0.8;
+        if(playerY <= 0) {
+          playerY = 0;
+          playerVy = 0;
+          isJumping = false;
+        }
+      }
+
+      // Spawning
+      spawnTimer++;
+      if(spawnTimer > 45) { spawnObstacle(); spawnTimer = 0; }
+      crystalTimer++;
+      if(crystalTimer > 35) { spawnCrystal(); crystalTimer = 0; }
+
+      const laneOffsets = [-160, 0, 160];
+
+      // Update Obstacles
+      for(let i=obstacles.length-1; i>=0; i--) {
+        const obs = obstacles[i];
+        obs.z -= speed;
+        if(obs.z < -50) { obstacles.splice(i, 1); continue; }
+
+        const p = project(laneOffsets[obs.lane], 100, obs.z);
+        const w = 70 * p.scale;
+        const h = 80 * p.scale;
+
+        // Draw Obstacle
+        ctx.fillStyle = obs.type === 'barrier' ? '#f43f5e' : '#e11d48';
+        ctx.shadowColor = '#f43f5e';
+        ctx.shadowBlur = 15;
+        ctx.fillRect(p.x - w/2, p.y - h, w, h);
+        ctx.shadowBlur = 0;
+
+        // Collision Check
+        if(obs.z < 120 && obs.z > 20 && obs.lane === lane && playerY < 40) {
+          gameOver();
+          return;
+        }
+      }
+
+      // Update Crystals
+      for(let i=crystals.length-1; i>=0; i--) {
+        const c = crystals[i];
+        c.z -= speed;
+        if(c.z < -50) { crystals.splice(i, 1); continue; }
+        if(!c.collected) {
+          const p = project(laneOffsets[c.lane], 70, c.z);
+          const r = 24 * p.scale;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y - r, r, 0, Math.PI*2);
+          ctx.fillStyle = '#a855f7';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 18;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          if(c.z < 120 && c.z > 20 && c.lane === lane) {
+            c.collected = true;
+            coins += 10;
+            beep(987, 0.12, 'triangle', 0.15);
+          }
+        }
+      }
+
+      // Draw Player Ship / Character
+      const targetX = W/2 + laneOffsets[lane] * 0.7;
+      const py = H - 90 - playerY * 2.2;
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.moveTo(targetX, py - 35);
+      ctx.lineTo(targetX + 26, py + 15);
+      ctx.lineTo(targetX - 26, py + 15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Jet Thruster Particles
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(targetX - 8, py + 18, 16, 12 + Math.random()*16);
+    }
+
+    loop();
+  </script>
+</body>
+</html>`;
+}
+
+/**
+ * 5. Gravitational Physics Particle Sandbox (2D Orbit & Collisions)
+ */
+export function getGravitationalPhysicsSandboxGame(): string {
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gravitational Particle Physics Sandbox</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #030712;
+      color: #38bdf8;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .sandbox-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      height: 100vh;
+      max-height: 780px;
+      background: #000;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.2);
+    }
+    .toolbar {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #38bdf8;
+      font-mono: monospace;
+    }
+    .tool-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .tool-btn.active {
+      background: rgba(14, 165, 233, 0.3);
+      color: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+    canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+  <div class="sandbox-container">
+    <div class="toolbar">
+      <div class="badge">الجسيمات: <span id="pCount">0</span></div>
+      <div style="display:flex; gap:6px;">
+        <button id="modeSun" class="tool-btn active">☀️ جاذبية شمسية</button>
+        <button id="modeRepel" class="tool-btn">🌀 حقل طارد</button>
+        <button id="modeBurst" class="tool-btn">💥 تفجير جزيئات</button>
+      </div>
+      <button id="clearBtn" class="tool-btn" style="border-color:#f43f5e; color:#fb7185;">مسح 🗑️</button>
+    </div>
+
+    <canvas id="cv"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('cv');
+    const ctx = canvas.getContext('2d');
+    const pCountEl = document.getElementById('pCount');
+    let W = canvas.width = 500;
+    let H = canvas.height = 650;
+
+    function resize() {
+      W = canvas.width = canvas.parentElement.clientWidth;
+      H = canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let mode = 'sun';
+    const particles = [];
+    const gravityWells = [{ x: W/2, y: H/2, mass: 1200, color: '#f59e0b' }];
+
+    // Audio SFX
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let actx = null;
+    function chime(f) {
+      try {
+        if(!actx) actx = new AudioCtx();
+        const osc = actx.createOscillator();
+        const g = actx.createGain();
+        osc.frequency.setValueAtTime(f, actx.currentTime);
+        g.gain.setValueAtTime(0.04, actx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.15);
+        osc.connect(g); g.connect(actx.destination);
+        osc.start(); osc.stop(actx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    document.getElementById('modeSun').onclick = () => { mode = 'sun'; setActive('modeSun'); };
+    document.getElementById('modeRepel').onclick = () => { mode = 'repel'; setActive('modeRepel'); };
+    document.getElementById('modeBurst').onclick = () => { mode = 'burst'; setActive('modeBurst'); };
+    document.getElementById('clearBtn').onclick = () => { particles.length = 0; gravityWells.length = 0; };
+
+    function setActive(id) {
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id)?.classList.add('active');
+    }
+
+    function addParticles(x, y, count=30) {
+      chime(440 + Math.random()*400);
+      for(let i=0; i<count; i++) {
+        const angle = Math.random()*Math.PI*2;
+        const spd = Math.random()*5 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle)*spd,
+          vy: Math.sin(angle)*spd,
+          color: \`hsl(\${Math.random()*60 + 180}, 95%, 60%)\`,
+          size: Math.random()*3 + 1.5,
+          life: 1.0,
+          decay: Math.random()*0.002 + 0.001
+        });
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if(mode === 'sun') {
+        gravityWells.push({ x, y, mass: 1000, color: '#f59e0b' });
+        chime(330);
+      } else if(mode === 'repel') {
+        gravityWells.push({ x, y, mass: -1000, color: '#f43f5e' });
+        chime(220);
+      } else if(mode === 'burst') {
+        addParticles(x, y, 60);
+      }
+    });
+
+    // Auto emit orbiting dust
+    setInterval(() => {
+      if(particles.length < 350) {
+        addParticles(Math.random()*W, Math.random()*H, 4);
+      }
+    }, 150);
+
+    function loop() {
+      requestAnimationFrame(loop);
+      ctx.fillStyle = 'rgba(3, 7, 18, 0.25)';
+      ctx.fillRect(0, 0, W, H);
+
+      pCountEl.innerText = particles.length;
+
+      // Draw Gravity Wells
+      gravityWells.forEach(w => {
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, Math.abs(w.mass)/60, 0, Math.PI*2);
+        ctx.fillStyle = w.color;
+        ctx.shadowColor = w.color;
+        ctx.shadowBlur = 25;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      // Update Particles with N-Body Physics
+      for(let i=particles.length-1; i>=0; i--) {
+        const p = particles[i];
+        gravityWells.forEach(w => {
+          const dx = w.x - p.x;
+          const dy = w.y - p.y;
+          const distSq = dx*dx + dy*dy + 400;
+          const dist = Math.sqrt(distSq);
+          const force = (w.mass / distSq) * 0.8;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        });
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.995; // drag
+        p.vy *= 0.995;
+
+        // Bounce walls
+        if(p.x < 0 || p.x > W) p.vx *= -0.8;
+        if(p.y < 0 || p.y > H) p.vy *= -0.8;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    loop();
+  </script>
+</body>
+</html>`;
+}
+

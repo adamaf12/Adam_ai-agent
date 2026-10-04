@@ -39,9 +39,15 @@ import {
 import { getSmartCalculatorAppCode } from '../../core/agent/interactiveAppTemplates';
 import { DockerSandboxRunner } from './DockerSandboxRunner';
 import {
+  synthesizeApp,
+  analyzeAppPrompt,
+} from '../../core/agent/gameAppSynthesizer';
+import {
   getThreeJs3DHyperTunnelGame,
   getCyberSpaceOdysseyDXGame,
   getCyberBreakoutDXGame,
+  getNeonVoxel3DRunnerGame,
+  getGravitationalPhysicsSandboxGame,
   exportToUnityCSharp,
   exportToGodotGDScript
 } from '../../core/gameEngineTemplates';
@@ -59,6 +65,22 @@ interface AppSandboxStudioProps {
 
 // Curated Luxury Built-in Templates
 const CURATED_MODELS: SandboxApp[] = [
+  {
+    id: 'neon_voxel_3d_runner',
+    title: 'عداء النيون السايبر ثلاثي الأبعاد (Neon Voxel 3D Runner)',
+    prompt: 'برمج لي عداء نيون سايبر ثلاثي الأبعاد 60fps مع قفز وتفادي حواجز وجمع كريستالات طاقة ومؤثرات صوتية ولمسية',
+    category: 'game',
+    createdAt: Date.now() - 300000,
+    code: getNeonVoxel3DRunnerGame(),
+  },
+  {
+    id: 'gravitational_physics_sandbox',
+    title: 'محاكي الجاذبية والفيزياء الجزيئية (Gravitational Physics Sandbox)',
+    prompt: 'برمج لي مختبر فيزياء فلكية وجاذبية تفاعلي مع حقول شمسية طاردة ومسارات مدارية وانفجارات جزيئية حقيقية',
+    category: 'app',
+    createdAt: Date.now() - 450000,
+    code: getGravitationalPhysicsSandboxGame(),
+  },
   {
     id: 'quantum_3d_hyper_tunnel',
     title: 'نفق الكوانتوم الفضائي ثلاثي الأبعاد 3D (Quantum 3D Tunnel)',
@@ -994,6 +1016,8 @@ export function AppSandboxStudio({
   const [promptInput, setPromptInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [synthesisStage, setSynthesisStage] = useState('');
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const activeApp = useMemo(() => {
@@ -1007,6 +1031,53 @@ export function AppSandboxStudio({
       setEditableCode(activeApp.code);
     }
   }, [activeApp?.id]);
+
+  const activeSpecs = useMemo(() => {
+    return analyzeAppPrompt(activeApp?.prompt || activeApp?.title || '');
+  }, [activeApp]);
+
+  const handleSynthesizeDirectly = async (customPrompt?: string) => {
+    const text = (customPrompt || promptInput).trim();
+    if (!text || isSynthesizing) return;
+    setIsSynthesizing(true);
+    try {
+      setSynthesisStage(isAr ? 'تحليل متطلبات اللعبة والمحرك الفيزيائي...' : 'Analyzing game mechanics and physics specs...');
+      await new Promise((r) => setTimeout(r, 250));
+
+      setSynthesisStage(isAr ? 'بناء شجرة الكائنات ونظام التصيير 60FPS...' : 'Architecting entity loop & 60FPS render loop...');
+      await new Promise((r) => setTimeout(r, 300));
+
+      setSynthesisStage(isAr ? 'حقن محرك الصوت وتوليد الترددات التفاعلية...' : 'Injecting Web Audio synthesis & SFX...');
+      await new Promise((r) => setTimeout(r, 250));
+
+      const result = synthesizeApp({ prompt: text });
+
+      const newApp: SandboxApp = {
+        id: result.id,
+        title: result.title,
+        prompt: result.prompt,
+        category: result.category,
+        createdAt: Date.now(),
+        code: result.code,
+      };
+
+      saveSandboxApp(newApp);
+      setApps((prev) => [newApp, ...prev]);
+      setSelectedId(newApp.id);
+      setEditableCode(newApp.code);
+      setActiveTab('preview');
+      setPromptInput('');
+    } finally {
+      setIsSynthesizing(false);
+      setSynthesisStage('');
+    }
+  };
+
+  const handlePromptSubmit = () => {
+    const text = promptInput.trim();
+    if (!text) return;
+    handleSynthesizeDirectly(text);
+  };
 
   const transpiledOutput = useMemo(() => {
     const title = activeApp.title || 'AdamGame';
@@ -1124,14 +1195,6 @@ export function AppSandboxStudio({
     saveSandboxApp(updated);
     setApps((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
     setActiveTab('preview');
-  };
-
-  const handlePromptSubmit = () => {
-    const text = promptInput.trim();
-    if (!text) return;
-    if (onNavigateToChat) {
-      onNavigateToChat(isAr ? `برمج لي لعبة أو تطبيق تفاعلي بنسبة 100%: ${text}` : `Build a 100% playable interactive game/app: ${text}`);
-    }
   };
 
   return (
@@ -1286,23 +1349,29 @@ export function AppSandboxStudio({
 
             {/* Prompt Direct Creator Bar */}
             <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[var(--accent)] flex items-center gap-1">
+                  <Sparkles size={12} />
+                  {isAr ? 'مولد الألعاب الفوري:' : 'Instant Game Synthesizer:'}
+                </span>
+                <span className="text-[10px] text-[var(--muted)] font-mono">60 FPS WebGL/Canvas</span>
+              </div>
               <div className="flex flex-wrap gap-1">
                 {[
                   { ar: '🚀 فضاء 3D WebGL', en: '🚀 3D WebGL Flight', p: 'برمج لي لعبة طيران فضاء 3D WebGL تفاعلية مع حلقات نيون وسرعات فائقة ومؤثرات صوتية' },
                   { ar: '👾 حرب سايبر DX', en: '👾 Cyber Shooter DX', p: 'برمج لعبة حرب طائرات سايبر 60fps مع رؤساء مراحل وترقية أسلحة ومؤثرات انفجار' },
                   { ar: '🧱 بريك آوت نيون', en: '🧱 Neon Breakout', p: 'برمج لعبة تدمير قوالب نيون سنثوايف مع فيزياء ارتداد حقيقية وأصوات أربيجيو' },
                   { ar: '🕹️ زنزانة روجلايك', en: '🕹️ Roguelike Dungeon', p: 'برمج لعبة مغامرات روجلايك بأبراج وغرف عشوائية وقتال بالسيوف مع ذكاء اصطناعي للأعداء' },
+                  { ar: '🌌 مختبر الجاذبية', en: '🌌 Gravity Physics Lab', p: 'برمج لي مختبر فيزياء فلكية وجاذبية تفاعلي مع حقول شمسية طاردة ومسارات مدارية' },
                 ].map((chip, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => {
                       setPromptInput(chip.p);
-                      if (onNavigateToChat) {
-                        onNavigateToChat(isAr ? `برمج لي لعبة تفاعلية 60fps احترافية بالكامل: ${chip.p}` : `Build a 100% playable 60fps game: ${chip.p}`);
-                      }
+                      handleSynthesizeDirectly(chip.p);
                     }}
-                    className="px-2 py-0.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                    className="px-2 py-0.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted)] hover:text-[var(--accent)] transition cursor-pointer"
                   >
                     {isAr ? chip.ar : chip.en}
                   </button>
@@ -1316,14 +1385,15 @@ export function AppSandboxStudio({
                   value={promptInput}
                   onChange={(e) => setPromptInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePromptSubmit()}
-                  placeholder={isAr ? 'اطلب برمجة لعبة جديدة...' : 'Ask to build a new game...'}
+                  placeholder={isAr ? 'اطلب برمجة أي لعبة تفاعلية بدقة...' : 'Describe any 60fps game to generate...'}
                   className="bg-transparent border-0 outline-none text-xs w-full text-[var(--text)] placeholder-[var(--muted)]"
                 />
                 <button
                   type="button"
-                  onClick={handlePromptSubmit}
-                  disabled={!promptInput.trim()}
-                  className="p-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 disabled:opacity-40 transition cursor-pointer"
+                  onClick={() => handleSynthesizeDirectly()}
+                  disabled={!promptInput.trim() || isSynthesizing}
+                  className="p-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                  title={isAr ? 'توليد فوري' : 'Synthesize'}
                 >
                   <Send size={12} />
                 </button>
@@ -1333,7 +1403,23 @@ export function AppSandboxStudio({
         )}
 
         {/* Main Stage & Runner */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[var(--bg)]">
+        <main className="flex-1 flex flex-col overflow-hidden bg-[var(--bg)] relative">
+          {/* Active Game Specs Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-1.5 bg-[var(--surface)]/90 border-b border-[var(--border)] text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-[var(--text)] truncate">{activeApp.title}</span>
+              <span className="px-2 py-0.5 rounded-md bg-[var(--accent-subtle)] text-[var(--accent)] font-mono text-[10px] font-bold">
+                {activeSpecs.genre}
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5">
+              {activeSpecs.features.slice(0, 3).map((f, i) => (
+                <span key={i} className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[var(--muted)] text-[10px]">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
           {/* Stage Controls Toolbar */}
           <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--surface)] border-b border-[var(--border)] gap-2">
             {/* Tab Switcher (Live / Code) */}
@@ -1491,6 +1577,23 @@ export function AppSandboxStudio({
 
           {/* Interactive Screen Display */}
           <div className="flex-1 overflow-hidden relative flex items-center justify-center p-2 sm:p-4 bg-[var(--bg)]">
+            {isSynthesizing && (
+              <div className="absolute inset-0 z-50 bg-[var(--bg)]/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--accent)] to-purple-600 flex items-center justify-center text-white shadow-2xl shadow-[var(--accent-glow)] mb-4 animate-bounce">
+                  <Gamepad2 size={32} />
+                </div>
+                <h3 className="text-base font-black text-[var(--text)] mb-2">
+                  {isAr ? 'جاري هندسة وبناء اللعبة 60FPS...' : 'Synthesizing 60FPS Game Architecture...'}
+                </h3>
+                <p className="text-xs font-mono text-[var(--accent)] animate-pulse max-w-sm mb-4">
+                  ⚡ {synthesisStage}
+                </p>
+                <div className="w-64 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[var(--accent)] to-purple-500 rounded-full animate-pulse w-3/4" />
+                </div>
+              </div>
+            )}
+
             {capturedNotice && (
               <div className="absolute top-4 z-40 px-4 py-2 rounded-xl bg-emerald-500/90 text-white text-xs font-bold shadow-xl backdrop-blur-md animate-fade-in flex items-center gap-2">
                 <Check size={14} />
@@ -1628,6 +1731,70 @@ export function AppSandboxStudio({
               </div>
             )}
           </div>
+
+          {/* Bottom AI Game & App Generator Bar */}
+          {!isFullscreen && (
+            <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur-md flex flex-col gap-2">
+              {/* Quick Prompt Ideas */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[11px]">
+                <span className="text-[var(--muted)] font-bold shrink-0 flex items-center gap-1">
+                  <Sparkles size={12} className="text-[var(--accent)]" />
+                  <span>{isAr ? 'أفكار سريعة:' : 'Quick Ideas:'}</span>
+                </span>
+                {[
+                  { ar: '🎮 لعبة قتال شوارع ومنصات 2D مع مؤثرات صوتية', en: '2D Platform Fighter Game' },
+                  { ar: '🏎️ محاكي سباق سيارات نيون وفيزياء انجراف', en: 'Neon Drift Racing Simulator' },
+                  { ar: '🌌 حرب نيازك ثلاثية الأبعاد 3D بالكانفاس', en: '3D Asteroid Space Combat' },
+                  { ar: '🧩 لعبة شطرنج ذكية مع ذكاء اصطناعي', en: 'Chess Game with AI' },
+                  { ar: '🎨 استوديو رسم رقمي وتصميم متقدم', en: 'Pro Digital Paint Studio' },
+                  { ar: '🧮 حاسبة علمية ورسومية بيانية متكاملة', en: 'Graphing Scientific Calculator' },
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setPromptInput(isAr ? chip.ar : chip.en);
+                    }}
+                    className="px-2.5 py-1 rounded-full bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] whitespace-nowrap transition cursor-pointer shrink-0"
+                  >
+                    {isAr ? chip.ar : chip.en}
+                  </button>
+                ))}
+              </div>
+
+              {/* Prompt Input Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handlePromptSubmit();
+                }}
+                className="flex items-center gap-2"
+              >
+                <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)] transition">
+                  <Terminal size={14} className="text-[var(--accent)] shrink-0" />
+                  <input
+                    type="text"
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    placeholder={
+                      isAr
+                        ? 'اكتب طلبك بالتفصيل (مثل: برمج لي لعبة طائرات مع رؤساء مراحل وأسلحة مطورة)...'
+                        : 'Describe your game or app in detail (e.g. Build an aircraft shooter with boss fights)...'
+                    }
+                    className="bg-transparent border-0 outline-none w-full text-xs text-[var(--text)] placeholder-[var(--muted)]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!promptInput.trim()}
+                  className="px-4 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-[var(--accent-glow)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  <Send size={13} className={isAr ? 'rotate-180' : ''} />
+                  <span>{isAr ? 'توليد بالذكاء الاصطناعي' : 'Generate with AI'}</span>
+                </button>
+              </form>
+            </div>
+          )}
         </main>
       </div>
     </div>

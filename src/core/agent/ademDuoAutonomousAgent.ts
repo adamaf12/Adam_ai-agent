@@ -15,6 +15,13 @@ import {
   getNeonCanvasDrawingAppCode,
   getNeonSnakeGameCode,
 } from './interactiveAppTemplates';
+import {
+  getThreeJs3DHyperTunnelGame,
+  getCyberSpaceOdysseyDXGame,
+  getCyberBreakoutDXGame,
+  getNeonVoxel3DRunnerGame,
+  getGravitationalPhysicsSandboxGame,
+} from '../gameEngineTemplates';
 
 export type AgentActionType = 
   | 'code_exec' 
@@ -519,6 +526,66 @@ export function checkAndExecuteDirectAutonomousCommand(
     return {
       actionType: 'sandbox_app',
       title: language === 'ar' ? 'تشغيل لعبة الثعبان التفاعلية 🎮' : 'Interactive Snake Game Ready 🎮',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  // 3D Neon Runner
+  const runnerMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:لعبة\s+)?(?:ركض|عداء|ركض\s+ثلاثي\s+الأبعاد|رانر|runner|3d\s+runner|neon\s+runner)\b/i)
+    || clean.match(/^(?:لعبة\s+ركض|عداء\s+نيون|neon\s+runner|3d\s+runner)$/i);
+  if (runnerMatch) {
+    const code = getNeonVoxel3DRunnerGame();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'عداء النيون السايبر ثلاثي الأبعاد (Neon Voxel 3D Runner)' : 'Neon Voxel 3D Cyber Runner',
+      code,
+      'game'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل لعبة عداء النيون ثلاثية الأبعاد 3D ⚡' : 'Neon Voxel 3D Runner Ready ⚡',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  // Physics / Gravity Sandbox
+  const physicsMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:محاكي\s+)?(?:فيزياء|جاذبية|جزيئات|ساندبوكس\s+فيزياء|physics|gravity|particles|orbit)\b/i)
+    || clean.match(/^(?:محاكي\s+فيزياء|محاكي\s+جاذبية|physics\s+sandbox)$/i);
+  if (physicsMatch) {
+    const code = getGravitationalPhysicsSandboxGame();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'محاكي الجاذبية والفيزياء الجزيئية (Gravitational Physics Sandbox)' : 'Gravitational Physics Sandbox',
+      code,
+      'app'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل محاكي الجاذبية والفيزياء التفاعلية 🌌' : 'Gravitational Physics Sandbox Ready 🌌',
+      engine: 'engine_1_executive',
+      authorityLevel: 'root_unrestricted',
+      timestamp: Date.now(),
+      payload: { type: 'sandbox_app', data: result },
+    };
+  }
+
+  // Space Flight / Tunnel 3D
+  const spaceMatch = clean.match(/^(?:اعمل|اصنع|برمج|انشئ|أنشئ|سوي|طور|اريد|أريد|build|make|create|code|develop)\s+(?:لي\s+)?(?:لعبة\s+)?(?:فضاء|طيران|نفق\s+فضاء|طيران\s+3d|حرب\s+فضاء|space\s+game|flight|tunnel|galaxy)\b/i)
+    || clean.match(/^(?:لعبة\s+فضاء|حرب\s+فضاء|space\s+game)$/i);
+  if (spaceMatch) {
+    const code = getThreeJs3DHyperTunnelGame();
+    const result = createAgentSandboxApp(
+      language === 'ar' ? 'نفق الكوانتوم الفضائي ثلاثي الأبعاد 3D (Quantum 3D Tunnel)' : 'Quantum 3D Space Tunnel',
+      code,
+      'game'
+    );
+    return {
+      actionType: 'sandbox_app',
+      title: language === 'ar' ? 'تشغيل لعبة نفق الفضاء ثلاثية الأبعاد 🚀' : 'Quantum 3D Space Tunnel Ready 🚀',
       engine: 'engine_1_executive',
       authorityLevel: 'root_unrestricted',
       timestamp: Date.now(),

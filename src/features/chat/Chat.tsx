@@ -75,6 +75,9 @@ import { ChatSessionDrawer } from './ChatSessionDrawer';
 import { ChatAcademicModal } from './ChatAcademicModal';
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
+  if (intent.type === 'creator.identity') {
+    return language === 'ar' ? intent.responseAr : intent.responseEn;
+  }
   if (intent.type === 'app.open') {
     const cardPayload = createAppLauncherPayload(intent.target, language);
     const appTitle = language === 'ar' ? intent.target.titleAr : intent.target.titleEn;
@@ -435,7 +438,9 @@ export function Chat({
 
       if (localIntent) {
         let confirmation = '';
-        if (localIntent.type === 'app.open') {
+        if (localIntent.type === 'creator.identity') {
+          confirmation = localConfirmation(language, localIntent, null);
+        } else if (localIntent.type === 'app.open') {
           confirmation = localConfirmation(language, localIntent, null);
           // Trigger instant / automatic app launch
           openAppTarget(localIntent.target, {
