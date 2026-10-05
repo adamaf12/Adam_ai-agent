@@ -212,8 +212,23 @@ function parseDataUrl(dataUrl: string): { mimeType: string; data: string } | nul
 }
 
 function normalizeMessages(input: unknown) {
-  if (!Array.isArray(input)) return [];
-  const valid = input
+  let list: any[] = [];
+  if (Array.isArray(input)) {
+    list = input;
+  } else if (typeof input === 'string' && input.trim()) {
+    list = [{ role: 'user', content: input.trim() }];
+  } else if (input && typeof input === 'object') {
+    const obj = input as any;
+    if (typeof obj.content === 'string') {
+      list = [obj];
+    } else if (typeof obj.message === 'string') {
+      list = [{ role: 'user', content: obj.message, images: obj.images }];
+    } else if (typeof obj.prompt === 'string') {
+      list = [{ role: 'user', content: obj.prompt, images: obj.images }];
+    }
+  }
+  if (!list.length) return [];
+  const valid = list
     .filter((item): item is { role: string; content: string; images?: string[] } =>
       Boolean(item && typeof item === 'object' && typeof (item as any).content === 'string')
     );
@@ -1136,7 +1151,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI has no active server-side AI credential. Configure GEMINI_API_KEY in your Vercel project environment variables.');
   }
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
-  const messages = normalizeMessages(body?.messages);
+  const messages = normalizeMessages(body?.messages ?? body?.message ?? body?.prompt ?? body);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
   const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
   const rawLanguage = body?.language === 'en' ? 'en' : 'ar';

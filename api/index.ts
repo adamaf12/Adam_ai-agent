@@ -52,17 +52,19 @@ export default async function handler(req: any, res: any) {
   const requestId = req.headers?.['x-vercel-id'] || req.headers?.['x-request-id'] || `v-${Date.now()}`;
 
   // Preserve and restore original API URL if rewritten by Vercel rewrites
-  if (req.headers) {
-    const matchedPath = req.headers['x-matched-path'] || req.headers['x-forwarded-uri'];
-    if (typeof matchedPath === 'string' && matchedPath.startsWith('/api') && !matchedPath.includes('index.ts') && !matchedPath.includes('index.js')) {
-      req.url = matchedPath;
-    } else if (typeof req.url === 'string' && (req.url === '/api/index.ts' || req.url === '/api/index' || req.url === '/api')) {
-      if (req.query?.path) {
-        req.url = `/api/${req.query.path}`;
-      } else if (req.query?.['0']) {
-        req.url = `/api/${req.query['0']}`;
-      }
-    }
+  const currentUrl = typeof req.url === 'string' ? req.url : '';
+  const matchedPath = req.headers?.['x-matched-path'] || req.headers?.['x-forwarded-uri'];
+
+  if (typeof matchedPath === 'string' && matchedPath.startsWith('/api') && !matchedPath.includes('index.ts') && !matchedPath.includes('index.js')) {
+    req.url = matchedPath;
+  } else if (req.query?.path) {
+    const cleanPath = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
+    const searchIdx = currentUrl.indexOf('?');
+    const rawSearch = searchIdx !== -1 ? currentUrl.slice(searchIdx) : '';
+    req.url = `/api/${cleanPath.replace(/^\/+/, '')}${rawSearch}`;
+  } else if (req.query?.['0']) {
+    const cleanPath = Array.isArray(req.query['0']) ? req.query['0'].join('/') : String(req.query['0']);
+    req.url = `/api/${cleanPath.replace(/^\/+/, '')}`;
   }
 
   // Parse body if Vercel serverless provided it as a raw string
