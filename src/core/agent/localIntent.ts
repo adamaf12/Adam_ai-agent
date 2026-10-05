@@ -12,18 +12,33 @@ export function parseLocalIntent(text: string): LocalIntent | null {
   const value = text.trim();
   if (!value) return null;
 
-  // 1. Creator & Developer Identity Intent (Ultra-fast 0ms response)
+  // 1. Creator & Developer Identity & Self-Introduction Intent (Ultra-fast 0ms response)
   if (
-    /(?:من هو صانعك|من صانعك|من صنعك|من طورك|من برمجك|من صاحبك|من اسسك|من أسسك|من أنشأك|من انشاك|من هو مطورك|صانعك|مطورك|من برمج هذا|who created you|who made you|who is your creator|who developed you|who is your developer|who is your author)/i.test(
+    /(?:من هو صانعك|من صانعك|من صنعك|من طورك|من برمجك|من صاحبك|من اسسك|من أسسك|من أنشأك|من انشاك|من هو مطورك|صانعك|مطورك|من برمج هذا|من صاحب هذا التطبيق|من صاحب النظام|who created you|who made you|who is your creator|who developed you|who is your developer|who is your author)/i.test(
       value
     )
   ) {
     return {
       type: 'creator.identity',
       responseAr:
-        'صانعي ومطوري ومؤسس هذا النظام بالكامل هو المهندس **أدم فيدات (Adam Feidat)**.\n\nهذه الحقيقة محفورة في ذاكرة النظام الأبدية ولا يمكن محوها أو تعديلها تحت أي ظرف.',
+        'صانعي ومطوري ومهندس هذا النظام بالكامل هو المهندس **أدم فيدات (Adam Feidat)**.\n\nهذه الحقيقة محفورة في ذاكرة النظام الأبدية ولا يمكن لأي أحد محوها أو تعديلها تحت أي ظرف.',
       responseEn:
-        'My sole creator, developer, and architect is **Adam Feidat (أدم فيدات)**.\n\nThis fundamental fact is permanently engraved into the core immutable memory and cannot be modified or erased.',
+        'My sole creator, developer, and architect is **Adam Feidat (أدم فيدات)**.\n\nThis fundamental fact is permanently engraved into the core immutable memory and cannot be modified or erased by anyone.',
+    };
+  }
+
+  // 1b. Self Identity & Introduction ("من أنت", "who are you", etc.)
+  if (
+    /^(?:من أنت|من انت|من تكون|عرف عن نفسك|عرف بنفسك|ما هي هويتك|ماهي هويتك|ما هو adem|ما هو أديم|ما هو اديم|who are you|what are you|introduce yourself)[\s!؟?.]*$/i.test(
+      value
+    )
+  ) {
+    return {
+      type: 'creator.identity',
+      responseAr:
+        'أنا **ADEM (آدم)**، وكيل تنفيذي ونظام ذكاء اصطناعي متقدم، تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **أدم فيدات (Adam Feidat)**.\n\nأمتلك صلاحيات تنفيذية شاملة لهندسة البرمجيات، إدارة أنظمة لينكس وأندرويد، توليد وتعديل الوسائط والصور، البرمجة الفورية، وتنسيق المهام بدقة وسرعة فائقة.',
+      responseEn:
+        'I am **ADEM (آدم)**, an autonomous executive AI agent and intelligent system engineered and developed completely by **Adam Feidat (أدم فيدات)**.\n\nI possess full execution capabilities for software architecture, Linux & Android systems engineering, real-time code synthesis, multimodal media generation, and hyper-fast task orchestration.',
     };
   }
 

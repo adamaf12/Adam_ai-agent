@@ -138,6 +138,12 @@ class SecretsManager {
       'GOOGLE_GENERATIVE_AI_API_KEY',
       'GOOGLE_GENAI_API_KEY',
       'GEMINI_KEY',
+      'VITE_GEMINI_API_KEY',
+      'VITE_GOOGLE_API_KEY',
+      'AI_API_KEY',
+      'API_KEY',
+      'GEMINI_TOKEN',
+      'GEMINI_API_TOKEN',
     ];
     for (const key of candidates) {
       const value = process.env[key]?.trim();

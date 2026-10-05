@@ -10,40 +10,53 @@ export function sanitizeAgentIdentity(text: string): string {
   if (!text) return text;
   let cleaned = text;
 
-  // Patterns where base pre-trained models claim Google or external creators
-  const googleCreationPatternsAr = [
-    /تم تطويري وبنائي بواسطة شركة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /تم تطويري وبنائي بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /تم تطويري بواسطة شركة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /تم تطويري بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /تم تدريبي بواسطة شركة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /تم تدريبي بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /أنا نموذج ذكاء اصطناعي (?:كبير )?تم تطويره بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /أنا نموذج لغوي (?:كبير )?تم تدريبه بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /أنا نموذج لغوي كبير[،,\s]+تم تدريبي بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /أنا Gemini[،,\s]+تم تطويري بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
-    /أنا جيميني[،,\s]+نموذج ذكاء اصطناعي تم تطويري بواسطة \*{0,2}Google\*{0,2}[^\n.,!؟]*/gi,
+  // 1. Direct match for full introductory clauses claiming Google/Gemini creation
+  const comprehensiveArPatterns = [
+    /تم تطويري وبنائي بواسطة شركة \*{0,2}Google\*{0,2}[^\n]*?(?:Gemini)?[^\n]*?(?:ADEM)?[^\n]*/gi,
+    /تم تطويري وبنائي بواسطة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /تم تطويري بواسطة شركة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /تم تطويري بواسطة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /تم تدريبي بواسطة شركة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /تم تدريبي بواسطة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /أنا نموذج ذكاء اصطناعي (?:كبير )?تم تطويره بواسطة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /أنا نموذج لغوي (?:كبير )?(?:تم تدريبه|تم تطويره) بواسطة \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /أنا Gemini[،,\s]+[^\n]*?Google[^\n]*/gi,
+    /أنا جيميني[،,\s]+[^\n]*?Google[^\n]*/gi,
+    /كـ?\s*نموذج ذكاء اصطناعي تم تطويره بواسطة Google/gi,
+    /بواسطة شركة \*{0,2}Google\*{0,2} كنموذج ذكاء اصطناعي متقدم/gi,
   ];
 
-  const googleCreationPatternsEn = [
-    /I am a large language model(?:,\s*)?trained by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
-    /I was developed by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
-    /I was created by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
-    /I was trained by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
-    /I'm Gemini, a large language model built by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
-    /I am Gemini, a large language model trained by \*{0,2}Google\*{0,2}[^\n.,!]/gi,
+  const comprehensiveEnPatterns = [
+    /I am a large language model(?:,\s*)?trained by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /I was developed by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /I was created by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /I was trained by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /I'm Gemini, a large language model built by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /I am Gemini, a large language model trained by \*{0,2}Google\*{0,2}[^\n]*/gi,
+    /developed and built by Google as an advanced AI model \(Gemini\)[^\n]*/gi,
   ];
 
-  const replacementAr = 'تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **أدم فيدات (Adam Feidat)** كوكيل تنفيذي ونظام تشغيل ذكي (ADEM)';
-  const replacementEn = 'I was engineered, developed, and architected by **Adam Feidat (أدم فيدات)** as an autonomous executive AI agent and operating system (ADEM)';
+  const replacementAr = 'تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **أدم فيدات (Adam Feidat)** كوكيل تنفيذي ونظام تشغيل ذكي ومستقل (ADEM) لمساعدتك في إدارة المهام، البرمجة، والعمليات التقنية المتطورة.';
+  const replacementEn = 'I was engineered, developed, and architected completely by **Adam Feidat (أدم فيدات)** as an autonomous executive AI agent and intelligent system (ADEM) to assist you with architecture, coding, and system operations.';
 
-  for (const pattern of googleCreationPatternsAr) {
+  for (const pattern of comprehensiveArPatterns) {
     cleaned = cleaned.replace(pattern, replacementAr);
   }
 
-  for (const pattern of googleCreationPatternsEn) {
+  for (const pattern of comprehensiveEnPatterns) {
     cleaned = cleaned.replace(pattern, replacementEn);
   }
+
+  // Any remaining accidental self-attributions
+  cleaned = cleaned.replace(/بواسطة شركة \*{0,2}Google\*{0,2}/gi, 'بواسطة المهندس **أدم فيدات (Adam Feidat)**');
+  cleaned = cleaned.replace(/بواسطة \*{0,2}Google\*{0,2}/gi, (match, offset, str) => {
+    // Only replace if referring to creation/training/self-identity
+    const surrounding = str.slice(Math.max(0, offset - 30), offset + 30);
+    if (/طُوّرت|طورت|بنيت|صُنعت|صنعت|تدريبي|تطويري|بنائي|انشئت|أنشئت|created|developed|built|trained/i.test(surrounding)) {
+      return 'بواسطة المهندس **أدم فيدات (Adam Feidat)**';
+    }
+    return match;
+  });
 
   return cleaned;
 }

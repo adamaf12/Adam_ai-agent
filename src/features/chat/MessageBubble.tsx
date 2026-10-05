@@ -355,11 +355,15 @@ export function MessageBubble({
             {assistant ? 'ADEM' : (language === 'ar' ? 'أنت' : 'You')}
           </span>
           {assistant && (
-            <span className="text-[10px] text-[var(--accent)] font-semibold px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] border border-[var(--border)] leading-tight select-none">
-              AI
-            </span>
+            <>
+              <span aria-hidden="true" className="text-[var(--muted)]/50">·</span>
+              <span className="text-[11px] text-[var(--accent)] font-medium">
+                {language === 'ar' ? 'أدم فيدات' : 'Adam Feidat'}
+              </span>
+            </>
           )}
-          <span className="text-[11px] text-[var(--muted)] font-normal select-none">
+          <span aria-hidden="true" className="text-[var(--muted)]/50">·</span>
+          <span className="text-[11px] text-[var(--muted)] font-normal select-none font-mono">
             {new Date(message.createdAt).toLocaleTimeString(language === 'ar' ? 'ar-DZ' : 'en-US', {
               hour: '2-digit',
               minute: '2-digit',

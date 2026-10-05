@@ -1,34 +1,76 @@
 /**
  * Vercel serverless adapter for the compiled Express application.
- *
- * IMPORTANT: Do not import ../server directly here. Vercel compiles this
- * TypeScript entrypoint independently, while Node's ESM resolver does not
- * support extensionless directory imports. The production build already
- * creates dist/server.cjs, so load that compiled bundle instead.
  */
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Enforce Vercel serverless flag to prevent accidental port listening or Vite boot
+process.env.VERCEL = '1';
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 let appPromise: Promise<any> | null = null;
 
 async function loadApp() {
   if (!appPromise) {
-    // @ts-ignore - dist/server.cjs is generated during the Vercel build and included by vercel.json.
-    appPromise = import('../dist/server.cjs')
-      .then((module) => {
-        const app = (module as any).app ?? (module as any).default?.app ?? (module as any).default;
-        if (typeof app !== 'function') {
-          throw new Error('Vercel server bundle loaded, but no Express app export was found.');
+    appPromise = (async () => {
+      const candidates = [
+        path.join(process.cwd(), 'dist', 'server.cjs'),
+        path.resolve(__dirname, '../dist/server.cjs'),
+        '../dist/server.cjs',
+      ];
+
+      let lastError: any = null;
+      for (const candidate of candidates) {
+        try {
+          const fileUrl = candidate.startsWith('.') ? candidate : pathToFileURL(candidate).href;
+          // @ts-ignore
+          const mod = await import(fileUrl);
+          const app = mod?.app ?? mod?.default?.app ?? mod?.default;
+          if (typeof app === 'function') {
+            return app;
+          }
+        } catch (err) {
+          lastError = err;
         }
-        return app;
-      })
-      .catch((error) => {
-        appPromise = null;
-        throw error;
-      });
+      }
+
+      throw lastError || new Error('Vercel server bundle loaded, but no Express app export was found.');
+    })().catch((error) => {
+      appPromise = null;
+      throw error;
+    });
   }
   return appPromise;
 }
 
 export default async function handler(req: any, res: any) {
-  const requestId = req.headers?.['x-vercel-id'] || req.headers?.['x-request-id'] || 'unknown';
+  const requestId = req.headers?.['x-vercel-id'] || req.headers?.['x-request-id'] || `v-${Date.now()}`;
+
+  // Preserve and restore original API URL if rewritten by Vercel rewrites
+  if (req.headers) {
+    const matchedPath = req.headers['x-matched-path'] || req.headers['x-forwarded-uri'];
+    if (typeof matchedPath === 'string' && matchedPath.startsWith('/api') && !matchedPath.includes('index.ts') && !matchedPath.includes('index.js')) {
+      req.url = matchedPath;
+    } else if (typeof req.url === 'string' && (req.url === '/api/index.ts' || req.url === '/api/index' || req.url === '/api')) {
+      if (req.query?.path) {
+        req.url = `/api/${req.query.path}`;
+      } else if (req.query?.['0']) {
+        req.url = `/api/${req.query['0']}`;
+      }
+    }
+  }
+
+  // Parse body if Vercel serverless provided it as a raw string
+  if (typeof req.body === 'string' && req.body.trim().startsWith('{')) {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch {}
+  }
 
   try {
     const app = await loadApp();
@@ -36,7 +78,7 @@ export default async function handler(req: any, res: any) {
   } catch (error: any) {
     const message = String(error?.message || error || 'Unknown server bootstrap error');
     const stack = String(error?.stack || '');
-    console.error('[Adam Vercel adapter] Failed to load Express application', {
+    console.error('[ADEM Vercel adapter] Failed to load Express application', {
       requestId,
       name: error?.name,
       code: error?.code,
@@ -48,7 +90,8 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({
         ok: false,
         code: 'SERVER_BOOT_ERROR',
-        message: 'Adam AI server failed to initialize.',
+        message: 'ADEM AI server failed to initialize on Vercel.',
+        details: message,
         requestId,
       });
     }

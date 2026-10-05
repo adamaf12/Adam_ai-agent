@@ -9,6 +9,8 @@ import {
   Sparkles,
   ChevronDown,
   Check,
+  Globe,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -300,33 +302,74 @@ export function AppShell({
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-xs tracking-wider text-[var(--text)] font-mono">ADEM</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold">
+                  v4.0
+                </span>
               </div>
-              <span className="text-[9px] text-[var(--muted)] font-medium">
-                {isAr ? 'المنظومة التنفيذية' : 'Executive OS'}
+              <span className="text-[9.5px] text-[var(--muted)] font-medium">
+                {isAr ? 'هندسة وبرمجة أدم فيدات' : 'Engineered by Adam Feidat'}
               </span>
             </div>
           </button>
         </div>
 
-        {/* Center Section: Unified Studio & Apps Menu Button (الازرار الاربعة في زر واحد بانيمايشن حديث وفائق التفاعل) */}
-        {(() => {
-          const currentTab = STUDIO_TABS.find((t) => t.id === activeView) || STUDIO_TABS[0];
-          const CurrentIcon = currentTab.icon;
-          return (
-            <div className="relative shrink-0" ref={toolsMenuRef}>
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setIsToolsMenuOpen((prev) => !prev)}
-                aria-expanded={isToolsMenuOpen}
-                className={`group relative flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm border select-none ${
-                  isToolsMenuOpen
-                    ? 'bg-[var(--surface-hover)] border-[var(--accent)] text-[var(--accent)] shadow-[0_0_22px_var(--accent-glow)] ring-2 ring-[var(--accent)]/25'
-                    : 'bg-[var(--surface-2)]/90 hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text)] hover:border-[var(--border-strong)]'
-                }`}
-                title={isAr ? 'التبديل بين الأدوات الأربعة (المحادثة، التطبيقات، الاستوديو، المترجم)' : 'Switch Studio (Chat, Apps, Studio, Translator)'}
-              >
+        {/* Center Section: Responsive Executive Studio Switcher */}
+        <div className="flex items-center">
+          {/* Desktop Direct Horizontal Segmented Switcher (Visible on md and larger) */}
+          <nav aria-label="Studio Navigation" className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface-2)]/80 border border-[var(--border)] shadow-xs backdrop-blur-xl">
+            {STUDIO_TABS.map((tab) => {
+              const TabIcon = tab.icon;
+              const isActive = activeView === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onViewChange(tab.id)}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-95 ${
+                    isActive
+                      ? 'text-[var(--text)] shadow-xs'
+                      : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]/60'
+                  }`}
+                  title={`${isAr ? tab.labelAr : tab.labelEn} (${tab.shortcut})`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="desktop-header-tab-glider"
+                      className="absolute inset-0 rounded-xl bg-[var(--surface)] border border-[var(--border-strong)] shadow-sm z-0"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className={`relative z-10 ${isActive ? tab.iconColor : 'opacity-70'}`}>
+                    <TabIcon size={14} />
+                  </span>
+                  <span className="relative z-10 text-[11.5px] tracking-tight">
+                    {isAr ? tab.labelAr : tab.labelEn}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Mobile / Narrow Screen Morphing Dropdown Deck Button (Visible on < md) */}
+          <div className="flex md:hidden relative shrink-0" ref={toolsMenuRef}>
+            {(() => {
+              const currentTab = STUDIO_TABS.find((t) => t.id === activeView) || STUDIO_TABS[0];
+              const CurrentIcon = currentTab.icon;
+              return (
+                <>
+                  <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setIsToolsMenuOpen((prev) => !prev)}
+                  aria-expanded={isToolsMenuOpen}
+                  className={`group relative flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm border select-none ${
+                    isToolsMenuOpen
+                      ? 'bg-[var(--surface-hover)] border-[var(--accent)] text-[var(--accent)] shadow-[0_0_22px_var(--accent-glow)] ring-2 ring-[var(--accent)]/25'
+                      : 'bg-[var(--surface-2)]/90 hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text)] hover:border-[var(--border-strong)]'
+                  }`}
+                  title={isAr ? 'التبديل بين الأدوات الأربعة' : 'Switch Studio'}
+                >
                 {/* Active Glowing Dot Indicator */}
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75" />
@@ -544,22 +587,77 @@ export function AppShell({
                   </>
                 )}
               </AnimatePresence>
-            </div>
+            </>
           );
         })()}
+          </div>
+        </div>
 
-        {/* End Section: Live Voice */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* End Section: Live Status, New Chat, Live Voice, Language, Settings */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Google Live Grounding Badge */}
+          <div
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-semibold select-none shadow-2xs backdrop-blur-md"
+            title={isAr ? 'محرك ADEM متصل ببحث Google المباشر لحظياً لجميع الإجابات' : 'ADEM is live connected to Google Search for real-time answers'}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            <Globe size={12} className="text-cyan-400" />
+            <span>{isAr ? 'Google حي' : 'Google Live'}</span>
+          </div>
+
+          {/* New Chat Quick Button */}
+          <button
+            type="button"
+            onClick={handleStartNewChat}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] hover:text-[var(--accent)] text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-2xs"
+            title={isAr ? 'بدء محادثة جديدة (Alt+N)' : 'Start new chat (Alt+N)'}
+            aria-label="New Chat"
+          >
+            <Plus size={14} className="text-[var(--accent)]" />
+            <span className="hidden sm:inline">{isAr ? 'جديدة' : 'New'}</span>
+            <kbd className="hidden lg:inline text-[9px] font-mono text-[var(--muted)] bg-[var(--surface)] px-1 rounded border border-[var(--border)]">
+              Alt+N
+            </kbd>
+          </button>
+
           {/* Live Voice Call Trigger */}
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-2xs"
             onClick={() => setIsLiveVoiceOpen(true)}
             title={isAr ? 'مكالمة صوتية تفاعلية حية' : 'Interactive Live Voice Call'}
             aria-label="Live Voice"
           >
             <Radio size={14} className="text-emerald-400 animate-pulse" />
-            <span className="hidden lg:inline">{isAr ? 'صوت مباشر' : 'Live Voice'}</span>
+            <span className="hidden lg:inline">{isAr ? 'صوت حي' : 'Live Voice'}</span>
+          </button>
+
+          {/* Language Switcher */}
+          {onToggleLanguage && (
+            <button
+              type="button"
+              onClick={onToggleLanguage}
+              className="flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] text-[11px] font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+              title={isAr ? 'Switch to English' : 'التحويل للعربية'}
+              aria-label="Toggle Language"
+            >
+              {isAr ? 'EN' : 'عربي'}
+            </button>
+          )}
+
+          {/* Settings / Theme Trigger */}
+          <button
+            type="button"
+            onClick={() => onViewChange('settings')}
+            className={`flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-2xs ${
+              activeView === 'settings'
+                ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent)]'
+                : 'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+            }`}
+            title={isAr ? 'الإعدادات والمظهر' : 'Settings & Themes'}
+            aria-label="Settings"
+          >
+            <SettingsIcon size={14} />
           </button>
         </div>
       </header>

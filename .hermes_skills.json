@@ -32,8 +32,8 @@
         "Handle window resize and device touch gracefully"
       ],
       "acquiredAt": 1788559126719,
-      "lastUsedAt": 1790959046695,
-      "usageCount": 52,
+      "lastUsedAt": 1791145237781,
+      "usageCount": 56,
       "successRate": 0.98,
       "level": 9,
       "origin": "builtin"
@@ -66,8 +66,8 @@
         "Structure answers logically with Markdown"
       ],
       "acquiredAt": 1788731926719,
-      "lastUsedAt": 1790959046695,
-      "usageCount": 77,
+      "lastUsedAt": 1791221577875,
+      "usageCount": 82,
       "successRate": 0.99,
       "level": 10,
       "origin": "builtin"
@@ -343,8 +343,89 @@
       "successRate": 0.95,
       "level": 1,
       "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_fd9fec40",
+      "name": "Dynamic Heuristic (أحدث أخبار الذكاء الاصطناعي)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: أحدث أخبار الذكاء الاصطناعي",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"أحدث أخبار الذكاء الاصطناعي\".",
+      "triggers": [
+        "أحدث",
+        "أخبار",
+        "الذكاء",
+        "الاصطناعي"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [أحدث, أخبار, الذكاء, الاصطناعي]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1791144091012,
+      "lastUsedAt": 1791144091012,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_65942079",
+      "name": "Dynamic Heuristic (أنت ومن طورك)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: أنت ومن طورك",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"أنت ومن طورك\".",
+      "triggers": [
+        "أنت",
+        "ومن",
+        "طورك"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [أنت, ومن, طورك]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1791145260003,
+      "lastUsedAt": 1791221598637,
+      "usageCount": 3,
+      "successRate": 0.95,
+      "level": 2,
+      "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_b20d2adf",
+      "name": "Dynamic Heuristic (مرحبا قدراتك)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: مرحبا قدراتك",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"مرحبا قدراتك\".",
+      "triggers": [
+        "مرحبا",
+        "قدراتك"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [مرحبا, قدراتك]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1791221621230,
+      "lastUsedAt": 1791221621230,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
     }
   ],
-  "totalExecutions": 12,
-  "lastSavedAt": 1790959063492
+  "totalExecutions": 17,
+  "lastSavedAt": 1791221621230
 }

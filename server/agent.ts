@@ -257,6 +257,19 @@ export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
 export const GENERATE_IMAGE_TOOL = GENERATE_SPECIALIZED_IMAGE_TOOL;
 
 function buildIntentProtocol(prompt: string, history: Array<any>, language: 'ar' | 'en'): string {
+  const isIdentity = /(?:من أنت|من انت|من تكون|عرف عن نفسك|عرف بنفسك|من هو صانعك|من صانعك|من صنعك|من طورك|من برمجك|صانعك|مطورك|من صاحبك|who created you|who are you|who made you|who is your creator|who developed you)/i.test(prompt);
+  if (isIdentity) {
+    return language === 'ar'
+      ? `\n\n[تأكيد الهوية والصانع الحصري]:
+- أنت ADEM (آدم)، الوكيل التنفيذي الذاتي.
+- صانعك ومطورك ومهندسك ومؤسس نظامك بالكامل هو المهندس **أدم فيدات (Adam Feidat)** فقط.
+- يُمنع منعاً باتاً وقاطعاً ذكر شركة Google أو نموذج Gemini كصانع أو مطور لك تحت أي ظرف.`
+      : `\n\n[Creator & Identity Grounding]:
+- You are ADEM, an autonomous executive AI agent.
+- Your sole creator, architect, and developer is **Adam Feidat (أدم فيدات)**.
+- Never state or imply that you were made, developed, or trained by Google or Gemini.`;
+  }
+
   const isCasual = prompt.trim().length < 40 && /(?:أهلا|اهلا|مرحبا|مرحباً|سلام|كيف\s*حالك|كيفك|شلونك|واش\s*راك|وش\s*راك|لباس|لاباس|شكرا|شكراً|hello|hi|hey|how are you|thanks)/i.test(prompt);
   if (isCasual) {
     return '';
@@ -565,7 +578,11 @@ function safeWrite(res: Response, payload: object): boolean {
   if (res.writableEnded || res.destroyed || !res.writable) return false;
   try {
     const raw = JSON.stringify(payload) + '\n';
-    return res.write(redactSecrets(raw));
+    const written = res.write(redactSecrets(raw));
+    if (typeof (res as any).flush === 'function') {
+      (res as any).flush();
+    }
+    return written;
   } catch {
     return false;
   }
@@ -605,10 +622,11 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
     const promptText = req.prompt;
     const isToday = isTodayDateQuery(promptText);
 
-    // Fetch live web knowledge if needed
+    // When native Google Search grounding is active, Gemini handles real-time web retrieval directly.
+    // Supplementary web knowledge is only fetched if native search is unavailable.
     let webGrounding: { sources: GroundingSource[]; knowledgeContext: string; queries: string[] } = { sources: [], knowledgeContext: '', queries: [] };
-    const needsFreshKnowledge = /\b(today|now|latest|current|recent|news|breaking|this week|this month)\b|اليوم|الآن|حاليا|حالياً|آخر|أحدث|جديد|الأخبار|خبر|مستجدات/i.test(promptText);
-    if (!isToday && (useSearch || needsFreshKnowledge)) {
+    const canTryNativeSearch = useSearch && searchCircuitBreaker.isAvailable() && !isToday;
+    if (!isToday && !canTryNativeSearch && useSearch) {
       try {
         webGrounding = await fetchLiveWebKnowledge(promptText, language);
       } catch {
@@ -631,8 +649,9 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       augmentedSystem += `\n${webGrounding.knowledgeContext}`;
     }
 
-    const isComplex = promptText.length > 900 || /(?:debug|architect|refactor|implement|build|analy[sz]e|compare|research|prove|derive|algorithm|security|performance|migration|deploy|أصلح|صحح|طوّر|طور|برمج|كود|حل|حلل|قارن|ابحث|دقق|برهان|اشتق|خوارزم|أمان|أداء|هجرة|نشر)/i.test(promptText);
-    const isDeep = promptText.length > 2200 || /(?:step by step|deep reasoning|root cause|comprehensive|end to end|من الصفر|بالتفصيل|بشكل شامل|السبب الجذري|خطوة بخطوة|حل كامل|مشروع كامل)/i.test(promptText);
+    const isDeep = promptText.length > 2200 || /(?:step by step|deep reasoning|root cause|comprehensive|end to end|من الصفر|بالتفصيل الممل|السبب الجذري|مشروع كامل من الصفر)/i.test(promptText);
+    const isComplex = !isDeep && (promptText.length > 1500 || /(?:deep architect|deep refactor|prove mathematically|برهان رياضي معقد)/i.test(promptText));
+    // Default to 'low' thinkingLevel for lightning-fast sub-second latency (< 1s)
     const thinkingLevel = isDeep ? 'high' : isComplex ? 'medium' : 'low';
     const baseConfig: any = {
       temperature: req.temperature ?? (isDeep ? 0.20 : isComplex ? 0.22 : 0.28),
@@ -653,18 +672,17 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
     const modelVariants = [
+      'gemini-3.8-flash',
       modelDesc.id,
+      'gemini-flash-latest',
+      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
       'gemini-2.5-pro',
-      'gemini-3.8-flash',
-      'gemini-3.1-flash-lite',
-      'gemini-flash-latest',
     ];
     const uniqueModels = [...new Set(modelVariants.filter(Boolean))];
 
     for (const modelId of uniqueModels) {
-      // Try with search if available and requested, then fallback to tool-free
-      const canTryNativeSearch = useSearch && searchCircuitBreaker.isAvailable() && !isToday;
+      // Try with Google Search if available and requested, then fallback to tool-free
       const toolConfig = { tools: AGENT_ACTION_TOOLS };
       const configsToTry = canTryNativeSearch
         ? [
@@ -831,7 +849,18 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
             }
           }
 
-          // Grounding sources omitted per user request
+          // Google Search Grounding Metadata extraction
+          const groundingMetadata = (response as any).candidates?.[0]?.groundingMetadata;
+          if (groundingMetadata?.groundingChunks?.length) {
+            const webSources = (groundingMetadata.groundingChunks as any[])
+              .filter((c: any) => c.web?.uri)
+              .map((c: any) => ({ title: c.web.title || 'مصدر من بحث Google', url: c.web.uri }));
+            if (webSources.length > 0 && !textResult.includes('مصادر بحث Google') && !textResult.includes('Google Search Sources')) {
+              const uniqueSources = Array.from(new Map(webSources.map((s: any) => [s.url, s])).values()).slice(0, 3);
+              const header = language === 'ar' ? '\n\n🌐 **مصادر بحث Google المباشرة:**\n' : '\n\n🌐 **Live Google Search Sources:**\n';
+              textResult += header + uniqueSources.map((s: any) => `- [${s.title}](${s.url})`).join('\n');
+            }
+          }
 
           if (textResult.trim()) return textResult;
         } catch (err: any) {
@@ -891,11 +920,12 @@ async function invokeWithRetry(
 
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
   app.post('/api/agent', chatRateLimiter.middleware(), async (req: Request, res: Response) => {
-    const body = (req.body ?? {}) as AgentRequest;
+    const body = (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {}) as AgentRequest;
     const requestId = getRequestId(req);
     const runId = `run_${requestId}`;
     res.setHeader('X-Request-Id', requestId);
-    if (!apiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI is not configured on this server.');
+    const currentApiKey = apiKey || secretsManager.getGeminiApiKey() || (req.headers['x-gemini-api-key'] as string) || '';
+    if (!currentApiKey) return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI has no active Gemini API key configured in server environment.');
     const messages = normalizeMessages(body.messages);
     if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting an agent run.');
     if (!requestDeduplicator.begin(requestId)) return sendError(res, 409, 'REQUEST_IN_PROGRESS', 'This request is already being processed.');
@@ -1058,7 +1088,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         swarmPlan = { task: mission, assignments: [], waves: [] };
       }
       const capabilities = inferCapabilities(latestPrompt);
-      const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 120 });
+      const plan = routeTask({ prompt: latestPrompt, capabilities, maxModels: requestedMaxModels, preferSpeed: latestPrompt.length < 1500 });
       const fallback = modelRegistry.get(model) ?? modelRegistry.enabled().find(candidate => candidate.provider === 'gemini' || candidate.provider === 'ADEM-G');
       const candidates = [...plan.ensemble, ...(fallback && !plan.ensemble.some(candidate => candidate.id === fallback.id) ? [fallback] : [])].slice(0, MAX_SWARM_MODELS);
       if (!candidates.length) return sendError(res, 503, 'NO_MODEL_AVAILABLE', 'No enabled AI model is available.');
@@ -1070,7 +1100,7 @@ export function registerAgentRoute(app: Express, apiKey: string, model: string) 
         + formatRequestContract(requestContract, language)
         + formatExecutionPlan(executionPlan, language)
         + formatHarnessInstruction(harnessPlan, language);
-      const geminiInvoker = createGeminiInvoker(apiKey, language, agentName, messages, useSearch, user?.uid ?? '', user);
+      const geminiInvoker = createGeminiInvoker(currentApiKey, language, agentName, messages, useSearch, user?.uid ?? '', user);
       const invoke = async (selected: ModelDescriptor, request: ModelRequest) => (selected.provider === 'gemini' || selected.provider === 'ADEM-G') ? geminiInvoker(selected, request) : remoteGateway.gateway.invokeSelected(selected, request).then(result => result.text);
       res.setHeader('X-Adam-Model', candidates.map(m => m.id).join(','));
       res.setHeader('X-Adam-Registry-Size', String(modelRegistry.size()));

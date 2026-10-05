@@ -177,7 +177,7 @@ export async function fetchLiveWebKnowledge(
   const ddgHtmlEndpoint = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(cleanQuery)}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3200);
+  const timer = setTimeout(() => controller.abort(), 1200);
 
   try {
     // Query Wikipedia, DuckDuckGo API, and DuckDuckGo HTML in parallel

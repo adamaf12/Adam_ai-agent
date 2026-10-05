@@ -52,12 +52,13 @@ process.on('uncaughtException', (err: any) => {
 });
 
 process.on('unhandledRejection', (reason: any) => {
-  console.error('[Adam Server] Prevented crash from unhandled rejection:', redactSecrets(String(reason?.message || reason)));
+  console.error('[Adam Server] Prevented crash from unhandled rejection:', redactSecrets(String(reason?.stack || reason?.message || reason)));
 });
 
 const app = express();
-const port = Number(process.env.PORT ?? 3000);
-const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-2.5-flash';
+const requestedPort = Number(process.env.PORT);
+const port = (!isNaN(requestedPort) && requestedPort !== 8080 && requestedPort > 0) ? requestedPort : 3000;
+const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.8-flash';
 const apiKey = secretsManager.getGeminiApiKey();
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');
@@ -1119,27 +1120,29 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
   const requestStartedAt = Date.now();
   let aborted = false;
   res.setHeader('X-Request-Id', requestId);
-  console.info('[Adam AI chat] request started', { requestId, model, hasGeminiApiKey: Boolean(apiKey), messageCount: Array.isArray(req.body?.messages) ? req.body.messages.length : 0 });
+  const currentApiKey = apiKey || secretsManager.getGeminiApiKey() || (req.headers['x-gemini-api-key'] as string) || '';
+  console.info('[Adam AI chat] request started', { requestId, model, hasGeminiApiKey: Boolean(currentApiKey), messageCount: Array.isArray(req.body?.messages) ? req.body.messages.length : 0 });
   res.once('close', () => {
     if (!res.writableFinished) aborted = true;
   });
 
-  if (!apiKey && !isGatewayConfigured(req)) {
+  if (!currentApiKey && !isGatewayConfigured(req)) {
     console.error('[Adam AI chat] No AI credential is available (Gemini key or Vercel AI Gateway OIDC)', {
       requestId,
       code: 'AI_NOT_CONFIGURED',
       status: 503,
       durationMs: Date.now() - requestStartedAt,
     });
-    return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI has no active server-side AI credential. Enable Vercel AI Gateway OIDC for this project or configure GEMINI_API_KEY for Production.');
+    return sendError(res, 503, 'AI_NOT_CONFIGURED', 'Adam AI has no active server-side AI credential. Configure GEMINI_API_KEY in your Vercel project environment variables.');
   }
-  const messages = normalizeMessages(req.body?.messages);
+  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
+  const messages = normalizeMessages(body?.messages);
   if (!messages.length) return sendError(res, 400, 'EMPTY_MESSAGE', 'Please send a message before starting a chat.');
   const userPrompt = messages[messages.length - 1]?.parts?.[0]?.text || '';
-  const rawLanguage = req.body?.language === 'en' ? 'en' : 'ar';
+  const rawLanguage = body?.language === 'en' ? 'en' : 'ar';
   const detectedLang = detectMessageLanguage(userPrompt, rawLanguage);
   const language: 'ar' | 'en' = detectedLang === 'ar' ? 'ar' : 'en';
-  const agentName = typeof req.body?.agentName === 'string' ? req.body.agentName.slice(0, 40) : 'Adam';
+  const agentName = typeof body?.agentName === 'string' ? body.agentName.slice(0, 40) : 'Adam';
 
   const query = userPrompt.toLowerCase();
   const reasoningProfile = getReasoningProfile(userPrompt, messages.length);
@@ -1268,7 +1271,7 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
       ? `\n\nUSER PERSISTENT MEMORY (ISOLATED & PRIVATE):\n${relevantMemories.map(m => `- ${m.text}`).join('\n')}`
       : '';
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: currentApiKey });
     const hermesAugmentedInstruction = hermesEngine.augmentSystemInstruction(systemInstruction(language, agentName) + memoryContext, userPrompt, language);
 
     // Apply sandwich defense wrapper to protect instruction integrity while preserving attached image inlineData

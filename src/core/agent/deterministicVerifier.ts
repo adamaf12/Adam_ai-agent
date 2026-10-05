@@ -1,5 +1,7 @@
+import { sanitizeAgentIdentity } from './responseSanitizer';
+
 export interface VerificationCorrection {
-  type: 'arithmetic' | 'temporal' | 'code_syntax' | 'contradiction';
+  type: 'arithmetic' | 'temporal' | 'code_syntax' | 'contradiction' | 'creator_identity';
   original: string;
   corrected: string;
   reason: string;
@@ -199,6 +201,18 @@ export function verifyAndCorrectResponse(text: string): VerificationResult {
   const codeResult = verifyCodeBlocks(currentText);
   currentText = codeResult.text;
   allCorrections.push(...codeResult.corrections);
+
+  // 4. Immutable Creator Identity Gate (Adam Feidat / أدم فيدات)
+  const sanitizedIdentity = sanitizeAgentIdentity(currentText);
+  if (sanitizedIdentity !== currentText) {
+    allCorrections.push({
+      type: 'creator_identity',
+      original: currentText,
+      corrected: sanitizedIdentity,
+      reason: 'Enforced indelible creator identity of Adam Feidat (أدم فيدات)',
+    });
+    currentText = sanitizedIdentity;
+  }
 
   const isModified = allCorrections.length > 0;
   return {

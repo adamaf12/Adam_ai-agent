@@ -72,8 +72,13 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Permissions-Policy', 'camera=*, microphone=*, display-capture=*, geolocation=*, payment=*, usb=()');
 
   // HSTS in production or HTTPS
-  const isHttps = req.secure || req.header('x-forwarded-proto') === 'https';
-  if (isHttps || process.env.NODE_ENV === 'production') {
+  let isHttps = false;
+  try {
+    isHttps = req.header?.('x-forwarded-proto') === 'https' || req.headers?.['x-forwarded-proto'] === 'https' || Boolean(req.secure);
+  } catch {
+    isHttps = Boolean(req.headers?.['x-forwarded-proto'] === 'https');
+  }
+  if (isHttps || process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 

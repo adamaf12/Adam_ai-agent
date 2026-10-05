@@ -971,10 +971,15 @@ export function Composer({
 
       {/* Clean & Minimalist Creator Signature */}
       <div className="flex items-center justify-between mt-1.5 px-3 text-[11px] text-[var(--muted)] select-none">
-        <span className="font-semibold text-[var(--text-secondary)]">
-          {isAr ? 'ADEM • تم تطويره من قبل : أدم فيدات' : 'ADEM • Developed by : Adem Feidat'}
+        <span className="font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
+          <span>{isAr ? 'ADEM • هندسة وبرمجة : أدم فيدات' : 'ADEM • Engineered by : Adam Feidat'}</span>
+          <span aria-hidden="true">·</span>
+          <span className="text-cyan-400 font-normal hidden sm:inline flex items-center gap-1">
+            <Globe size={10} />
+            <span>{isAr ? 'Google حي' : 'Google Grounded'}</span>
+          </span>
         </span>
-        <span className="font-mono text-[10px]">v2.5 Ultra</span>
+        <span className="font-mono text-[10px] text-[var(--accent)] font-semibold">v4.0 Neural Executive</span>
       </div>
 
       {/* Universal Fast Translation Modal */}
