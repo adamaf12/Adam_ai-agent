@@ -83,11 +83,23 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Service Worker registration for PWA and offline APK cache
-      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').catch(function() {});
-        });
+      // Service Worker registration for PWA - safe environment detection
+      if ('serviceWorker' in navigator) {
+        var isDevOrPreview = window.location.hostname.includes('run.app') ||
+                             window.location.hostname.includes('localhost') ||
+                             window.location.hostname === '127.0.0.1';
+        if (isDevOrPreview) {
+          // Clear any registered service workers in development/preview to prevent stale module caching
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var registration of registrations) {
+              registration.unregister();
+            }
+          }).catch(function() {});
+        } else if (window.location.protocol.startsWith('http')) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').catch(function() {});
+          });
+        }
       }
     </script>
   </body>

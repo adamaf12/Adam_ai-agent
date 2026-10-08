@@ -32,8 +32,8 @@
         "Handle window resize and device touch gracefully"
       ],
       "acquiredAt": 1788559126719,
-      "lastUsedAt": 1791230614916,
-      "usageCount": 57,
+      "lastUsedAt": 1791498009530,
+      "usageCount": 59,
       "successRate": 0.98,
       "level": 9,
       "origin": "builtin"
@@ -66,8 +66,8 @@
         "Structure answers logically with Markdown"
       ],
       "acquiredAt": 1788731926719,
-      "lastUsedAt": 1791230614916,
-      "usageCount": 84,
+      "lastUsedAt": 1791498009530,
+      "usageCount": 86,
       "successRate": 0.99,
       "level": 10,
       "origin": "builtin"
@@ -424,8 +424,36 @@
       "successRate": 0.95,
       "level": 1,
       "origin": "autonomous_learned"
+    },
+    {
+      "id": "skill_auto_d2954ee7",
+      "name": "Dynamic Heuristic (اختبار محرك الوكيل ADEM)",
+      "displayNameAr": "مهارة مكتسبة تلقائياً: اختبار محرك الوكيل ADEM",
+      "category": "math",
+      "description": "Autonomous skill synthesized by Hermes Agent for recurring task pattern \"اختبار محرك الوكيل ADEM\".",
+      "triggers": [
+        "اختبار",
+        "محرك",
+        "الوكيل",
+        "adem"
+      ],
+      "proceduralSteps": [
+        "Identify specific constraints matching [اختبار, محرك, الوكيل, ADEM]",
+        "Formulate deterministic verification and deliver modular output",
+        "Verify edge cases and user constraints iteratively"
+      ],
+      "bestPractices": [
+        "Maintain high consistency with previous successful completions",
+        "Refine answer quality based on user context"
+      ],
+      "acquiredAt": 1791498015939,
+      "lastUsedAt": 1791498015939,
+      "usageCount": 1,
+      "successRate": 0.95,
+      "level": 1,
+      "origin": "autonomous_learned"
     }
   ],
-  "totalExecutions": 19,
-  "lastSavedAt": 1791230614916
+  "totalExecutions": 21,
+  "lastSavedAt": 1791498015939
 }

@@ -58,7 +58,7 @@ process.on('unhandledRejection', (reason: any) => {
 const app = express();
 const requestedPort = Number(process.env.PORT);
 const port = (!isNaN(requestedPort) && requestedPort !== 8080 && requestedPort > 0) ? requestedPort : 3000;
-const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-3.8-flash';
+const model = process.env.ADAM_GEMINI_MODEL ?? 'gemini-2.5-flash';
 const apiKey = secretsManager.getGeminiApiKey();
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'dist');

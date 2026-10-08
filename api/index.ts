@@ -1,14 +1,18 @@
 /**
- * Vercel serverless adapter for the compiled Express application.
+ * Vercel Serverless Function adapter for ADEM AI Express Application.
  */
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-// Enforce Vercel serverless flag to prevent accidental port listening or Vite boot
+// Ensure Vercel serverless flag is set before any server components inspect it
 process.env.VERCEL = '1';
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production';
 }
+
+// Static import guarantees Vercel's bundler (@vercel/node) traces and bundles all server dependencies
+// into the serverless function deployment artifact.
+import { app as serverApp } from '../server.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +20,10 @@ const __dirname = path.dirname(__filename);
 let appPromise: Promise<any> | null = null;
 
 async function loadApp() {
+  if (typeof serverApp === 'function') {
+    return serverApp;
+  }
+
   if (!appPromise) {
     appPromise = (async () => {
       const candidates = [
@@ -39,7 +47,7 @@ async function loadApp() {
         }
       }
 
-      throw lastError || new Error('Vercel server bundle loaded, but no Express app export was found.');
+      throw lastError || new Error('Vercel serverless adapter: Express app instance could not be resolved.');
     })().catch((error) => {
       appPromise = null;
       throw error;
@@ -51,20 +59,36 @@ async function loadApp() {
 export default async function handler(req: any, res: any) {
   const requestId = req.headers?.['x-vercel-id'] || req.headers?.['x-request-id'] || `v-${Date.now()}`;
 
-  // Preserve and restore original API URL if rewritten by Vercel rewrites
+  // Preserve and restore original API URL when routed by Vercel rewrites
   const currentUrl = typeof req.url === 'string' ? req.url : '';
-  const matchedPath = req.headers?.['x-matched-path'] || req.headers?.['x-forwarded-uri'];
+  const forwardedUri = req.headers?.['x-forwarded-uri'] || req.headers?.['x-real-url'];
+  const matchedPath = req.headers?.['x-matched-path'];
 
-  if (typeof matchedPath === 'string' && matchedPath.startsWith('/api') && !matchedPath.includes('index.ts') && !matchedPath.includes('index.js')) {
+  if (typeof forwardedUri === 'string' && forwardedUri.startsWith('/api') && !forwardedUri.includes('index.ts') && !forwardedUri.includes('index.js')) {
+    req.url = forwardedUri;
+  } else if (typeof matchedPath === 'string' && matchedPath.startsWith('/api') && !matchedPath.includes('index.ts') && !matchedPath.includes('index.js')) {
     req.url = matchedPath;
-  } else if (req.query?.path) {
-    const cleanPath = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
-    const searchIdx = currentUrl.indexOf('?');
-    const rawSearch = searchIdx !== -1 ? currentUrl.slice(searchIdx) : '';
-    req.url = `/api/${cleanPath.replace(/^\/+/, '')}${rawSearch}`;
-  } else if (req.query?.['0']) {
-    const cleanPath = Array.isArray(req.query['0']) ? req.query['0'].join('/') : String(req.query['0']);
-    req.url = `/api/${cleanPath.replace(/^\/+/, '')}`;
+  } else if (typeof req.query?.path !== 'undefined') {
+    const rawPath = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path);
+    const cleanPath = rawPath.replace(/^\/+/, '');
+
+    // Extract actual query parameters excluding the internal 'path' rewrite param
+    let querySuffix = '';
+    const qIndex = currentUrl.indexOf('?');
+    if (qIndex !== -1) {
+      try {
+        const searchParams = new URLSearchParams(currentUrl.slice(qIndex + 1));
+        searchParams.delete('path');
+        const filtered = searchParams.toString();
+        if (filtered) querySuffix = `?${filtered}`;
+      } catch {}
+    }
+    req.url = `/api/${cleanPath}${querySuffix}`;
+  } else if (typeof req.query?.['0'] !== 'undefined') {
+    const rawPath = Array.isArray(req.query['0']) ? req.query['0'].join('/') : String(req.query['0']);
+    req.url = `/api/${rawPath.replace(/^\/+/, '')}`;
+  } else if (typeof req.url === 'string' && (req.url.startsWith('/api/index.ts') || req.url.startsWith('/api/index.js'))) {
+    req.url = req.url.replace(/^\/api\/index\.(ts|js)/, '/api');
   }
 
   // Parse body if Vercel serverless provided it as a raw string

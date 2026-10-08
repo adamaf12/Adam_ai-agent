@@ -23,7 +23,7 @@ import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, 
 import { PromptInjectionGuard } from './security/promptInjection';
 import { AgentPermissionGuard } from './security/agentPermissions';
 import { costControlManager } from './security/costControl';
-import { redactSecrets } from './security/secrets';
+import { secretsManager, redactSecrets } from './security/secrets';
 import { systemMonitor } from './security/monitoring';
 import { chatRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
@@ -672,12 +672,12 @@ function createGeminiInvoker(apiKey: string, language: 'ar' | 'en', agentName: s
       : [{ role: 'user' as const, parts: [{ text: promptText }] }];
 
     const modelVariants = [
-      'gemini-3.8-flash',
-      modelDesc.id,
-      'gemini-flash-latest',
-      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
       'gemini-2.5-pro',
+      'gemini-flash-latest',
+      modelDesc.id,
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
     ];
     const uniqueModels = [...new Set(modelVariants.filter(Boolean))];
 
