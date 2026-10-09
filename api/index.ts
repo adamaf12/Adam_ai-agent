@@ -12,25 +12,42 @@ if (!process.env.NODE_ENV) {
 
 // Static import guarantees Vercel's bundler (@vercel/node) traces and bundles all server dependencies
 // into the serverless function deployment artifact.
-import { app as serverApp } from '../server.ts';
+// Load the self-contained server bundle generated during the build. This avoids
+// Vercel's runtime tracer missing dependencies referenced by dist/server.cjs.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function loadApp() {
-  // Use the statically imported Express application. Do not dynamically import
-  // dist/server.cjs: esbuild externalizes npm packages there, and Vercel may
-  // omit those modules from the traced function artifact (e.g. compression).
-  if (typeof serverApp === 'function') {
-    return serverApp;
-  }
+let appPromise: Promise<any> | null = null;
 
-  // Be defensive in case the framework wraps the Express application object.
-  if (serverApp && typeof (serverApp as any).handle === 'function') {
-    return (req: any, res: any) => (serverApp as any).handle(req, res);
+async function loadApp() {
+  if (!appPromise) {
+    appPromise = (async () => {
+      const candidates = [
+        path.join(process.cwd(), 'dist', 'server.cjs'),
+        path.resolve(__dirname, '../dist/server.cjs'),
+      ];
+      let lastError: any = null;
+      for (const candidate of candidates) {
+        try {
+          const mod = await import(pathToFileURL(candidate).href);
+          const app = mod?.app ?? mod?.default?.app ?? mod?.default;
+          if (typeof app === 'function') return app;
+          if (app && typeof app.handle === 'function') {
+            return (req: any, res: any) => app.handle(req, res);
+          }
+          lastError = new Error(`Server bundle did not export an Express app (type=${typeof app}).`);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error('Vercel serverless adapter: server bundle could not be loaded.');
+    })().catch((error) => {
+      appPromise = null;
+      throw error;
+    });
   }
-
-  throw new Error(`Vercel serverless adapter: statically imported Express app is unavailable (type=${typeof serverApp}).`);
+  return appPromise;
 }
 
 export default async function handler(req: any, res: any) {
