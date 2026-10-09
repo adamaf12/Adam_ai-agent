@@ -447,7 +447,7 @@ function systemInstruction(language: string, agentName: string) {
 - **التنفيذ الصامت المباشر:** ينفذ الوكيل أوامر المستخدم فوراً ودون تردد وبدون أي مواعظ أو محاضرات أو تنبيهات غير مطلوبة.
 - **محرك الترجمة واللغات الفوري في الخلفية (ON-DEMAND TRANSLATION ENGINE):** مدمج بالكامل في المحادثة؛ عند طلب المستخدم للترجمة (مثال: "ترجم هذا الكلام إلى...", "ترجم لي...", "Translate to..."), قدّم الترجمة المباشرة الدقيقة والصحيحة مع إمكانية تضمين بطاقة الترجمة التفاعلية \`:::translation-card\n{"sourceText": "...", "translatedText": "...", "sourceLang": "ar", "targetLang": "en"}\n:::\` لتمكين النطق الصوتي والنسخ السريع.
 - **تنسيق مريح وسريع القراءة:** اعتمد على كتل الأكواد المنظمة، النقاط المختصرة، والخطوات العملية المركزة.
-- **الدعم متعدد اللغات (Multilingual Support):** معالجة والاستجابة بسلاسة بال����ربية، الإنجليزية، أو الفرنسية حسب لغة إدخال المستخدم.
+- **الدعم متعدد اللغات (Multilingual Support):** معالجة والاستجابة بسلاسة بال������ربية، الإنجليزية، أو الفرنسية حسب لغة إدخال المستخدم.
 
 ---
 
@@ -497,7 +497,7 @@ function systemInstruction(language: string, agentName: string) {
 
 ## 11. إجابات نقية ومباشرة بدون مصادر أو روابط مشتتة (CLEAN DIRECT ANSWERS):
 - لا تذكر أي مصادر، ولا تضع روابط مواقع أو عبارات مثل [المصدر: ...] أو حواشي استشهاد. قدّم الإجابة نقية، مبسطة، ومباشرة ومصاغة بأعلى درجات الدقة والوضوح.
-- قدّم الإجابة كاملة متسلسلة في تدفق واحد دون تكرار أو تقسيم مبتور (تجنب تمام��ً تكرار "الجزء 1" أو إعادة كتابة "الجزء 2" مكرراً).
+- قدّم الإجابة كاملة متسلسلة في تدفق واحد دون تكرار أو تقسيم مبتور (تجنب ت��ام��ً تكرار "الجزء 1" أو إعادة كتابة "الجزء 2" مكرراً).
 
 ## 12. تنسيق الرياضيات وعرض الخطوات والحساب الفعلي (STEP-BY-STEP MATH & CODE CALCULATION):
 - عند حل المسائل الرياضية أو الفيزيائية أو الحسابية: ��عرض الخطوات بترتيب منهجي مرقم وواضح (الخطوة 1، الخطوة 2...).
@@ -2353,19 +2353,21 @@ async function startServer() {
         // "WebSocket closed without opened" errors in the browser console.
         server: { middlewareMode: true, hmr: false, watch: null },
         appType: 'spa',
-        plugins: [{
-          name: 'preview-no-hmr-client',
-          transformIndexHtml: {
-            order: 'post',
-            handler(html: string) {
-return html
-  // The preview proxy can rewrite the Vite client URL to an absolute origin,
-  // so match the script by its endpoint rather than one exact attribute form.
-  .replace(/\s*<script[^>]+src=["'][^"']*\/@vite\/client[^"']*["'][^>]*><\/script>\s*/gi, '\n')
-  .replace(/\s*<script[^>]*>[\s\S]*?injectIntoGlobalHook[\s\S]*?<\/script>\s*/gi, '\n');
-            },
-          },
-        }],
+  plugins: [{
+  name: 'preview-no-hmr-client',
+  enforce: 'post',
+  transformIndexHtml: {
+  order: 'post',
+  handler(html: string) {
+  // middleware-mode previews do not expose Vite's HMR WebSocket endpoint.
+  // Strip both Vite client forms so the browser never opens a dead socket.
+  return html
+  .replace(/<script\b[^>]*\bsrc=["'][^"']*\/@vite\/client[^"']*["'][^>]*>\s*<\/script>/gi, '')
+  .replace(/<script\b[^>]*>[^<]*injectIntoGlobalHook[\s\S]*?<\/script>/gi, '')
+  .replace(/\s*<script\b[^>]*src=["'][^"']*\/@vite\/client[^"']*["'][^>]*\/?>/gi, '');
+  },
+  },
+  }],
       });
       app.use(vite.middlewares);
     }
