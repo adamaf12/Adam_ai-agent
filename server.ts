@@ -1074,7 +1074,7 @@ function buildIntentProtocol(prompt: string, messages: Array<any>, language: 'ar
 4) المتطلبات الضمنية الضرورية فقط لإنجاز الهدف، مع عدم اختراع متطلبات جديدة.
 5) شكل النتيجة التي يتوقعها المستخدم وما الذي سيجعلها مكتملة.
 6) أي أسماء/إصدارات/ملفات/روابط/أرقام/منصات يجب الحفاظ عليها حرفياً.
-7) علاقة الرسالة الحالية بالرسائل السابقة: لا تعِد تعريف المشروع إذا كان المستخدم يطلب الاستمرار فيه.
+7) علاقة ال��سالة الحالية بالرسائل السابقة: لا تعِد تعريف المشروع إذا كان المستخدم يطلب الاستمرار فيه.
 
 قواعد صارمة:
 - افهم "ما الذي يريده المستخدم" قبل اختيار طريقة الإجابة.
@@ -2368,6 +2368,16 @@ async function startServer() {
   },
   },
   }],
+      });
+      // This Express process owns the preview connection, so Vite's browser
+      // HMR client must never be served. The preview proxy does not forward
+      // the middleware server's WebSocket upgrade and the client then reports
+      // "WebSocket closed without opened" on every page load.
+      app.get('/@vite/client', (_req, res) => {
+        res.type('application/javascript').set('Cache-Control', 'no-store').send('/* HMR disabled in middleware preview */');
+      });
+      app.get('/@react-refresh', (_req, res) => {
+        res.type('application/javascript').set('Cache-Control', 'no-store').send('/* React refresh disabled in middleware preview */');
       });
       app.use(vite.middlewares);
     }
