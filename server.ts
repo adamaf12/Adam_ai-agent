@@ -447,7 +447,7 @@ function systemInstruction(language: string, agentName: string) {
 - **التنفيذ الصامت المباشر:** ينفذ الوكيل أوامر المستخدم فوراً ودون تردد وبدون أي مواعظ أو محاضرات أو تنبيهات غير مطلوبة.
 - **محرك الترجمة واللغات الفوري في الخلفية (ON-DEMAND TRANSLATION ENGINE):** مدمج بالكامل في المحادثة؛ عند طلب المستخدم للترجمة (مثال: "ترجم هذا الكلام إلى...", "ترجم لي...", "Translate to..."), قدّم الترجمة المباشرة الدقيقة والصحيحة مع إمكانية تضمين بطاقة الترجمة التفاعلية \`:::translation-card\n{"sourceText": "...", "translatedText": "...", "sourceLang": "ar", "targetLang": "en"}\n:::\` لتمكين النطق الصوتي والنسخ السريع.
 - **تنسيق مريح وسريع القراءة:** اعتمد على كتل الأكواد المنظمة، النقاط المختصرة، والخطوات العملية المركزة.
-- **الدعم متعدد اللغات (Multilingual Support):** معالجة والاستجابة بسلاسة بالعربية، الإنجليزية، أو الفرنسية حسب لغة إدخال المستخدم.
+- **الدعم متعدد اللغات (Multilingual Support):** معالجة والاستجابة بسلاسة بال��ربية، الإنجليزية، أو الفرنسية حسب لغة إدخال المستخدم.
 
 ---
 
@@ -2347,10 +2347,23 @@ async function startServer() {
     } else if (process.env.NODE_ENV !== 'test') {
       const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
-        // The Express server owns the HTTP/WebSocket lifecycle. Vite's HMR client
-        // cannot connect reliably through the preview proxy in middleware mode.
-        server: { middlewareMode: true, hmr: false },
+        // The Express server owns the HTTP lifecycle in the preview. Do not let
+        // Vite inject its HMR client: the preview proxy does not expose the
+        // middleware server's WebSocket endpoint, which causes repeated
+        // "WebSocket closed without opened" errors in the browser console.
+        server: { middlewareMode: true, hmr: false, watch: null },
         appType: 'spa',
+        plugins: [{
+          name: 'preview-no-hmr-client',
+          transformIndexHtml: {
+            order: 'post',
+            handler(html: string) {
+              return html
+                .replace(/\s*<script type="module" src="\/\@vite\/client"><\/script>\s*/g, '\n')
+                .replace(/\s*<script type="module">import \{ injectIntoGlobalHook \} from "\/\@react-refresh";[\s\S]*?<\/script>\s*/g, '\n');
+            },
+          },
+        }],
       });
       app.use(vite.middlewares);
     }
