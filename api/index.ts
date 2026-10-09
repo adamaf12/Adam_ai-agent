@@ -17,43 +17,20 @@ import { app as serverApp } from '../server.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let appPromise: Promise<any> | null = null;
-
-async function loadApp() {
+function loadApp() {
+  // Use the statically imported Express application. Do not dynamically import
+  // dist/server.cjs: esbuild externalizes npm packages there, and Vercel may
+  // omit those modules from the traced function artifact (e.g. compression).
   if (typeof serverApp === 'function') {
     return serverApp;
   }
 
-  if (!appPromise) {
-    appPromise = (async () => {
-      const candidates = [
-        path.join(process.cwd(), 'dist', 'server.cjs'),
-        path.resolve(__dirname, '../dist/server.cjs'),
-        '../dist/server.cjs',
-      ];
-
-      let lastError: any = null;
-      for (const candidate of candidates) {
-        try {
-          const fileUrl = candidate.startsWith('.') ? candidate : pathToFileURL(candidate).href;
-          // @ts-ignore
-          const mod = await import(fileUrl);
-          const app = mod?.app ?? mod?.default?.app ?? mod?.default;
-          if (typeof app === 'function') {
-            return app;
-          }
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      throw lastError || new Error('Vercel serverless adapter: Express app instance could not be resolved.');
-    })().catch((error) => {
-      appPromise = null;
-      throw error;
-    });
+  // Be defensive in case the framework wraps the Express application object.
+  if (serverApp && typeof (serverApp as any).handle === 'function') {
+    return (req: any, res: any) => (serverApp as any).handle(req, res);
   }
-  return appPromise;
+
+  throw new Error(`Vercel serverless adapter: statically imported Express app is unavailable (type=${typeof serverApp}).`);
 }
 
 export default async function handler(req: any, res: any) {
