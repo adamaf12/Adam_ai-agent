@@ -2346,7 +2346,12 @@ async function startServer() {
       });
     } else if (process.env.NODE_ENV !== 'test') {
       const { createServer: createViteServer } = await import('vite');
-      const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
+      const vite = await createViteServer({
+        // The Express server owns the HTTP/WebSocket lifecycle. Vite's HMR client
+        // cannot connect reliably through the preview proxy in middleware mode.
+        server: { middlewareMode: true, hmr: false },
+        appType: 'spa',
+      });
       app.use(vite.middlewares);
     }
   } catch (err) {
