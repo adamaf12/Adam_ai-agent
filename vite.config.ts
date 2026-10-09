@@ -114,10 +114,12 @@ export default defineConfig(() => {
         'motion/react',
       ],
     },
+    // The app is served through the Express middleware preview, which does not
+    // expose Vite's WebSocket upgrade endpoint. Keep the browser HMR client
+    // disabled so it cannot repeatedly connect to a dead socket.
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      hmr: false,
+      watch: null,
     },
   };
 });
