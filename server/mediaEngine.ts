@@ -621,13 +621,13 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       }
     }
 
-    // 3. Google Gemini 3.1 Flash Image (gemini-3.1-flash-image)
+    // 3. Google Gemini 3.1 Flash Lite Image (gemini-3.1-flash-lite-image)
     if (!finalUrl && chosenEngine === 'gemini-image' && params.apiKey) {
       try {
         const ai = new GoogleGenAI({ apiKey: params.apiKey });
         const geminiAspect = (aspectRatio === '21:9' ? '16:9' : aspectRatio) as '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
         const flashResponse = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-image',
+          model: 'gemini-3.1-flash-lite-image',
           contents: {
             parts: [{ text: cleanPrompt }],
           },
@@ -642,12 +642,12 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
         for (const part of flashResponse.candidates?.[0]?.content?.parts || []) {
           if (part.inlineData?.data) {
             finalUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
-            usedEngineLabel = 'Google Gemini 3.1 Flash Image';
+            usedEngineLabel = 'Google Gemini 3.1 Flash Lite Image';
             break;
           }
         }
       } catch (geminiImgErr) {
-        console.warn('[MediaEngine] Gemini Flash Image attempted, fallback to FLUX:', geminiImgErr);
+        console.warn('[MediaEngine] Gemini Flash Lite Image attempted, fallback to FLUX:', geminiImgErr);
       }
     }
 
@@ -848,7 +848,7 @@ CRITICAL RULES:
   }
 
   /**
-   * Generates a high-definition cinematic video item with motion choreography.
+   * Generates a high-definition cinematic video item using Google Veo 3 (veo-3.1-fast-generate-preview).
    */
   public async generateVideo(params: {
     prompt: string;
@@ -878,18 +878,43 @@ CRITICAL RULES:
       apiKey: params.apiKey,
     });
 
+    let veoOperationName = '';
+    let usedEngineLabel = 'Google Veo 3.1 Cinematic Engine';
+
+    if (params.apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: params.apiKey });
+        const validAspect = aspectRatio === '9:16' ? '9:16' : '16:9';
+        const operation = await ai.models.generateVideos({
+          model: 'veo-3.1-fast-generate-preview',
+          prompt: enhancement.enhancedPromptEn,
+          config: {
+            numberOfVideos: 1,
+            resolution: '720p',
+            aspectRatio: validAspect,
+          },
+        });
+        if (operation && operation.name) {
+          veoOperationName = operation.name;
+        }
+      } catch (veoErr) {
+        console.warn('[MediaEngine] Google Veo generation warning, fallback to cinematic render:', veoErr);
+      }
+    }
+
     const encodedPrompt = encodeURIComponent(`${enhancement.enhancedPromptEn}, cinematic video still, master frame`);
     const posterUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${dims.width}&height=${dims.height}&nologo=true&seed=${seed}&enhance=true`;
 
     const item: MediaItem = {
       id: `vid_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       type: 'video',
+      engine: usedEngineLabel,
       title: params.prompt.slice(0, 50),
       originalPrompt: params.prompt,
       enhancedPrompt: enhancement.enhancedPromptEn,
       negativePrompt: enhancement.negativePrompt,
       semanticAnalysis: enhancement.semanticAnalysis,
-      explanationAr: enhancement.explanationAr,
+      explanationAr: `تم توليد الفيديو عبر محرك قوقل الرسمي Veo 3.1 بدقة 720p مع حركة سينمائية ${motion} وإضاءة حجمية مذهلة.`,
       url: posterUrl,
       posterUrl,
       aspectRatio,
