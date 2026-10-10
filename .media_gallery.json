@@ -1,0 +1,27 @@
+[
+  {
+    "id": "img_mv2suu85_6awb",
+    "type": "image",
+    "engine": "FLUX.1 Pro High-Performance",
+    "title": "صقر ذهبي في الصحراء",
+    "originalPrompt": "صقر ذهبي في الصحراء",
+    "enhancedPrompt": "majestic royal Arabian falcon, razor-sharp golden talons, detailed plumage feathers, keen focused piercing gaze, set in sweeping golden red sand dunes with delicate wind ripples, vast desert horizon, thermal heat haze. volumetric cinematic lighting, soft dramatic studio rim lights, natural soft shadows, ray-traced global illumination. anamorphic 70mm widescreen cinema framing, shot on 85mm cine prime lens at f/1.8, creamy bokeh, subtle horizontal flare. cinematic still, IMAX 70mm film grain, dynamic dramatic lighting, anamorphic lens flare, moody color grading, epic cinematic atmosphere, masterpiece, 8k resolution, ultra-detailed textures, volumetric lighting, studio lights, 85mm f/1.8 lens, creamy optical bokeh depth of field, hyper-realistic masterpiece photo, pristine quality",
+    "negativePrompt": "cartoon, anime, 3d render, cgi, illustration, painting, drawing, sketch, plastic skin, smooth skin, airbrushed, oversaturated, low quality, blurry, deformed, watermark, signature, text",
+    "semanticAnalysis": {
+      "subject": "صقر عربي ملكي أصيل، ريش دقيق وتفصيلي، مخالب حادة ونظرة حادة ومركزة",
+      "environment": "صحراء شاسعة ذات كثبان رملية متموجة بفعل الرياح وأفق لا نهائي",
+      "lighting": "إضاءة حجمية سينمائية مع إضاءة حواف استوديو وظلال ناعمة وتتبع أشعة واقعي",
+      "camera": "تأطير سينمائي عريض 70mm بعدسة سينمائية 85mm بفتحة f/1.8 وتدرجات لونية هوليوودية",
+      "mood": "أجواء ملحمية، راقية وذات حضور بصري ساحر"
+    },
+    "explanationAr": "تمت معالجة وإثراء الطلب عبر محرك ADEM فائق التطور (Flux.1 High-Performance Pipeline): تم تحويل الوصف إلى برومبت سينمائي 8K فائق الدقة مع إضاءة حجمية (Volumetric/Studio Lighting) وعدسة 85mm f/1.8 مع عزل بصري Bokeh وتفاصيل فائقة الواقعية.",
+    "url": "https://pollinations.ai/p/majestic%20royal%20Arabian%20falcon%2C%20razor-sharp%20golden%20talons%2C%20detailed%20plumage%20feathers%2C%20keen%20focused%20piercing%20gaze%2C%20set%20in%20sweeping%20golden%20red%20sand%20dunes%20with%20delicate%20wind%20ripples%2C%20vast%20desert%20horizon%2C%20thermal%20heat%20haze.%20volumetric%20cinematic%20lighting%2C%20soft%20dramatic%20studio%20rim%20lights%2C%20natural%20soft%20shadows%2C%20ray-traced%20global%20illumination.%20anamorphic%2070mm%20widescreen%20cinema%20framing%2C%20shot%20on%2085mm%20cine%20prime%20lens%20at%20f%201.8%2C%20creamy%20bokeh%2C%20subtle%20horizontal%20flare.%20cinematic%20still%2C%20IMAX%2070mm%20film%20grain%2C%20dynamic%20dramatic%20lighting%2C%20anamorphic%20lens%20flare%2C%20moody%20color%20grading%2C%20epic%20cinematic%20atmosphere%2C%20masterpiece%2C%208k%20resolution%2C%20ultra-detailed%20textures%2C%20volumetric%20lighting%2C%20studio%20lights%2C%2085mm%20f%201.8%20lens%2C%20creamy%20optical%20bokeh%20depth%20of%20field%2C%20hyper-realistic%20masterpiece%20photo%2C%20pristine%20quality?width=1344&height=768&model=flux&nologo=true&seed=840202",
+    "aspectRatio": "16:9",
+    "width": 1344,
+    "height": 768,
+    "style": "cinematic",
+    "seed": 840202,
+    "userId": "guest_b4aa743c6fb9fba89c4c481d",
+    "createdAt": 1791661262981
+  }
+]
