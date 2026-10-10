@@ -14,7 +14,9 @@ import {
   Play,
   Radio,
   FileAudio,
+  FileText,
   MapPin,
+  Paperclip,
   Search,
   Send,
   Sparkles,
@@ -87,7 +89,9 @@ export function Composer({
 }) {
   const [draft, setDraft] = useState('');
   const [images, setImages] = useState<ProcessedImage[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{ id: string; name: string; sizeBytes: number; type: string; content: string }[]>([]);
   const [processingImages, setProcessingImages] = useState(false);
+  const [processingFiles, setProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [listening, setListening] = useState(false);
   const [showQuickModes, setShowQuickModes] = useState(false);
@@ -109,6 +113,7 @@ export function Composer({
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   const filteredDialects = useMemo(() => {
     return GLOBAL_DIALECTS.filter((d) => {
@@ -175,24 +180,73 @@ export function Composer({
   }, [draft]);
 
   const handleFiles = async (files: FileList | File[]) => {
-    const validImageFiles = Array.from(files).filter((file) =>
+    const fileList = Array.from(files);
+    const validImageFiles = fileList.filter((file) =>
       file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|heic)$/i.test(file.name)
     );
+    const documentFiles = fileList.filter((file) =>
+      !file.type.startsWith('image/') && !/\.(png|jpe?g|webp|gif|bmp|heic)$/i.test(file.name)
+    );
 
-    if (validImageFiles.length === 0) return;
+    if (validImageFiles.length > 0) {
+      setProcessingImages(true);
+      try {
+        const processed = await Promise.all(
+          validImageFiles.map((file) => processImageFile(file))
+        );
+        setImages((prev) => [...prev, ...processed].slice(0, 8));
+      } catch (err) {
+        console.error('Failed to process image attachment:', err);
+      } finally {
+        setProcessingImages(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    }
 
-    setProcessingImages(true);
-    try {
-      const processed = await Promise.all(
-        validImageFiles.map((file) => processImageFile(file))
-      );
-      setImages((prev) => [...prev, ...processed].slice(0, 8));
-    } catch (err) {
-      console.error('Failed to process image attachment:', err);
-    } finally {
-      setProcessingImages(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    if (documentFiles.length > 0) {
+      setProcessingFiles(true);
+      try {
+        const newDocs = await Promise.all(
+          documentFiles.map((file) => {
+            return new Promise<{ id: string; name: string; sizeBytes: number; type: string; content: string }>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const textContent = (e.target?.result as string) || '';
+                resolve({
+                  id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  name: file.name,
+                  sizeBytes: file.size,
+                  type: file.type || 'text/plain',
+                  content: textContent.slice(0, 50000),
+                });
+              };
+              reader.onerror = () => {
+                resolve({
+                  id: `doc-${Date.now()}`,
+                  name: file.name,
+                  sizeBytes: file.size,
+                  type: file.type || 'text/plain',
+                  content: '[Error reading file]',
+                });
+              };
+              if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+                reader.readAsDataURL(file);
+              } else {
+                reader.readAsText(file);
+              }
+            });
+          })
+        );
+        setAttachedFiles((prev) => [...prev, ...newDocs].slice(0, 6));
+      } catch (err) {
+        console.error('Failed to process document attachment:', err);
+      } finally {
+        setProcessingFiles(false);
+        if (documentInputRef.current) {
+          documentInputRef.current.value = '';
+        }
       }
     }
   };
@@ -201,21 +255,23 @@ export function Composer({
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
+  const removeDocument = (id: string) => {
+    setAttachedFiles((prev) => prev.filter((doc) => doc.id !== id));
+  };
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
 
-    const imageFiles: File[] = [];
+    const filesToHandle: File[] = [];
     for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        const file = items[i].getAsFile();
-        if (file) imageFiles.push(file);
-      }
+      const file = items[i].getAsFile();
+      if (file) filesToHandle.push(file);
     }
 
-    if (imageFiles.length > 0) {
+    if (filesToHandle.length > 0) {
       e.preventDefault();
-      handleFiles(imageFiles);
+      handleFiles(filesToHandle);
     }
   };
 
@@ -239,18 +295,27 @@ export function Composer({
 
   const submit = () => {
     const text = draft.trim();
-    if ((!text && images.length === 0) || busy) return;
+    if ((!text && images.length === 0 && attachedFiles.length === 0) || busy) return;
+
+    const filesContext = attachedFiles
+      .map(
+        (f) =>
+          `[Attached Document / File: ${f.name} (${Math.round(f.sizeBytes / 1024)} KB)]\n\`\`\`\n${f.content}\n\`\`\``
+      )
+      .join('\n\n');
 
     const defaultPrompt = isAr
-      ? 'قم بفحص وتحليل الصورة المرفقة واستنتج المطلوب وقدم الحل الدقيق والشامل فوراً.'
-      : 'Analyze this image and provide the complete, accurate solution directly.';
+      ? 'قم بدراسة وتحليل الملفات والمستندات المرفقة واستخراج كافة التفاصيل والاجابة عن الاسئلة المتعلقة بها بدقة واحترافية.'
+      : 'Study and analyze the attached documents/files and provide complete accurate answers.';
 
-    const finalPrompt = text || defaultPrompt;
+    const basePrompt = text || (attachedFiles.length > 0 || images.length > 0 ? defaultPrompt : '');
+    const finalPrompt = filesContext ? `${filesContext}\n\n${basePrompt}` : basePrompt;
     const imageUrls = images.map((img) => img.dataUrl);
 
     onSend(finalPrompt, imageUrls.length > 0 ? imageUrls : undefined);
     setDraft('');
     setImages([]);
+    setAttachedFiles([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -470,6 +535,20 @@ export function Composer({
         }}
       />
 
+      {/* Hidden File Input for Document / Text / Code / PDF Attachments */}
+      <input
+        ref={documentInputRef}
+        type="file"
+        accept=".pdf,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.py,.doc,.docx"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.length) {
+            handleFiles(e.target.files);
+          }
+        }}
+      />
+
       {/* Image Attachments Preview Tray */}
       {images.length > 0 && (
         <div className="mb-2.5 p-2 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex flex-col gap-2 animate-fadeIn shadow-sm">
@@ -505,6 +584,50 @@ export function Composer({
                 <button
                   type="button"
                   onClick={() => removeImage(img.id)}
+                  className="p-1 rounded-full bg-[var(--surface-2)] text-[var(--muted)] hover:text-rose-400 transition cursor-pointer"
+                  title={isAr ? 'إزالة' : 'Remove'}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Document Attachments Preview Tray */}
+      {attachedFiles.length > 0 && (
+        <div className="mb-2.5 p-2.5 rounded-2xl bg-[var(--surface-2)] border border-cyan-500/30 flex flex-col gap-2 animate-fadeIn shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[var(--text)] font-semibold px-1">
+            <span className="flex items-center gap-1.5 text-cyan-400">
+              <FileText size={13} className="animate-pulse" />
+              <span>{isAr ? 'مستندات وملفات مرفقة للدراسة والتحليل' : 'Attached documents ready for study & analysis'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setAttachedFiles([])}
+              className="text-[var(--muted)] hover:text-rose-400 text-[11px] transition cursor-pointer"
+            >
+              {isAr ? 'حذف الكل' : 'Clear'}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {attachedFiles.map((doc) => (
+              <div
+                key={doc.id}
+                className="group relative flex items-center gap-2.5 p-2 rounded-xl bg-[var(--surface)] border border-cyan-500/30 shadow-sm max-w-xs"
+              >
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
+                  <FileText size={16} />
+                </div>
+                <div className="flex flex-col min-w-0 pr-1 text-[11px]">
+                  <span className="truncate max-w-[130px] text-[var(--text)] font-bold">{doc.name}</span>
+                  <span className="text-[10px] text-[var(--muted)]">{formatFileSize(doc.sizeBytes)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDocument(doc.id)}
                   className="p-1 rounded-full bg-[var(--surface-2)] text-[var(--muted)] hover:text-rose-400 transition cursor-pointer"
                   title={isAr ? 'إزالة' : 'Remove'}
                 >
@@ -838,7 +961,7 @@ export function Composer({
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => fileInputRef.current?.click()}
-          aria-label={isAr ? 'إرفاق صورة أو مستند' : 'Attach Image'}
+          aria-label={isAr ? 'إرفاق صورة' : 'Attach Image'}
           title={isAr ? 'إرفاق صورة' : 'Attach image'}
           disabled={processingImages}
         >
@@ -846,6 +969,26 @@ export function Composer({
             <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
           ) : (
             <Camera size={16} />
+          )}
+        </button>
+
+        {/* Attach Document / File Button */}
+        <button
+          type="button"
+          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
+            attachedFiles.length > 0
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
+              : 'text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]'
+          }`}
+          onClick={() => documentInputRef.current?.click()}
+          aria-label={isAr ? 'إرفاق ملف أو مستند للدراسة' : 'Attach Document'}
+          title={isAr ? 'إرفاق ملف، نص، كود أو PDF للدراسة والتحليل' : 'Attach document, text, code or PDF'}
+          disabled={processingFiles}
+        >
+          {processingFiles ? (
+            <Loader2 size={16} className="animate-spin text-cyan-400" />
+          ) : (
+            <Paperclip size={16} />
           )}
         </button>
 
