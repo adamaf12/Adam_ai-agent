@@ -22,6 +22,22 @@ function cleanPromptForUrl(prompt: string, maxLen = 650): string {
     .slice(0, maxLen);
 }
 
+function generateFallbackSvgUrl(title: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0B0F19" />
+        <stop offset="100%" stop-color="#1E1B4B" />
+      </linearGradient>
+    </defs>
+    <rect width="800" height="800" fill="url(#bg)" />
+    <circle cx="400" cy="400" r="240" fill="#3B82F6" fill-opacity="0.25" />
+    <text x="400" y="370" text-anchor="middle" fill="#F8FAFC" font-family="sans-serif" font-weight="900" font-size="34">ADEM STUDIO HD</text>
+    <text x="400" y="420" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-weight="600" font-size="16">${(title || '').slice(0, 50)}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function buildSpeedCandidates(
   rawUrl: string,
   prompt: string,
@@ -62,8 +78,11 @@ function buildSpeedCandidates(
       urls.push(rawUrl);
     }
     urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
-    urls.push(`https://image.pollinations.ai/prompt/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
+    urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
   }
+
+  // Guaranteed ultimate fallback SVG data URL to prevent any load failure
+  urls.push(generateFallbackSvgUrl(prompt));
 
   return Array.from(new Set(urls.filter(Boolean)));
 }
