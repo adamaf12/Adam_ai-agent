@@ -9,6 +9,7 @@ import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
 import { TranslatorStudio } from './features/translation/TranslatorStudio';
 import { GoogleAdkStudio } from './features/adk/GoogleAdkStudio';
 import { MediaStudio } from './features/media/MediaStudio';
+import { AcademicStudio } from './features/academic/AcademicStudio';
 import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
 import { QuickLiquidRefraction } from './components/QuickLiquidRefraction';
 import { NetworkSentinel } from './components/NetworkSentinel';
@@ -265,7 +266,17 @@ export default function App() {
               }}
             />
           )}
+
+          {activeView === 'academic' && (
+            <AcademicStudio
+              language={preferences.language}
+              onNavigateToChat={(_prompt) => {
+                setActiveView('chat');
+              }}
+            />
+          )}
         </motion.div>
+
       </AnimatePresence>
 
       <BackgroundSecuritySentinel />

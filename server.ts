@@ -2170,6 +2170,49 @@ app.post('/api/academic/thesis', chatRateLimiter.middleware(), async (req, res) 
   }
 });
 
+app.post('/api/academic/presentation', chatRateLimiter.middleware(), async (req, res) => {
+  try {
+    const {
+      topic,
+      degree,
+      presentationType,
+      slideCount,
+      language,
+      targetDurationMinutes,
+      studentName,
+      supervisorName,
+      university,
+      faculty,
+    } = req.body || {};
+
+    if (!topic || typeof topic !== 'string' || !topic.trim()) {
+      return res.status(400).json({ ok: false, error: 'Topic is required for presentation generation' });
+    }
+
+    const keyToUse = (req.headers['x-gemini-api-key'] as string) || apiKey || secretsManager.getGeminiApiKey();
+
+    const presentation = await AcademicEngine.generatePresentation({
+      topic: topic.trim(),
+      degree,
+      presentationType,
+      slideCount: Number(slideCount) || 12,
+      language,
+      targetDurationMinutes: Number(targetDurationMinutes) || 15,
+      studentName,
+      supervisorName,
+      university,
+      faculty,
+      apiKey: keyToUse,
+    });
+
+    res.json({ ok: true, presentation });
+  } catch (err: any) {
+    console.error('[API] /api/academic/presentation error:', err);
+    res.status(500).json({ ok: false, error: err?.message || 'Failed to generate academic presentation' });
+  }
+});
+
+
 app.post('/api/academic/study-plan', chatRateLimiter.middleware(), async (req, res) => {
   try {
     const { stage, targetExam, subjectsToFocus, hoursPerDay, daysUntilExam, language } = req.body || {};

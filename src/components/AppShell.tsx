@@ -11,6 +11,7 @@ import {
   Check,
   Globe,
   Settings as SettingsIcon,
+  GraduationCap,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -118,7 +119,23 @@ const STUDIO_TABS: {
     borderColor: 'border-emerald-500/40',
     glowAura: 'rgba(16, 185, 129, 0.35)',
   },
+  {
+    id: 'academic',
+    icon: GraduationCap,
+    labelAr: 'الأكاديمية وعروض التخرج',
+    labelEn: 'Academic & Presentations',
+    descAr: 'مكتبات العالم، عروض التخرج PFE والمرافق الأكاديمي',
+    descEn: 'World Libraries, PFE Defenses & Academic Suite',
+    badgeAr: 'الأكاديمية',
+    badgeEn: 'Academic',
+    shortcut: 'Alt+5',
+    gradientClass: 'from-amber-500/25 via-yellow-500/15 to-transparent',
+    iconColor: 'text-amber-400',
+    borderColor: 'border-amber-500/40',
+    glowAura: 'rgba(245, 158, 11, 0.35)',
+  },
 ];
+
 
 export function AppShell({
   activeView,

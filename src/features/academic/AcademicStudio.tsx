@@ -32,12 +32,14 @@ import {
   Clock,
   Bookmark,
   CalendarCheck,
+  Presentation,
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
 import type { AcademicStage, AcademicTab, AcademicSearchResult, AcademicQuizQuestion, CitationOutput } from './types';
 import { WORLD_DIGITAL_LIBRARIES, STAGE_CURRICULUM_DATA } from './worldLibrariesData';
 import { StudentCompanionView } from './StudentCompanionView';
 import { FormulaCheatSheetsView } from './FormulaCheatSheetsView';
+import { UniversityPresentationStudio } from './UniversityPresentationStudio';
 
 interface AcademicStudioProps {
   language: Language;
@@ -357,6 +359,7 @@ export function AcademicStudio({ language, onNavigateToChat }: AcademicStudioPro
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none border-b border-[var(--border)]">
         {(
           [
+            { id: 'presentation', labelAr: 'عروض التخرج (Présentation PFE)', labelEn: 'Defense & Presentations (PFE)', icon: Presentation },
             { id: 'companion', labelAr: 'المرافق الأكاديمي وغرفة التركيز', labelEn: 'Student Companion & Focus', icon: Clock },
             { id: 'stages', labelAr: 'مناهج ومفاهيم الطور', labelEn: 'Curriculum & Concepts', icon: BookMarked },
             { id: 'formulas', labelAr: 'كناش القوانين والمعادلات', labelEn: 'Formula Cheat Sheets', icon: Calculator },
@@ -1240,7 +1243,24 @@ export function AcademicStudio({ language, onNavigateToChat }: AcademicStudioPro
             />
           </motion.div>
         )}
+
+        {/* UNIVERSITY PRESENTATION & DEFENSE (PRÉSENTATION PFE) */}
+        {activeTab === 'presentation' && (
+          <motion.div
+            key="presentation-tab"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+            <UniversityPresentationStudio
+              language={language}
+              onNavigateToChat={onNavigateToChat}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
 }
+
