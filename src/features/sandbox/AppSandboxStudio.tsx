@@ -4,6 +4,7 @@ import {
   Code2,
   Play,
   RotateCcw,
+  RefreshCw,
   Copy,
   Check,
   ExternalLink,
@@ -1041,32 +1042,66 @@ export function AppSandboxStudio({
     if (!text || isSynthesizing) return;
     setIsSynthesizing(true);
     try {
-      setSynthesisStage(isAr ? 'تحليل متطلبات اللعبة والمحرك الفيزيائي...' : 'Analyzing game mechanics and physics specs...');
-      await new Promise((r) => setTimeout(r, 250));
+      setSynthesisStage(isAr ? 'تحليل فكرة التطبيق وهندسة المتطلبات بالذكاء الاصطناعي...' : 'Analyzing application specs & AI prompt architecture...');
+      await new Promise((r) => setTimeout(r, 200));
 
-      setSynthesisStage(isAr ? 'بناء شجرة الكائنات ونظام التصيير 60FPS...' : 'Architecting entity loop & 60FPS render loop...');
-      await new Promise((r) => setTimeout(r, 300));
+      setSynthesisStage(isAr ? 'هندسة بنية واجهة المستخدم HTML5 والأنماط البصرية...' : 'Architecting HTML5 layout & responsive CSS aesthetics...');
 
-      setSynthesisStage(isAr ? 'حقن محرك الصوت وتوليد الترددات التفاعلية...' : 'Injecting Web Audio synthesis & SFX...');
-      await new Promise((r) => setTimeout(r, 250));
+      let newApp: SandboxApp | null = null;
 
-      const result = synthesizeApp({ prompt: text });
+      // 1. Try real server AI generation via Gemini
+      try {
+        const res = await fetch('/api/sandbox/generate-app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: text,
+            category: categoryFilter !== 'all' ? categoryFilter : undefined,
+            language: isAr ? 'ar' : 'en',
+          }),
+        });
 
-      const newApp: SandboxApp = {
-        id: result.id,
-        title: result.title,
-        prompt: result.prompt,
-        category: result.category,
-        createdAt: Date.now(),
-        code: result.code,
-      };
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.app && data.app.code) {
+            newApp = {
+              id: data.app.id,
+              title: data.app.title,
+              prompt: data.app.prompt || text,
+              category: data.app.category || 'app',
+              createdAt: Date.now(),
+              code: data.app.code,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[Sandbox AI Server fallback]', err);
+      }
+
+      setSynthesisStage(isAr ? 'برمجة المنطق التفاعلي وحقن محركات الصوت والأحداث...' : 'Compiling JavaScript logic, Web Audio & event listeners...');
+      await new Promise((r) => setTimeout(r, 200));
+
+      // 2. Resilient procedural fallback if backend unreachable
+      if (!newApp) {
+        const result = synthesizeApp({ prompt: text });
+        newApp = {
+          id: result.id,
+          title: result.title,
+          prompt: result.prompt,
+          category: result.category,
+          createdAt: Date.now(),
+          code: result.code,
+        };
+      }
 
       saveSandboxApp(newApp);
-      setApps((prev) => [newApp, ...prev]);
+      setApps((prev) => [newApp!, ...prev]);
       setSelectedId(newApp.id);
       setEditableCode(newApp.code);
       setActiveTab('preview');
       setPromptInput('');
+    } catch (e: any) {
+      console.error('[Synthesis Error]:', e);
     } finally {
       setIsSynthesizing(false);
       setSynthesisStage('');
@@ -1352,17 +1387,17 @@ export function AppSandboxStudio({
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-[var(--accent)] flex items-center gap-1">
                   <Sparkles size={12} />
-                  {isAr ? 'مولد الألعاب الفوري:' : 'Instant Game Synthesizer:'}
+                  {isAr ? 'مولد التطبيقات والأدوات والألعاب:' : 'Apps, Tools & Games Synthesizer:'}
                 </span>
-                <span className="text-[10px] text-[var(--muted)] font-mono">60 FPS WebGL/Canvas</span>
+                <span className="text-[10px] text-[var(--muted)] font-mono">Gemini 3.8 AI & HTML5</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {[
+                  { ar: '📋 لوحة مهام وإنتاجية', en: '📋 Task & Goal Board', p: 'برمج لي تطبيق لوحة مهام كانبان تفاعلي متقدم مع حفظ محلي وأولويات وتنبيهات وتصميم دارك فخم' },
+                  { ar: '🧮 حاسبة علمية ورسومية', en: '🧮 Scientific Calculator', p: 'برمج لي آلة حاسبة علمية متقدمة مع رسم بياني للدوال وسجل حسابات وأصوات تفاعلية' },
+                  { ar: '🎨 استوديو رسم كانفاس', en: '🎨 Canvas Paint Studio', p: 'برمج لي تطبيق استوديو رسم رقمي تفاعلي كامل مع فراشي متنوعة وتصدير صور PNG ولوحة ألوان' },
                   { ar: '🚀 فضاء 3D WebGL', en: '🚀 3D WebGL Flight', p: 'برمج لي لعبة طيران فضاء 3D WebGL تفاعلية مع حلقات نيون وسرعات فائقة ومؤثرات صوتية' },
-                  { ar: '👾 حرب سايبر DX', en: '👾 Cyber Shooter DX', p: 'برمج لعبة حرب طائرات سايبر 60fps مع رؤساء مراحل وترقية أسلحة ومؤثرات انفجار' },
-                  { ar: '🧱 بريك آوت نيون', en: '🧱 Neon Breakout', p: 'برمج لعبة تدمير قوالب نيون سنثوايف مع فيزياء ارتداد حقيقية وأصوات أربيجيو' },
-                  { ar: '🕹️ زنزانة روجلايك', en: '🕹️ Roguelike Dungeon', p: 'برمج لعبة مغامرات روجلايك بأبراج وغرف عشوائية وقتال بالسيوف مع ذكاء اصطناعي للأعداء' },
-                  { ar: '🌌 مختبر الجاذبية', en: '🌌 Gravity Physics Lab', p: 'برمج لي مختبر فيزياء فلكية وجاذبية تفاعلي مع حقول شمسية طاردة ومسارات مدارية' },
+                  { ar: '🧱 بريك آوت نيون DX', en: '🧱 Neon Breakout DX', p: 'برمج لعبة تدمير قوالب نيون سنثوايف مع فيزياء ارتداد حقيقية وأصوات أربيجيو ومؤثرات انفجار' },
                 ].map((chip, idx) => (
                   <button
                     key={idx}
@@ -1384,8 +1419,13 @@ export function AppSandboxStudio({
                   type="text"
                   value={promptInput}
                   onChange={(e) => setPromptInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handlePromptSubmit()}
-                  placeholder={isAr ? 'اطلب برمجة أي لعبة تفاعلية بدقة...' : 'Describe any 60fps game to generate...'}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handlePromptSubmit();
+                    }
+                  }}
+                  placeholder={isAr ? 'اطلب برمجة أي تطبيق أو أداة أو لعبة بدقة...' : 'Describe any app, tool or game to generate...'}
                   className="bg-transparent border-0 outline-none text-xs w-full text-[var(--text)] placeholder-[var(--muted)]"
                 />
                 <button
@@ -1610,6 +1650,7 @@ export function AppSandboxStudio({
                 }`}
               >
                 <iframe
+                  key={`${activeApp.id}-${editableCode.length}`}
                   ref={iframeRef}
                   srcDoc={editableCode}
                   title={activeApp.title}
@@ -1742,12 +1783,12 @@ export function AppSandboxStudio({
                   <span>{isAr ? 'أفكار سريعة:' : 'Quick Ideas:'}</span>
                 </span>
                 {[
-                  { ar: '🎮 لعبة قتال شوارع ومنصات 2D مع مؤثرات صوتية', en: '2D Platform Fighter Game' },
-                  { ar: '🏎️ محاكي سباق سيارات نيون وفيزياء انجراف', en: 'Neon Drift Racing Simulator' },
-                  { ar: '🌌 حرب نيازك ثلاثية الأبعاد 3D بالكانفاس', en: '3D Asteroid Space Combat' },
-                  { ar: '🧩 لعبة شطرنج ذكية مع ذكاء اصطناعي', en: 'Chess Game with AI' },
-                  { ar: '🎨 استوديو رسم رقمي وتصميم متقدم', en: 'Pro Digital Paint Studio' },
-                  { ar: '🧮 حاسبة علمية ورسومية بيانية متكاملة', en: 'Graphing Scientific Calculator' },
+                  { ar: '📋 لوحة مهام كانبان وإنتاجية', en: '📋 Kanban Task & Productivity Board' },
+                  { ar: '🧮 حاسبة علمية ورسوم بيانية', en: '🧮 Graphing Scientific Calculator' },
+                  { ar: '🎨 استوديو رسم رقمي وتصميم', en: '🎨 Pro Digital Paint Studio' },
+                  { ar: '⏱️ مؤقت بومودورو وتقويم عادات', en: '⏱️ Pomodoro Habit Tracker' },
+                  { ar: '🎮 لعبة قتال شوارع ومنصات 2D', en: '🎮 2D Platform Fighter Game' },
+                  { ar: '🏎️ محاكي سباق سيارات نيون', en: '🏎️ Neon Drift Racing Simulator' },
                 ].map((chip, idx) => (
                   <button
                     key={idx}
@@ -1778,19 +1819,31 @@ export function AppSandboxStudio({
                     onChange={(e) => setPromptInput(e.target.value)}
                     placeholder={
                       isAr
-                        ? 'اكتب طلبك بالتفصيل (مثل: برمج لي لعبة طائرات مع رؤساء مراحل وأسلحة مطورة)...'
-                        : 'Describe your game or app in detail (e.g. Build an aircraft shooter with boss fights)...'
+                        ? 'اكتب طلبك بالتفصيل (مثل: برمج لي تطبيق إدارة مهام، أداة حسابات، أو لعبة أركيد)...'
+                        : 'Describe your app, tool or game in detail (e.g. Build a task manager, calculation tool, or arcade game)...'
                     }
                     className="bg-transparent border-0 outline-none w-full text-xs text-[var(--text)] placeholder-[var(--muted)]"
                   />
                 </div>
                 <button
                   type="submit"
-                  disabled={!promptInput.trim()}
+                  disabled={!promptInput.trim() || isSynthesizing}
                   className="px-4 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-[var(--accent-glow)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
-                  <Send size={13} className={isAr ? 'rotate-180' : ''} />
-                  <span>{isAr ? 'توليد بالذكاء الاصطناعي' : 'Generate with AI'}</span>
+                  {isSynthesizing ? (
+                    <RefreshCw size={13} className="animate-spin" />
+                  ) : (
+                    <Send size={13} className={isAr ? 'rotate-180' : ''} />
+                  )}
+                  <span>
+                    {isSynthesizing
+                      ? isAr
+                        ? 'جاري البرمجة والتوليد...'
+                        : 'Generating...'
+                      : isAr
+                      ? 'توليد بالذكاء الاصطناعي'
+                      : 'Generate with AI'}
+                  </span>
                 </button>
               </form>
             </div>

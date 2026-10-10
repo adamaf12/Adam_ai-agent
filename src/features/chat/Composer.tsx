@@ -972,7 +972,7 @@ export function Composer({
       {/* Clean & Minimalist Creator Signature */}
       <div className="flex items-center justify-between mt-1.5 px-3 text-[11px] text-[var(--muted)] select-none">
         <span className="font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-          <span>{isAr ? 'ADEM • هندسة وبرمجة : أدم فيدات' : 'ADEM • Engineered by : Adam Feidat'}</span>
+          <span>{isAr ? 'ADEM • هندسة وبرمجة : آدم فيدات' : 'ADEM • Engineered by : Adem Feidat'}</span>
           <span aria-hidden="true">·</span>
           <span className="text-cyan-400 font-normal hidden sm:inline flex items-center gap-1">
             <Globe size={10} />

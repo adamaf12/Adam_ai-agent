@@ -1,7 +1,40 @@
 import { Router, type Request, type Response } from 'express';
 import { dockerSandboxService, type SandboxExecutionRequest } from './dockerSandboxService';
+import { AppGeneratorEngine } from './appGeneratorEngine';
 
 export const sandboxRouter = Router();
+
+/**
+ * POST /api/sandbox/generate-app
+ * Generates a full interactive HTML5/CSS/JS application or game using Gemini 3.8 Flash
+ */
+sandboxRouter.post('/generate-app', async (req: Request, res: Response) => {
+  try {
+    const { prompt, category, language } = req.body || {};
+    const apiKeyHeader = req.headers['x-gemini-api-key'] as string;
+
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      res.status(400).json({
+        ok: false,
+        error: 'PROMPT_REQUIRED',
+        message: 'The prompt parameter is required.',
+      });
+      return;
+    }
+
+    const app = await AppGeneratorEngine.generateApp({
+      prompt: prompt.trim(),
+      category,
+      language: language === 'en' ? 'en' : 'ar',
+      apiKey: apiKeyHeader,
+    });
+
+    res.json({ ok: true, app });
+  } catch (err: any) {
+    console.error('[Sandbox Generate App Error]:', err);
+    res.status(500).json({ ok: false, error: err.message || 'Failed to generate application.' });
+  }
+});
 
 /**
  * GET /api/sandbox/docker/status

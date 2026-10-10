@@ -850,7 +850,7 @@ export function Chat({
                 <span className="font-bold text-[var(--text)] tracking-wider">ADEM AI 4.0</span>
                 <span aria-hidden="true">·</span>
                 <span className="text-[var(--accent)] font-sans font-semibold">
-                  {language === 'ar' ? 'هندسة وبرمجة أدم فيدات' : 'Engineered by Adam Feidat'}
+                  {language === 'ar' ? 'هندسة وبرمجة: آدم فيدات' : 'Engineered by: Adem Feidat'}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span className="text-cyan-400 font-sans flex items-center gap-1 font-medium">

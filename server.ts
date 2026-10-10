@@ -1363,19 +1363,12 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
     for (const currentModel of candidateModels) {
       if (aborted || res.writableEnded || res.destroyed) break;
 
-      // Multi-Agent tools configuration: Gemini API allows either googleSearch OR functionDeclarations, not both in the same call
-      const isExplicitSearch = /(?:ابحث|بحث|أخبار|اخبار|من هو|من هي|ماهو|ماهي|ما هو|ما هي|كم سعر|سعر|نتائج|search|google|lookup|find|who is|what is|latest|current price|weather)/i.test(userPrompt);
+      // Ensure answers are always connected to the live internet with real-time Google search grounding
       const canTrySearch = searchCircuitBreaker.isAvailable() && !isToday;
-      const configsToTry = (isExplicitSearch && canTrySearch)
+      const configsToTry = canTrySearch
         ? [
             { ...baseConfig, tools: [{ googleSearch: {} }] },
             { ...baseConfig, tools: AGENT_ACTION_TOOLS },
-            baseConfig,
-          ]
-        : canTrySearch
-        ? [
-            { ...baseConfig, tools: AGENT_ACTION_TOOLS },
-            { ...baseConfig, tools: [{ googleSearch: {} }] },
             baseConfig,
           ]
         : [

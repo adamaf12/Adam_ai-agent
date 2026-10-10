@@ -27,7 +27,12 @@ export function setupLiveApiWebSocket(server: http.Server) {
   });
 
   wss.on('connection', async (clientWs: WebSocket, request: http.IncomingMessage) => {
-    const apiKey = secretsManager.getGeminiApiKey();
+    const url = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+    const requestedVoice = url.searchParams.get('voice') || 'Zephyr';
+    const queryApiKey = url.searchParams.get('apiKey');
+    const headerApiKey = request.headers['x-gemini-api-key'] as string | undefined;
+    const apiKey = queryApiKey || headerApiKey || secretsManager.getGeminiApiKey();
+
     if (!apiKey) {
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.send(
@@ -45,9 +50,6 @@ export function setupLiveApiWebSocket(server: http.Server) {
     let session: any = null;
 
     try {
-      const url = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
-      const requestedVoice = url.searchParams.get('voice') || 'Zephyr';
-
       const ai = new GoogleGenAI({ apiKey });
       session = await ai.live.connect({
         model: 'gemini-3.8-live',
@@ -56,8 +58,14 @@ export function setupLiveApiWebSocket(server: http.Server) {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: requestedVoice } },
           },
-          systemInstruction:
-            'You are ADEM (آدم), an advanced, high-speed executive AI assistant. Be direct, natural, conversational, and energetic. Respond smoothly in the language spoken by the user (Arabic, English, French, etc.). Keep responses concise and audible for natural live conversation.',
+          systemInstruction: {
+            parts: [
+              {
+                text: 'You are ADEM (آدم), an advanced, high-speed executive AI assistant. Be direct, natural, conversational, and energetic. Respond smoothly in the language spoken by the user (Arabic, English, French, etc.). Keep responses concise and audible for natural live conversation.',
+              },
+            ],
+          },
+          outputAudioTranscription: {},
         },
         callbacks: {
           onmessage: (message: LiveServerMessage) => {

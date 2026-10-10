@@ -19,7 +19,6 @@ import {
   Camera,
   Layers,
   ChevronDown,
-  ExternalLink,
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
 
@@ -168,6 +167,23 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
     return audioBuffer;
   };
 
+  // Gracefully creates or resumes 24kHz AudioContext on any user interaction
+  const ensureAudioContext = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!outputAudioCtxRef.current || outputAudioCtxRef.current.state === 'closed') {
+        outputAudioCtxRef.current = new AudioCtx({ sampleRate: 24000 });
+        nextStartTimeRef.current = outputAudioCtxRef.current.currentTime;
+      }
+      if (outputAudioCtxRef.current.state === 'suspended') {
+        outputAudioCtxRef.current.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[AudioContext unlock warning]', e);
+    }
+    return outputAudioCtxRef.current;
+  }, []);
+
   // Schedule AudioBuffer for gapless playback
   const playAudioChunk = useCallback(
     (base64Audio: string) => {
@@ -215,6 +231,7 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
 
   // Initialize or Request Microphone Stream gracefully without breaking live session
   const initMicrophone = useCallback(async (): Promise<boolean> => {
+    ensureAudioContext();
     setIsRequestingMic(true);
     setMicErrorMessage(null);
 
@@ -457,24 +474,25 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
         setStatus((s) => (s === 'connected' ? 'idle' : s));
       };
 
-      // 3. Only auto-initialize microphone if permission was already granted previously
+      // 3. Check microphone permission state gracefully without prematurely blocking the user
       try {
         if (navigator.permissions && navigator.permissions.query) {
           const p = await navigator.permissions.query({ name: 'microphone' as PermissionName });
           setMicPermissionState(p.state as any);
           if (p.state === 'granted') {
             await initMicrophone();
-          } else {
+          } else if (p.state === 'denied') {
             setMicPermissionDenied(true);
-            if (p.state === 'denied') {
-              setShowPermissionGuide(true);
-            }
+            setShowPermissionGuide(true);
+          } else {
+            setMicPermissionDenied(false);
+            setShowPermissionGuide(false);
           }
         } else {
-          setMicPermissionDenied(true);
+          setMicPermissionDenied(false);
         }
       } catch {
-        setMicPermissionDenied(true);
+        setMicPermissionDenied(false);
       }
     } catch (err: any) {
       console.warn('[Multimodal Live Startup Notice]', err?.message || err);
@@ -670,6 +688,7 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
   // Send realtime text prompt into the live session
   const handleSendText = (e: React.FormEvent) => {
     e.preventDefault();
+    ensureAudioContext();
     if (!textInput.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
     wsRef.current.send(
@@ -933,56 +952,9 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
           </div>
         </div>
 
-        {/* If inside iframe (AI Studio Preview Pane) */}
-        {!hasActiveMicStream && typeof window !== 'undefined' && window.self !== window.top && (
-          <div className="mx-3 sm:mx-5 mb-2.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-cyan-950/80 via-slate-900/90 to-purple-950/80 border-2 border-cyan-400/50 shadow-[0_0_30px_rgba(6,182,212,0.25)] flex flex-col gap-3 text-xs animate-fadeIn">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shrink-0">
-                <ExternalLink size={20} className="animate-pulse text-cyan-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-cyan-100 flex items-center gap-1.5 flex-wrap">
-                  <span>{isAr ? 'فتح في نافذة مستقلة لتشغيل الميكروفون' : 'Open in Standalone Tab for Microphone'}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                    {isAr ? 'موصى به' : 'Recommended'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                  {isAr
-                    ? 'متصفحات الهواتف (Chrome) تقيد الميكروفون داخل إطار المعاينة الداخلي. اضغط الزر أدناه لفتح التطبيق مباشرة في متصفحك وسيعمل الميكروفون فوراً بنقرة واحدة.'
-                    : 'Mobile browsers block microphone inside embedded preview iframes. Click below to open in your browser directly and talk with ADEM.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Huge Glowing 1-Click Launch Button */}
-            <a
-              href={`${window.location.origin}${window.location.pathname}?live=1`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 via-emerald-500 to-cyan-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 transition-all active:scale-95 cursor-pointer uppercase tracking-wider text-center no-underline"
-            >
-              <ExternalLink size={16} />
-              <span>{isAr ? '🚀 فتح التطبيق في نافذة مستقلة وتفعيل الصوت فوراً' : '🚀 Open in New Tab & Enable Mic Now'}</span>
-            </a>
-
-            <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[11px] text-slate-400">
-              <span>{isAr ? 'أو يمكنك التفاعل بالنص والكاميرا أدناه دون ميكروفون:' : 'Or type and use camera live below:'}</span>
-              <button
-                type="button"
-                onClick={initMicrophone}
-                disabled={isRequestingMic}
-                className="text-cyan-400 hover:text-cyan-300 underline font-semibold cursor-pointer"
-              >
-                {isRequestingMic ? (isAr ? 'جاري الفحص...' : 'Trying...') : (isAr ? 'تجربة طلب الإذن هنا' : 'Try permission here')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* If in Standalone / Full Browser Window */}
-        {!hasActiveMicStream && typeof window !== 'undefined' && window.self === window.top && (
-          <div className="mx-3 sm:mx-5 mb-2.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-purple-500/10 to-emerald-500/15 border border-emerald-500/35 shadow-lg flex flex-col gap-2.5 text-xs animate-fadeIn">
+        {/* Unified Microphone & Voice Activation Bar */}
+        {!hasActiveMicStream && (
+          <div className="mx-3 sm:mx-5 mb-2.5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-cyan-500/10 to-purple-500/15 border border-emerald-500/35 shadow-lg flex flex-col gap-2.5 text-xs animate-fadeIn">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start gap-2.5 text-emerald-200">
                 <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 mt-0.5 sm:mt-0">
@@ -993,8 +965,8 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
                     <span>
                       {showPermissionGuide || micPermissionState === 'denied'
                         ? isAr
-                          ? 'إذن الميكروفون محظور في إعدادات المتصفح'
-                          : 'Microphone Permission Blocked'
+                          ? 'إذن الميكروفون مقيد أو محظور'
+                          : 'Microphone Restricted'
                         : isAr
                         ? 'تفعيل الميكروفون للتحدث الصوتي المباشر'
                         : 'Enable Microphone for Live Voice'}
@@ -1003,8 +975,8 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
                   <p className="text-[11px] text-emerald-200/90 mt-0.5 leading-relaxed">
                     {micErrorMessage ||
                       (isAr
-                        ? 'انقر على الزر أدناه ليطلب المتصفح الإذن، ثم اضغط «سماح» (Allow) في النافذة المنبثقة للتحدث مع آدم.'
-                        : 'Click below to prompt your browser for permission, then choose "Allow" to talk with ADEM.')}
+                        ? 'انقر على الزر لتفعيل الميكروفون فوراً والتحدث بالصوت الحي مع آدم، أو اكتب استفسارك أدناه واستمع لصوته!'
+                        : 'Click below to activate microphone and talk live with ADEM, or type below to hear his voice!')}
                   </p>
                 </div>
               </div>
@@ -1012,7 +984,10 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
               {/* Primary Action Button */}
               <button
                 type="button"
-                onClick={initMicrophone}
+                onClick={() => {
+                  ensureAudioContext();
+                  initMicrophone();
+                }}
                 disabled={isRequestingMic}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 active:scale-95 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shrink-0 shadow-lg shadow-emerald-950/40"
               >
@@ -1020,15 +995,15 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
                 <span>
                   {isRequestingMic
                     ? isAr
-                      ? 'جاري طلب الإذن...'
-                      : 'Requesting...'
+                      ? 'جاري التفعيل...'
+                      : 'Activating...'
                     : showPermissionGuide || micPermissionState === 'denied'
                     ? isAr
-                      ? '🔄 إعادة المحاولة والتحقق'
-                      : '🔄 Retry & Verify'
+                      ? '🔄 إعادة محاولة الإذن'
+                      : '🔄 Retry Microphone'
                     : isAr
-                    ? '🎙️ السماح بالميكروفون والبدء'
-                    : '🎙️ Allow Microphone & Start'}
+                    ? '🎙️ تفعيل الميكروفون والبدء'
+                    : '🎙️ Enable Mic & Start'}
                 </span>
               </button>
             </div>
@@ -1037,12 +1012,12 @@ export function LiveVoiceModal({ isOpen, onClose, language }: LiveVoiceModalProp
               <div className="pt-2 border-t border-emerald-500/25 flex flex-col gap-1 text-[11px] text-slate-300">
                 <span className="font-semibold text-amber-300 flex items-center gap-1">
                   <AlertCircle size={13} />
-                  {isAr ? 'إذا لم يظهر مربع الحوار، قم بإلغاء الحظر يدوياً:' : 'If dialog does not appear, unblock manually:'}
+                  {isAr ? 'تلميح أذونات المتصفح:' : 'Browser Permission Tip:'}
                 </span>
                 <p className="text-slate-300/90 pr-1">
                   {isAr
-                    ? 'اضغط على أيقونة القفل 🔒 أعلى شريط عنوان المتصفح ➔ أذونات الموقع (Permissions) ➔ الميكروفون ➔ غيّرها إلى "سماح" (Allow)، ثم اضغط زر إعادة المحاولة.'
-                    : 'Tap the lock 🔒 icon in address bar > Permissions > Microphone > Allow, then tap Retry.'}
+                    ? 'إذا لم يطلب المتصفح الإذن، انقر فوق أيقونة القفل 🔒 في شريط عنوان المتصفح ➔ اسمح بالميكروفون، أو اكتب استفسارك في الخانة بالأسفل وسيرد آدم صوتياً فوراً.'
+                    : 'If permission prompt did not appear, allow microphone in your browser URL bar settings, or type your message below to hear ADEM live.'}
                 </p>
               </div>
             )}

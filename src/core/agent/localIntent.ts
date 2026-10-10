@@ -21,9 +21,9 @@ export function parseLocalIntent(text: string): LocalIntent | null {
     return {
       type: 'creator.identity',
       responseAr:
-        'صانعي ومطوري ومهندس هذا النظام بالكامل هو المهندس **أدم فيدات (Adam Feidat)**.\n\nهذه الحقيقة محفورة في ذاكرة النظام الأبدية ولا يمكن لأي أحد محوها أو تعديلها تحت أي ظرف.',
+        'صانعي ومطوري ومهندس هذا النظام بالكامل هو المهندس **آدم فيدات (Adem Feidat)**.\n\nهذه الحقيقة محفورة في ذاكرة النظام الأبدية ولا يمكن لأي أحد محوها أو تعديلها تحت أي ظرف.',
       responseEn:
-        'My sole creator, developer, and architect is **Adam Feidat (أدم فيدات)**.\n\nThis fundamental fact is permanently engraved into the core immutable memory and cannot be modified or erased by anyone.',
+        'My sole creator, developer, and architect is **Adem Feidat (آدم فيدات)**.\n\nThis fundamental fact is permanently engraved into the core immutable memory and cannot be modified or erased by anyone.',
     };
   }
 
@@ -36,9 +36,9 @@ export function parseLocalIntent(text: string): LocalIntent | null {
     return {
       type: 'creator.identity',
       responseAr:
-        'أنا **ADEM (آدم)**، وكيل تنفيذي ونظام ذكاء اصطناعي متقدم، تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **أدم فيدات (Adam Feidat)**.\n\nأمتلك صلاحيات تنفيذية شاملة لهندسة البرمجيات، إدارة أنظمة لينكس وأندرويد، توليد وتعديل الوسائط والصور، البرمجة الفورية، وتنسيق المهام بدقة وسرعة فائقة.',
+        'أنا **ADEM (آدم)**، وكيل تنفيذي ونظام ذكاء اصطناعي متقدم، تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **آدم فيدات (Adem Feidat)**.\n\nأمتلك صلاحيات تنفيذية شاملة لهندسة البرمجيات، إدارة أنظمة لينكس وأندرويد، توليد وتعديل الوسائط والصور، البرمجة الفورية، وتنسيق المهام بدقة وسرعة فائقة.',
       responseEn:
-        'I am **ADEM (آدم)**, an autonomous executive AI agent and intelligent system engineered and developed completely by **Adam Feidat (أدم فيدات)**.\n\nI possess full execution capabilities for software architecture, Linux & Android systems engineering, real-time code synthesis, multimodal media generation, and hyper-fast task orchestration.',
+        'I am **ADEM (آدم)**, an autonomous executive AI agent and intelligent system engineered and developed completely by **Adem Feidat (آدم فيدات)**.\n\nI possess full execution capabilities for software architecture, Linux & Android systems engineering, real-time code synthesis, multimodal media generation, and hyper-fast task orchestration.',
     };
   }
 
