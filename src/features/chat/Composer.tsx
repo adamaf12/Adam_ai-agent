@@ -1,35 +1,19 @@
 import {
-  BrainCircuit,
   Camera,
-  Check,
-  Code2,
-  Cpu,
-  FileCode,
-  Gamepad2,
-  Globe,
-  Languages,
   Loader2,
   Mic,
   MicOff,
-  Play,
-  Radio,
-  FileAudio,
   FileText,
-  MapPin,
   Paperclip,
-  Search,
   Send,
   Sparkles,
   Square,
-  Terminal,
   UploadCloud,
-  Wrench,
   X,
 } from 'lucide-react';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { copy } from '../../core/i18n';
 import { processImageFile, formatFileSize, type ProcessedImage } from '../../core/utils/imageUtils';
-import { TranslationModal } from '../translation/TranslationModal';
 
 export interface DialectOption {
   code: string;
@@ -94,11 +78,6 @@ export function Composer({
   const [processingFiles, setProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [listening, setListening] = useState(false);
-  const [showQuickModes, setShowQuickModes] = useState(false);
-  const [showDialects, setShowDialects] = useState(false);
-  const [showTranslateModal, setShowTranslateModal] = useState(false);
-  const [dialectTab, setDialectTab] = useState<'all' | 'arabic' | 'world'>('all');
-  const [dialectSearch, setDialectSearch] = useState('');
   const isAr = language === 'ar';
   const [voiceDialect, setVoiceDialect] = useState<string>(() => {
     return localStorage.getItem('adam_voice_dialect') || (isAr ? 'ar-DZ' : 'en-US');
@@ -114,22 +93,6 @@ export function Composer({
   const timerIntervalRef = useRef<any>(null);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
-
-  const filteredDialects = useMemo(() => {
-    return GLOBAL_DIALECTS.filter((d) => {
-      const isArabic = d.code.startsWith('ar-');
-      if (dialectTab === 'arabic' && !isArabic) return false;
-      if (dialectTab === 'world' && isArabic) return false;
-
-      if (!dialectSearch.trim()) return true;
-      const q = dialectSearch.toLowerCase().trim();
-      return (
-        d.label.toLowerCase().includes(q) ||
-        d.nativeName.toLowerCase().includes(q) ||
-        d.code.toLowerCase().includes(q)
-      );
-    });
-  }, [dialectTab, dialectSearch]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -486,19 +449,7 @@ export function Composer({
     if (e.target) e.target.value = '';
   };
 
-  const handleSelectDialect = (code: string) => {
-    setVoiceDialect(code);
-    try {
-      localStorage.setItem('adam_voice_dialect', code);
-    } catch {}
-    setShowDialects(false);
-  };
 
-  const insertPromptChip = (prefix: string) => {
-    setDraft((prev) => (prev ? `${prefix} ${prev}` : prefix));
-    setShowQuickModes(false);
-    textareaRef.current?.focus();
-  };
 
   return (
     <div
@@ -639,237 +590,6 @@ export function Composer({
         </div>
       )}
 
-      {/* Quick Developer & Creator Chips Drawer (Horizontal scroll for all phone widths) */}
-      {showQuickModes && (
-        <div className="flex items-center gap-2 mb-2.5 px-1 overflow-x-auto scrollbar-none py-0.5 animate-fadeIn select-none">
-          <button
-            type="button"
-            onClick={() => setShowDialects((prev) => !prev)}
-            className={`text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0 ${
-              showDialects
-                ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent)]'
-                : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border-[var(--border)]'
-            }`}
-          >
-            <Languages size={13} className="text-emerald-400" />
-            <span>
-              {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.flag}{' '}
-              {GLOBAL_DIALECTS.find((d) => d.code === voiceDialect)?.label.split(' ')[0] || (isAr ? 'اللهجة واللغة' : 'Dialect')}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'نفذ ذاتياً كوكيل مستقل (Agentic AI) وقم بالتخطيط واستدعاء الأدوات اللازمة والتحقق لـ: ' : 'Execute autonomously as an Agentic AI with tool calls & verification for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="ADEM Autonomous Agentic AI Execution"
-          >
-            <Cpu size={13} className="text-emerald-400" />
-            <span>{isAr ? '⚡ وكيل ذاتي (Agentic)' : '⚡ Agentic Mode'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'شغل كود في بيئة Sandbox المعزولة واعرض المخرجات: ' : 'Run code in the isolated sandbox environment: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="Live Sandbox Code Execution"
-          >
-            <Play size={13} className="text-blue-400" />
-            <span>{isAr ? 'تشغيل كود Sandbox' : 'Sandbox Run'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'نفذ أمر طرفية لينكس/أندرويد: ' : 'Run system terminal command: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0 font-mono"
-            title="Terminal Command Execution"
-          >
-            <Terminal size={13} className="text-emerald-400" />
-            <span>{isAr ? 'طرفية Terminal' : 'Terminal CLI'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'أنشئ ملفاً برمجياً كاملاً مع رابط تنزيل فوري لـ: ' : 'Create a complete downloadable file for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="Generate Downloadable File"
-          >
-            <FileCode size={13} className="text-amber-400" />
-            <span>{isAr ? 'إنشاء ملف 💾' : 'Create File 💾'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? '🔍 ابحث في Google وقدم أحدث معلومات حية مع المصادر لـ: ' : '🔍 Search Google for real-time live sources about: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="Google Search Grounding (gemini-3.5-flash)"
-          >
-            <Search size={13} className="text-cyan-400" />
-            <span>{isAr ? 'بحث حي Google 🔍' : 'Search Grounding 🔍'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? '📍 ابحث في خرائط Google عن أفضل الأماكن والتقييمات والروابط لـ: ' : '📍 Find Google Maps locations, ratings, and reviews for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="Google Maps Grounding (gemini-3.5-flash)"
-          >
-            <MapPin size={13} className="text-emerald-400" />
-            <span>{isAr ? 'خرائط Google 📍' : 'Maps Grounding 📍'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('adam:open-live-voice'))}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-            title="Multimodal Live API via WebSockets (ADEM-G 3.8 Live)"
-          >
-            <Radio size={13} className="text-purple-400 animate-pulse" />
-            <span>{isAr ? 'بث حي صوت ورؤية ⚡' : 'Multimodal Live ⚡'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'ترجم هذا الكلام باحترافية ودقة إلى الإنجليزية: ' : 'Translate this text accurately to Arabic: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-emerald-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <Languages size={13} className="text-emerald-400" />
-            <span>{isAr ? 'ترجمة فورية 🌐' : 'Translate 🌐'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'فكر بعمق استثنائي وحلل كل خطوة وقدم أدق حل علمي/برمجي لـ: ' : 'Think deeply step-by-step with ultra-high reasoning for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-violet-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <BrainCircuit size={13} className="text-violet-400" />
-            <span>{isAr ? 'تفكير عميق 🧠' : 'Deep Reasoning 🧠'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'برمج لي كود كامل بنسبة 100% لـ: ' : 'Write 100% complete production code for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <Code2 size={13} className="text-[var(--accent)]" />
-            <span>{isAr ? 'برمجة كود' : 'Write Code'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'اصنع لعبة تفاعلية HTML5 Canvas لـ: ' : 'Build a playable HTML5 Canvas game for: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <Gamepad2 size={13} className="text-cyan-400" />
-            <span>{isAr ? 'لعبة تفاعلية' : 'Interactive Game'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'افحص هذا الخطأ واشرح سببه وقدم الحل الجذري: ' : 'Analyze this error and provide the root cause fix: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <Wrench size={13} className="text-amber-400" />
-            <span>{isAr ? 'تصحيح أخطاء' : 'Debug Fix'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => insertPromptChip(isAr ? 'أنشئ صورة سينمائية فائقة الدقة 8K لـ: ' : 'Generate an 8K photorealistic visual of: ')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl sm:rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex-shrink-0"
-          >
-            <Sparkles size={13} className="text-purple-400" />
-            <span>{isAr ? 'توليد 8K' : '8K Visual'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Dialect / Language Selector Tray */}
-      {showDialects && (
-        <div className="mb-2.5 p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] animate-fadeIn shadow-2xl space-y-2.5">
-          <div className="flex items-center justify-between text-xs font-bold text-[var(--text)]">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <Globe size={14} />
-              <span>{isAr ? 'اختر لهجة الإملاء والحديث' : 'Select Voice & Dialect Accent'}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowDialects(false)}
-              className="text-[var(--muted)] hover:text-[var(--text)] text-xs font-medium cursor-pointer"
-            >
-              {isAr ? 'إغلاق' : 'Close'}
-            </button>
-          </div>
-
-          {/* Dialect Filter Tabs & Search */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex items-center gap-1 bg-[var(--surface)] p-0.5 rounded-xl border border-[var(--border)] flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setDialectTab('all')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                  dialectTab === 'all'
-                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
-                }`}
-              >
-                {isAr ? 'الكل' : 'All'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDialectTab('arabic')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                  dialectTab === 'arabic'
-                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
-                }`}
-              >
-                {isAr ? '🇩🇿 العربية واللهجات' : 'Arabic Dialects'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDialectTab('world')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                  dialectTab === 'world'
-                    ? 'bg-[var(--accent)] text-slate-950 shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
-                }`}
-              >
-                {isAr ? '🌍 لغات عالمية' : 'Global Languages'}
-              </button>
-            </div>
-
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={dialectSearch}
-                onChange={(e) => setDialectSearch(e.target.value)}
-                placeholder={isAr ? 'بحث في اللهجات واللغات...' : 'Filter dialects or countries...'}
-                className="w-full py-1 px-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
-              />
-              {dialectSearch && (
-                <button
-                  type="button"
-                  onClick={() => setDialectSearch('')}
-                  className={`absolute top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] text-xs ${isAr ? 'left-2' : 'right-2'}`}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Dialect Options Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
-            {filteredDialects.map((d) => (
-              <button
-                key={d.code}
-                type="button"
-                onClick={() => handleSelectDialect(d.code)}
-                className={`flex items-center justify-between gap-1 px-2.5 py-1.5 rounded-xl text-xs text-right transition cursor-pointer ${
-                  voiceDialect === d.code
-                    ? 'bg-[var(--accent)] text-slate-950 font-bold shadow-sm'
-                    : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text)] border border-[var(--border)]'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 truncate">
-                  <span>{d.flag}</span>
-                  <span className="truncate">{d.label}</span>
-                </div>
-                {voiceDialect === d.code && <Check size={12} className="flex-shrink-0" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Audio Recording / Transcription Status Pill (gemini-3.5-transcribe) */}
       {(isRecordingAudio || isTranscribing) && (
         <div className="flex items-center justify-between mb-2 px-3.5 py-2 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg text-xs animate-fadeIn">
@@ -935,54 +655,19 @@ export function Composer({
         </div>
       )}
 
-      {/* Main Luxury Composer Box */}
-      <div className="composer flex items-end gap-1 sm:gap-2 p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-2xl backdrop-blur-3xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_30px_var(--accent-glow)] w-full">
-        {/* Quick Power Tools Toggle */}
-        <button
-          type="button"
-          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            showQuickModes
-              ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-bold shadow-inner'
-              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
-          }`}
-          onClick={() => setShowQuickModes((prev) => !prev)}
-          aria-label="Toggle prompt tools"
-          title={isAr ? 'أدوات مساعدة سريعة' : 'Quick Prompt Tools'}
-        >
-          <Sparkles size={16} />
-        </button>
-
-        {/* Attach Image Button */}
-        <button
-          type="button"
-          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            images.length > 0
-              ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
-              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-          aria-label={isAr ? 'إرفاق صورة' : 'Attach Image'}
-          title={isAr ? 'إرفاق صورة' : 'Attach image'}
-          disabled={processingImages}
-        >
-          {processingImages ? (
-            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
-          ) : (
-            <Camera size={16} />
-          )}
-        </button>
-
+      {/* Main Luxury Streamlined Composer Box */}
+      <div className="composer flex items-end gap-1.5 p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-xl backdrop-blur-2xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_24px_var(--accent-glow)] w-full">
         {/* Attach Document / File Button */}
         <button
           type="button"
-          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             attachedFiles.length > 0
               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => documentInputRef.current?.click()}
-          aria-label={isAr ? 'إرفاق ملف أو مستند للدراسة' : 'Attach Document'}
-          title={isAr ? 'إرفاق ملف، نص، كود أو PDF للدراسة والتحليل' : 'Attach document, text, code or PDF'}
+          aria-label={isAr ? 'إرفاق ملف أو مستند' : 'Attach Document'}
+          title={isAr ? 'إرفاق ملف، مستند، كود أو PDF' : 'Attach document, code or PDF'}
           disabled={processingFiles}
         >
           {processingFiles ? (
@@ -992,22 +677,27 @@ export function Composer({
           )}
         </button>
 
-        {/* Dedicated Instant Translation Trigger Button (Desktop / Tablet) */}
+        {/* Attach Image Button */}
         <button
           type="button"
-          className={`hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            showTranslateModal
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
-              : 'text-[var(--muted)] hover:text-emerald-400 hover:bg-[var(--surface-2)]'
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
+            images.length > 0
+              ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
+              : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
-          onClick={() => setShowTranslateModal(true)}
-          aria-label={isAr ? 'ترجمة فورية للنصوص' : 'Universal Translation'}
-          title={isAr ? 'ترجمة النصوص إلى أي لغة' : 'Translate text to any language'}
+          onClick={() => fileInputRef.current?.click()}
+          aria-label={isAr ? 'إرفاق صورة' : 'Attach Image'}
+          title={isAr ? 'إرفاق صورة للتحليل البصري' : 'Attach image'}
+          disabled={processingImages}
         >
-          <Languages size={17} />
+          {processingImages ? (
+            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
+          ) : (
+            <Camera size={16} />
+          )}
         </button>
 
-        {/* Flexible Text Input Wrapper */}
+        {/* Flexible Text Input */}
         <div className="flex-1 min-w-0 w-full flex items-center py-0.5">
           <textarea
             ref={textareaRef}
@@ -1026,49 +716,24 @@ export function Composer({
                 ? isAr
                   ? 'جاري الاستماع بدقة...'
                   : 'Listening...'
-                : images.length > 0
+                : images.length > 0 || attachedFiles.length > 0
                 ? isAr
-                  ? 'اكتب رسالتك حول الصورة...'
-                  : 'Ask about the attached image...'
+                  ? 'اكتب سؤالك أو تعليماتك حول الملفات المرفقة...'
+                  : 'Ask about the attached files...'
                 : isAr
-                ? 'اكتب رسالتك هنا...'
-                : 'Type your message here...'
+                ? 'اكتب رسالتك أو اسأل عن أي موضوع...'
+                : 'Type your message or ask anything...'
             }
             rows={1}
             disabled={busy}
-            className="w-full bg-transparent border-0 outline-none text-[16px] sm:text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1 sm:py-1.5 px-1.5 sm:px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
+            className="w-full bg-transparent border-0 outline-none text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
           />
         </div>
 
-        {/* Hidden Audio File Input for gemini-3.5-transcribe */}
-        <input
-          ref={audioFileInputRef}
-          type="file"
-          accept="audio/*"
-          className="hidden"
-          onChange={handleAudioFileUpload}
-        />
-
-        {/* Audio File Upload for gemini-3.5-transcribe (Desktop / Tablet) */}
+        {/* Voice Input Microphone */}
         <button
           type="button"
-          className="hidden md:flex w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl items-center justify-center transition-all cursor-pointer shrink-0 text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]"
-          onClick={() => audioFileInputRef.current?.click()}
-          aria-label={isAr ? 'تفريغ ملف صوتي (gemini-3.5-transcribe)' : 'Transcribe Audio File (gemini-3.5-transcribe)'}
-          title={isAr ? 'رفع وتفريغ ملف صوتي بالذكاء الاصطناعي' : 'Upload & Transcribe Audio'}
-          disabled={isTranscribing}
-        >
-          {isTranscribing ? (
-            <Loader2 size={17} className="animate-spin text-cyan-400" />
-          ) : (
-            <FileAudio size={17} />
-          )}
-        </button>
-
-        {/* Voice Input Microphone (gemini-3.5-transcribe) */}
-        <button
-          type="button"
-          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
@@ -1076,15 +741,15 @@ export function Composer({
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
           onClick={toggleVoiceRecording}
-          aria-label={isAr ? 'تسجيل وتفريغ صوتي (gemini-3.5-transcribe)' : 'Transcribe Voice (gemini-3.5-transcribe)'}
+          aria-label={isAr ? 'تسجيل صوتي' : 'Voice Input'}
           title={
             isRecordingAudio
               ? isAr
-                ? `إيقاف التسجيل وتفريغ الكلام (${recordSeconds}s)`
-                : `Stop & Transcribe (${recordSeconds}s)`
+                ? `إيقاف التسجيل (${recordSeconds}s)`
+                : `Stop recording (${recordSeconds}s)`
               : isAr
-              ? 'تسجيل وتفريغ صوتي بدقة فائقة (gemini-3.5-transcribe)'
-              : 'Voice Recording & Transcription (gemini-3.5-transcribe)'
+              ? 'تسجيل وتفريغ صوتي فوري'
+              : 'Voice Recording & Transcription'
           }
         >
           {isRecordingAudio ? (
@@ -1097,46 +762,25 @@ export function Composer({
         {/* Send / Stop Action Button */}
         <button
           type="button"
-          className={`w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-lg touch-manipulation ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md touch-manipulation ${
             busy
               ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
-              : draft.trim() || images.length > 0
-              ? 'bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] active:scale-95'
+              : draft.trim() || images.length > 0 || attachedFiles.length > 0
+              ? 'bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] shadow-[0_0_18px_var(--accent-glow)] active:scale-95'
               : 'bg-[var(--surface-2)] text-[var(--muted)] opacity-50 cursor-not-allowed'
           }`}
           onClick={busy ? onStop : submit}
           aria-label={busy ? t.stop : t.send}
-          disabled={!busy && !draft.trim() && images.length === 0}
+          disabled={!busy && !draft.trim() && images.length === 0 && attachedFiles.length === 0}
         >
           {busy ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
         </button>
       </div>
 
-      {/* Clean & Minimalist Creator Signature */}
-      <div className="flex items-center justify-between mt-1.5 px-3 text-[11px] text-[var(--muted)] select-none">
-        <span className="font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
-          <span>{isAr ? 'ADEM • هندسة وبرمجة : آدم فيدات' : 'ADEM • Engineered by : Adem Feidat'}</span>
-          <span aria-hidden="true">·</span>
-          <span className="text-cyan-400 font-normal hidden sm:inline flex items-center gap-1">
-            <Globe size={10} />
-            <span>{isAr ? 'Google حي' : 'Google Grounded'}</span>
-          </span>
-        </span>
-        <span className="font-mono text-[10px] text-[var(--accent)] font-semibold">v4.0 Neural Executive</span>
+      {/* Minimalist Footnote */}
+      <div className="flex items-center justify-center mt-1 text-[10px] text-[var(--muted)] select-none">
+        <span>{isAr ? 'ADEM AI • هندسة وبرمجة: آدم فيدات' : 'ADEM AI • Engineered by: Adem Feidat'}</span>
       </div>
-
-      {/* Universal Fast Translation Modal */}
-      <TranslationModal
-        isOpen={showTranslateModal}
-        onClose={() => setShowTranslateModal(false)}
-        language={language}
-        initialText={draft}
-        onSendToChat={(translatedText) => {
-          setDraft(translatedText);
-          setShowTranslateModal(false);
-          textareaRef.current?.focus();
-        }}
-      />
     </div>
   );
 }

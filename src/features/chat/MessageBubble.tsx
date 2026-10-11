@@ -11,7 +11,6 @@ import { AgentActionCard } from './AgentActionCard';
 import { extractAgentActions } from '../../core/agent/ademDuoAutonomousAgent';
 import { extractAppCode, saveSandboxApp } from '../../core/appSandboxStorage';
 import { InteractiveAppCard } from './InteractiveAppCard';
-import { AcademicCard, type AcademicCardPayload } from './AcademicCard';
 import { MediaStudioCard, type MediaCardPayload } from './MediaStudioCard';
 import { CognitiveIqCard, type CognitiveIqCardPayload } from './CognitiveIqCard';
 import { GeospatialCard, type GeospatialCardPayload } from './GeospatialCard';
@@ -84,15 +83,6 @@ export function MessageBubble({
 
   // Check if message contains structured autonomous agent actions
   const agentActions = extractAgentActions(message.content);
-
-  // Check if message contains structured academic card payload
-  const academicMatch = message.content.match(/:::academic-card\s*([\s\S]*?)\s*:::/i);
-  let academicData: AcademicCardPayload | null = null;
-  if (academicMatch) {
-    try {
-      academicData = JSON.parse(academicMatch[1]);
-    } catch {}
-  }
 
   // Check if message contains structured media studio card payload
   const mediaMatch = message.content.match(/:::media-card\s*([\s\S]*?)\s*:::/i);
@@ -182,9 +172,7 @@ export function MessageBubble({
   if (agentActions.length > 0) {
     displayMarkdown = displayMarkdown.replace(/:::agent-action\s*[\s\S]*?\s*:::/gi, '').trim();
   }
-  if (academicMatch) {
-    displayMarkdown = displayMarkdown.replace(/:::academic-card\s*[\s\S]*?\s*:::/gi, '').trim();
-  }
+  displayMarkdown = displayMarkdown.replace(/:::academic-card\s*[\s\S]*?\s*:::/gi, '').trim();
   if (mediaMatch) {
     displayMarkdown = displayMarkdown.replace(/:::media-card\s*[\s\S]*?\s*:::/gi, '').trim();
   }
@@ -451,15 +439,6 @@ export function MessageBubble({
           />
         )}
 
-        {/* Dedicated Academic Intelligence Card (Formulas, Mistakes, Study Plans, Quizzes, Sources) */}
-        {academicData && (
-          <AcademicCard
-            data={academicData}
-            language={language}
-            onNavigateView={onNavigateView}
-          />
-        )}
-
         {/* Dedicated Media Studio Card (Palettes, SVG Vectors, Prompts, 3D specs) */}
         {mediaData && (
           <MediaStudioCard
@@ -722,7 +701,7 @@ export function MessageBubble({
                     {displayMarkdown}
                   </ReactMarkdown>
                 </div>
-              ) : !imageCardData && !agentActions.length && !academicData && !mediaData && !iqData && !geoData && !taskData && !translationData && !adkData && !adkPlanData && !appData ? (
+              ) : !imageCardData && !agentActions.length && !mediaData && !iqData && !geoData && !taskData && !translationData && !adkData && !adkPlanData && !appData ? (
                 <div className="flex items-center gap-2 text-xs text-[var(--muted)] py-1 select-none">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:-0.3s]" />

@@ -310,7 +310,7 @@ router.post('/media/gemini-image', mediaRateLimiter.middleware(), async (req: ex
     parts.push({ text: prompt.trim() });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
+      model: 'gemini-3.1-flash-lite-image',
       contents: { parts },
       config: {
         imageConfig: {
@@ -403,7 +403,7 @@ async function handleMediaGenerateImage(req: express.Request, res: express.Respo
     parts.push({ text: fullPrompt });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
+      model: 'gemini-3.1-flash-lite-image',
       contents: { parts },
       config: {
         imageConfig: {

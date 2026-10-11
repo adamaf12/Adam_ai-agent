@@ -11,6 +11,7 @@ export interface GeospatialCardPayload {
   landmarks?: string[];
   recommendedRoute?: string;
   googleMapsUrl?: string;
+  embedUrl?: string;
 }
 
 interface GeospatialCardProps {
@@ -25,6 +26,11 @@ export function GeospatialCard({ payload, language }: GeospatialCardProps) {
   const coordsText = payload.coordinates
     ? `${payload.coordinates.lat.toFixed(4)}, ${payload.coordinates.lng.toFixed(4)}`
     : '';
+
+  const envApiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY) || '';
+  const embedUrl = payload.embedUrl || (payload.origin && payload.destination
+    ? `https://www.google.com/maps/embed/v1/directions?key=${envApiKey || 'AIzaSyDemoKeyForMaps'}&origin=${encodeURIComponent(payload.origin)}&destination=${encodeURIComponent(payload.destination)}`
+    : `https://www.google.com/maps/embed/v1/search?key=${envApiKey || 'AIzaSyDemoKeyForMaps'}&q=${encodeURIComponent(payload.destination)}`);
 
   const copyCoords = () => {
     if (!coordsText) return;
@@ -53,7 +59,7 @@ export function GeospatialCard({ payload, language }: GeospatialCardProps) {
           <div>
             <span className="font-bold text-slate-100">{payload.destination}</span>
             <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-              <span>{isAr ? 'محرك الملاحة والذكاء الجغرافي' : 'Geospatial & Route Engine'}</span>
+              <span>{isAr ? 'محرك الملاحة والذكاء الجغرافي (Google Maps)' : 'Geospatial & Route Engine (Google Maps)'}</span>
             </div>
           </div>
         </div>
@@ -69,6 +75,19 @@ export function GeospatialCard({ payload, language }: GeospatialCardProps) {
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Interactive Google Maps Embed */}
+        <div className="w-full h-56 sm:h-64 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900 relative shadow-inner">
+          <iframe
+            title={payload.destination}
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            loading="lazy"
+            allowFullScreen
+            src={embedUrl}
+          />
+        </div>
+
         {/* Route Info Highlights */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
           {payload.estimatedDistance && (

@@ -885,17 +885,32 @@ CRITICAL RULES:
       try {
         const ai = new GoogleGenAI({ apiKey: params.apiKey });
         const validAspect = aspectRatio === '9:16' ? '9:16' : '16:9';
-        const operation = await ai.models.generateVideos({
-          model: 'veo-3.1-fast-generate-preview',
-          prompt: enhancement.enhancedPromptEn,
-          config: {
-            numberOfVideos: 1,
-            resolution: '720p',
-            aspectRatio: validAspect,
-          },
-        });
-        if (operation && operation.name) {
-          veoOperationName = operation.name;
+        try {
+          const operation = await ai.models.generateVideos({
+            model: 'veo-3.1-lite-generate-preview',
+            prompt: enhancement.enhancedPromptEn,
+            config: {
+              numberOfVideos: 1,
+              resolution: '720p',
+              aspectRatio: validAspect,
+            },
+          });
+          if (operation && operation.name) {
+            veoOperationName = operation.name;
+          }
+        } catch {
+          const opFast = await ai.models.generateVideos({
+            model: 'veo-3.1-fast-generate-preview',
+            prompt: enhancement.enhancedPromptEn,
+            config: {
+              numberOfVideos: 1,
+              resolution: '720p',
+              aspectRatio: validAspect,
+            },
+          });
+          if (opFast && opFast.name) {
+            veoOperationName = opFast.name;
+          }
         }
       } catch (veoErr) {
         console.warn('[MediaEngine] Google Veo generation warning, fallback to cinematic render:', veoErr);

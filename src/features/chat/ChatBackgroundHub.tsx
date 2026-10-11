@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  GraduationCap,
   Palette,
   Terminal,
   Gamepad2,
@@ -20,7 +19,6 @@ interface ChatBackgroundHubProps {
   language: 'ar' | 'en';
   onExecutePrompt: (prompt: string) => void;
   onNavigateView: (view: ViewId) => void;
-  onOpenAcademicModal?: () => void;
 }
 
 interface EngineInfo {
@@ -40,56 +38,17 @@ export function ChatBackgroundHub({
   language,
   onExecutePrompt,
   onNavigateView,
-  onOpenAcademicModal,
 }: ChatBackgroundHubProps) {
   const isAr = language === 'ar';
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('academic');
+  const [activeTab, setActiveTab] = useState<string>('media');
 
   const engines: EngineInfo[] = [
     {
-      id: 'academic',
-      nameAr: 'المرشد الأكاديمي والمكتبات',
-      nameEn: 'Academic & World Libraries',
-      viewId: 'chat',
-      icon: GraduationCap,
-      color: 'text-indigo-400',
-      bgLight: 'bg-indigo-500/10',
-      borderLight: 'border-indigo-500/30',
-      status: 'active',
-      quickActions: [
-        {
-          labelAr: 'كناش القوانين وصيغ الامتحانات',
-          labelEn: 'Scientific Formula Vault',
-          prompt: 'اعرض لي كناش أهم القوانين الرياضية والفيزيائية مع فخاخ الامتحانات والقواعد الذهبية',
-        },
-        {
-          labelAr: 'حل مسألة بالخطوات والبرهان',
-          labelEn: 'Proof & Step Solver',
-          prompt: 'حل لي مسألة علمية متقدمة خطوة بخطوة بالاستدلال المنطقي والتحليل البعدي',
-        },
-        {
-          labelAr: 'عيادة تشخيص الأخطاء وفخاخ الباك',
-          labelEn: 'Exam Traps & Mistake Clinic',
-          prompt: 'حلل لي أشهر أخطاء وفخاخ الامتحانات والبكالوريا مع الشفرات الذهبية لتفاديها',
-        },
-        {
-          labelAr: 'كويز تفاعلي فوري لتقييم الفهم',
-          labelEn: 'Instant Diagnostic Quiz',
-          prompt: 'اطرح علي كويز دراسي تفاعلي فوري مع خيارات متعددة وتفسير نموذجي للحل',
-        },
-        {
-          labelAr: 'أوراق بحثية ومصادر OpenAlex',
-          labelEn: 'OpenAlex Scholarly Papers',
-          prompt: 'ابحث لي في مصادر OpenAlex وDOAJ عن أحدث الأوراق البحثية المحكمة مفتوحة المصدر',
-        },
-      ],
-    },
-    {
       id: 'media',
-      nameAr: 'استوديو الميديا والمرئيات',
+      nameAr: 'استوديو الميديا والصور',
       nameEn: 'Media & Visual Studio',
-      viewId: 'chat',
+      viewId: 'media',
       icon: Palette,
       color: 'text-purple-400',
       bgLight: 'bg-purple-500/10',
@@ -293,24 +252,13 @@ export function ChatBackgroundHub({
               <span className="text-[10px] text-slate-500">({isAr ? 'مدمج في الخلفية' : 'Integrated Background Daemon'})</span>
             </div>
 
-            {currentEngine.id === 'academic' ? (
-              <button
-                type="button"
-                onClick={() => onOpenAcademicModal?.()}
-                className="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition-all cursor-pointer font-medium flex items-center gap-1"
-              >
-                <GraduationCap size={12} />
-                <span>{isAr ? 'فتح المكتبة والأكاديمية 🎓' : 'Open Academic Hub 🎓'}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onExecutePrompt(currentEngine.quickActions[0]?.prompt || currentEngine.nameAr)}
-                className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
-              >
-                {isAr ? 'تشغيل المحرك في الشات ⚡' : 'Run in Chat ⚡'}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onExecutePrompt(currentEngine.quickActions[0]?.prompt || currentEngine.nameAr)}
+              className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
+            >
+              {isAr ? 'تشغيل المحرك في الشات ⚡' : 'Run in Chat ⚡'}
+            </button>
           </div>
 
           {/* Quick 1-Click Action Chips */}

@@ -11,7 +11,6 @@ import {
   Check,
   Globe,
   Settings as SettingsIcon,
-  GraduationCap,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -118,21 +117,6 @@ const STUDIO_TABS: {
     iconColor: 'text-emerald-400',
     borderColor: 'border-emerald-500/40',
     glowAura: 'rgba(16, 185, 129, 0.35)',
-  },
-  {
-    id: 'academic',
-    icon: GraduationCap,
-    labelAr: 'الأكاديمية وعروض التخرج',
-    labelEn: 'Academic & Presentations',
-    descAr: 'مكتبات العالم، عروض التخرج PFE والمرافق الأكاديمي',
-    descEn: 'World Libraries, PFE Defenses & Academic Suite',
-    badgeAr: 'الأكاديمية',
-    badgeEn: 'Academic',
-    shortcut: 'Alt+5',
-    gradientClass: 'from-amber-500/25 via-yellow-500/15 to-transparent',
-    iconColor: 'text-amber-400',
-    borderColor: 'border-amber-500/40',
-    glowAura: 'rgba(245, 158, 11, 0.35)',
   },
 ];
 
@@ -610,43 +594,18 @@ export function AppShell({
           </div>
         </div>
 
-        {/* End Section: Live Status, New Chat, Live Voice, Language, Settings */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Google Live Grounding Badge */}
-          <div
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-semibold select-none shadow-2xs backdrop-blur-md"
-            title={isAr ? 'محرك ADEM متصل ببحث Google المباشر لحظياً لجميع الإجابات' : 'ADEM is live connected to Google Search for real-time answers'}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-            <Globe size={12} className="text-cyan-400" />
-            <span>{isAr ? 'Google حي' : 'Google Live'}</span>
-          </div>
-
+        {/* End Section: New Chat, Language, Settings */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* New Chat Quick Button */}
           <button
             type="button"
             onClick={handleStartNewChat}
-            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] hover:text-[var(--accent)] text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-2xs"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] hover:text-[var(--accent)] text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-2xs"
             title={isAr ? 'بدء محادثة جديدة (Alt+N)' : 'Start new chat (Alt+N)'}
             aria-label="New Chat"
           >
             <Plus size={14} className="text-[var(--accent)]" />
             <span className="hidden sm:inline">{isAr ? 'جديدة' : 'New'}</span>
-            <kbd className="hidden lg:inline text-[9px] font-mono text-[var(--muted)] bg-[var(--surface)] px-1 rounded border border-[var(--border)]">
-              Alt+N
-            </kbd>
-          </button>
-
-          {/* Live Voice Call Trigger */}
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 hover:border-emerald-400/50 transition-all cursor-pointer active:scale-95 text-xs font-semibold shadow-2xs"
-            onClick={() => setIsLiveVoiceOpen(true)}
-            title={isAr ? 'مكالمة صوتية تفاعلية حية' : 'Interactive Live Voice Call'}
-            aria-label="Live Voice"
-          >
-            <Radio size={14} className="text-emerald-400 animate-pulse" />
-            <span className="hidden lg:inline">{isAr ? 'صوت حي' : 'Live Voice'}</span>
           </button>
 
           {/* Language Switcher */}
@@ -654,7 +613,7 @@ export function AppShell({
             <button
               type="button"
               onClick={onToggleLanguage}
-              className="flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] text-[11px] font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+              className="flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] text-[11px] font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
               title={isAr ? 'Switch to English' : 'التحويل للعربية'}
               aria-label="Toggle Language"
             >
@@ -666,7 +625,7 @@ export function AppShell({
           <button
             type="button"
             onClick={() => onViewChange('settings')}
-            className={`flex items-center justify-center w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-2xs ${
+            className={`flex items-center justify-center w-8 h-8 rounded-xl border transition-all cursor-pointer active:scale-95 shadow-2xs ${
               activeView === 'settings'
                 ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent)]'
                 : 'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
@@ -693,6 +652,9 @@ export function AppShell({
           onDeleteConversation={handleDeleteConversation}
           onRenameConversation={handleRenameConversation}
           onOpenSettings={() => onViewChange('settings')}
+          onViewChange={onViewChange}
+          onOpenLiveVoice={() => setIsLiveVoiceOpen(true)}
+          activeView={activeView}
           memoryCount={memoryStats.total}
         />
 

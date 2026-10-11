@@ -3,16 +3,21 @@ import {
   Brain,
   Check,
   Edit2,
+  Film,
+  Gamepad2,
+  Languages,
   MessageSquare,
   PanelLeftClose,
   Plus,
+  Radio,
   Search,
   Settings2,
+  Sparkles,
   Trash2,
   X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { ChatConversation, Language } from '../core/domain';
+import type { ChatConversation, Language, ViewId } from '../core/domain';
 import { BrandMark } from './BrandMark';
 
 interface SidebarProps {
@@ -27,6 +32,9 @@ interface SidebarProps {
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
   onOpenSettings: () => void;
+  onViewChange?: (view: ViewId) => void;
+  onOpenLiveVoice?: () => void;
+  activeView?: ViewId;
   memoryCount?: number;
 }
 
@@ -42,6 +50,9 @@ export function Sidebar({
   onDeleteConversation,
   onRenameConversation,
   onOpenSettings,
+  onViewChange,
+  onOpenLiveVoice,
+  activeView = 'chat',
   memoryCount = 0,
 }: SidebarProps) {
   const isAr = language === 'ar';
@@ -148,6 +159,94 @@ export function Sidebar({
             </span>
           </button>
         </div>
+
+        {/* Studios & Navigation Links (كل أدوات النظام في الزر الجانبي) */}
+        {onViewChange && (
+          <div className="px-3 pb-2 space-y-1">
+            <div className="px-1 py-0.5 text-[10px] font-semibold tracking-wider text-[var(--muted)]">
+              {isAr ? 'الأدوات والاستوديوهات' : 'Studios & Tools'}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange('chat');
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start ${
+                  activeView === 'chat'
+                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                    : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <MessageSquare size={13} className="text-cyan-400 shrink-0" />
+                <span className="truncate">{isAr ? 'الدردشة الذكية' : 'Smart Chat'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange('apps');
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start ${
+                  activeView === 'apps'
+                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                    : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <Gamepad2 size={13} className="text-purple-400 shrink-0" />
+                <span className="truncate">{isAr ? 'التطبيقات' : 'Apps & Tools'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange('media');
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start ${
+                  activeView === 'media'
+                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                    : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <Film size={13} className="text-rose-400 shrink-0" />
+                <span className="truncate">{isAr ? 'استوديو الصور' : 'Media Studio'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange('translate');
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start ${
+                  activeView === 'translate'
+                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                    : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <Languages size={13} className="text-emerald-400 shrink-0" />
+                <span className="truncate">{isAr ? 'المترجم' : 'Translator'}</span>
+              </button>
+
+              {onOpenLiveVoice && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenLiveVoice();
+                    if (window.innerWidth < 1024) onClose();
+                  }}
+                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/20"
+                >
+                  <Radio size={13} className="text-emerald-400 animate-pulse shrink-0" />
+                  <span className="truncate">{isAr ? 'مكالمة صوتية' : 'Live Voice'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Search Input */}
         <div className="px-3 pb-2">

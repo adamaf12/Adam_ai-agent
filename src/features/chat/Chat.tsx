@@ -72,7 +72,6 @@ import { verifyAndCorrectResponse } from '../../core/agent/deterministicVerifier
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { InfiniteMemoryModal } from './InfiniteMemoryModal';
 import { ChatSessionDrawer } from './ChatSessionDrawer';
-import { ChatAcademicModal } from './ChatAcademicModal';
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
   if (intent.type === 'creator.identity') {
@@ -398,21 +397,17 @@ export function Chat({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
   const [isSessionDrawerOpen, setIsSessionDrawerOpen] = useState(false);
-  const [isAcademicModalOpen, setIsAcademicModalOpen] = useState(false);
   const [memoryStats, setMemoryStats] = useState(() => getInfiniteMemoryStats());
   const [heroCategory, setHeroCategory] = useState<'featured' | 'code' | 'search' | 'media' | 'linux' | 'identity'>('featured');
 
   useEffect(() => {
-    const handleOpenAcademic = () => setIsAcademicModalOpen(true);
     const handleOpenSession = () => {
       setMemoryStats(getInfiniteMemoryStats());
       setIsSessionDrawerOpen(true);
     };
 
-    window.addEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
     window.addEventListener('adam:open-session-drawer' as any, handleOpenSession);
     return () => {
-      window.removeEventListener('adam_open_academic_modal' as any, handleOpenAcademic);
       window.removeEventListener('adam:open-session-drawer' as any, handleOpenSession);
     };
   }, []);
@@ -833,101 +828,79 @@ export function Chat({
         )}
 
         {messages.length === 0 ? (
-          <div className="flex-1 my-auto max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-10 text-center flex flex-col items-center justify-center gap-5 sm:gap-6 animate-fadeIn select-none">
-            {/* Executive Identity Emblem */}
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="relative group">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-indigo-500/20 border border-cyan-500/30 text-[var(--accent)] flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-transform group-hover:scale-105 duration-300">
-                  <Sparkles size={28} className="text-cyan-400 drop-shadow-[0_0_12px_#22d3ee]" />
-                </div>
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[var(--bg)] flex items-center justify-center shadow-[0_0_8px_#34d399]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                </span>
+          <div className="flex-1 my-auto max-w-2xl mx-auto px-4 py-8 sm:py-12 text-center flex flex-col items-center justify-center gap-5 sm:gap-6 animate-fadeIn select-none">
+            {/* Minimalist Emblem */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-indigo-500/20 border border-cyan-500/30 text-[var(--accent)] flex items-center justify-center shadow-lg backdrop-blur-xl">
+                <Sparkles size={24} className="text-cyan-400" />
               </div>
-
-              {/* Immutable Creator & System Attribution Badge */}
-              <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[var(--muted)] font-mono">
-                <span className="font-bold text-[var(--text)] tracking-wider">ADEM AI 4.0</span>
-                <span aria-hidden="true">·</span>
-                <span className="text-[var(--accent)] font-sans font-semibold">
-                  {language === 'ar' ? 'هندسة وبرمجة: آدم فيدات' : 'Engineered by: Adem Feidat'}
-                </span>
-                <span aria-hidden="true">·</span>
-                <span className="text-cyan-400 font-sans flex items-center gap-1 font-medium">
-                  <Globe size={11} /> {language === 'ar' ? 'متصل ببحث Google الحي' : 'Google Live Grounded'}
-                </span>
-              </div>
+              <span className="text-xs font-mono text-[var(--muted)]">
+                {language === 'ar' ? 'ADEM AI • آدم فيدات' : 'ADEM AI • Adam Feidat'}
+              </span>
             </div>
 
-            {/* Headline and Narrative */}
-            <div className="space-y-1.5 max-w-xl">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text)] tracking-tight leading-tight">
-                {language === 'ar' ? 'ما هي المهمة التي تريد إنجازها؟' : 'What would you like to build today?'}
+            {/* Clean Welcoming Header */}
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text)] tracking-tight">
+                {language === 'ar' ? 'كيف يمكنني مساعدتك اليوم؟' : 'How can I help you today?'}
               </h1>
-              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto">
                 {language === 'ar'
-                  ? 'منظومة تنفيذية فائقة السرعة بلمح البصر — برمجة تطبيقات كاملة، توليد وسائط 8K، وأتمتة لينكس وسيرفرات.'
-                  : 'Sub-second executive AI — synthesizes full apps, 8K cinematic media, and automated system commands.'}
+                  ? 'اكتب طلبك مباشرة أو أرفق ملفات، صور، وأوامر برمجية لتحليلها فورياً.'
+                  : 'Type your prompt, attach files or images, or run live autonomous tasks.'}
               </p>
             </div>
 
-            {/* Interactive Domain Filter Tabs (Constitutional standard) */}
-            <div className="flex items-center gap-1 p-1 bg-[var(--surface-2)]/90 rounded-2xl border border-[var(--border)] max-w-full overflow-x-auto scrollbar-none shadow-xs">
+            {/* 4 Compact, Fast-Action Prompt Pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg mt-2">
               {[
-                { id: 'featured', labelAr: 'المميزة', labelEn: 'Featured', icon: Sparkles },
-                { id: 'code', labelAr: 'برمجة وألعاب', labelEn: 'Code & Apps', icon: Code },
-                { id: 'search', labelAr: 'بحث Google الحي', labelEn: 'Live Search', icon: Globe },
-                { id: 'media', labelAr: 'وسائط وفيديو 8K', labelEn: 'Media & 8K', icon: Film },
-                { id: 'linux', labelAr: 'لينكس والطرفية', labelEn: 'Linux & CLI', icon: Terminal },
-                { id: 'identity', labelAr: 'الصانع والهوية', labelEn: 'Identity', icon: ShieldCheck },
-              ].map((tab) => {
-                const TabIcon = tab.icon;
-                const isSelected = heroCategory === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setHeroCategory(tab.id as any)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
-                      isSelected
-                        ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs border border-[var(--border-strong)]'
-                        : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]/60'
-                    }`}
-                  >
-                    <TabIcon size={13} className={isSelected ? 'text-[var(--accent)]' : 'opacity-60'} />
-                    <span>{language === 'ar' ? tab.labelAr : tab.labelEn}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Dynamic Curated Executive Capability Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl text-start">
-              {HERO_PROMPT_CARDS[heroCategory].map((card, idx) => {
-                const Icon = card.icon;
+                {
+                  icon: Globe,
+                  labelAr: 'بحث Google الحي والمصادر',
+                  labelEn: 'Live Google Search Grounding',
+                  promptAr: 'ما هي أحدث أخبار وتطورات اليوم مع المصادر المباشرة؟',
+                  promptEn: 'What are today’s latest developments with verified web sources?',
+                  color: 'text-cyan-400',
+                },
+                {
+                  icon: Code,
+                  labelAr: 'برمجة تطبيق أو لعبة تفاعلية',
+                  labelEn: 'Build Interactive Web App',
+                  promptAr: 'برمج لي تطبيق ويب متجاوب وحديث بالكامل بنسبة 100% مع واجهة أنيقة',
+                  promptEn: 'Write a complete responsive production-ready web application with real state',
+                  color: 'text-purple-400',
+                },
+                {
+                  icon: FileSearch,
+                  labelAr: 'دراسة وتحليل ملف أو كود',
+                  labelEn: 'Analyze & Study Document',
+                  promptAr: 'حلل هذا الموضوع واشرح النقاط الجوهرية وقدم ملخصاً تطبيقياً دقيقاً',
+                  promptEn: 'Analyze this subject and provide key takeaways with an actionable summary',
+                  color: 'text-emerald-400',
+                },
+                {
+                  icon: Film,
+                  labelAr: 'توليد صور سينمائية 8K',
+                  labelEn: 'Cinematic 8K Imagery',
+                  promptAr: 'أنشئ صورة سينمائية فائقة الدقة 8K لمشهد مستقبلي مذهل بتوزيع إضاءة احترافي',
+                  promptEn: 'Generate an 8K photorealistic cinematic visual with volumetric lighting',
+                  color: 'text-rose-400',
+                },
+              ].map((item, idx) => {
+                const ItemIcon = item.icon;
                 return (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => send(language === 'ar' ? card.promptAr : card.promptEn)}
-                    className="group relative p-3 sm:p-3.5 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all duration-200 flex items-start gap-3 text-start cursor-pointer shadow-xs hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] active:scale-[0.99] select-none"
+                    onClick={() => send(language === 'ar' ? item.promptAr : item.promptEn)}
+                    className="p-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-all flex items-center gap-2.5 text-start cursor-pointer shadow-xs active:scale-[0.98] group"
                   >
-                    <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 ${card.iconClass}`}>
-                      <Icon size={16} />
+                    <div className="p-1.5 rounded-lg bg-[var(--surface-2)] shrink-0">
+                      <ItemIcon size={15} className={item.color} />
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors truncate">
-                          {language === 'ar' ? card.titleAr : card.titleEn}
-                        </span>
-                        <span className="text-[10px] font-mono opacity-0 group-hover:opacity-100 text-[var(--accent)] transition-opacity shrink-0">
-                          {language === 'ar' ? 'تشغيل ↵' : 'Run ↵'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[var(--muted)] line-clamp-2 mt-0.5 leading-relaxed">
-                        {language === 'ar' ? card.descAr : card.descEn}
-                      </p>
-                    </div>
+                    <span className="text-xs font-semibold text-[var(--text-secondary)] group-hover:text-[var(--text)] transition-colors truncate">
+                      {language === 'ar' ? item.labelAr : item.labelEn}
+                    </span>
                   </button>
                 );
               })}
@@ -1048,16 +1021,6 @@ export function Chat({
           setMemoryStats(getInfiniteMemoryStats());
         }}
         language={language}
-      />
-
-      {/* Integrated Academic & Scholarly Library Modal */}
-      <ChatAcademicModal
-        isOpen={isAcademicModalOpen}
-        onClose={() => setIsAcademicModalOpen(false)}
-        language={language}
-        onSendPrompt={(prompt) => {
-          send(prompt);
-        }}
       />
     </section>
   );
