@@ -28,9 +28,13 @@ export function GeospatialCard({ payload, language }: GeospatialCardProps) {
     : '';
 
   const envApiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY) || '';
-  const embedUrl = payload.embedUrl || (payload.origin && payload.destination
-    ? `https://www.google.com/maps/embed/v1/directions?key=${envApiKey || 'AIzaSyDemoKeyForMaps'}&origin=${encodeURIComponent(payload.origin)}&destination=${encodeURIComponent(payload.destination)}`
-    : `https://www.google.com/maps/embed/v1/search?key=${envApiKey || 'AIzaSyDemoKeyForMaps'}&q=${encodeURIComponent(payload.destination)}`);
+  const embedUrl = payload.embedUrl || (envApiKey
+    ? (payload.origin && payload.destination
+        ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(envApiKey)}&origin=${encodeURIComponent(payload.origin)}&destination=${encodeURIComponent(payload.destination)}`
+        : `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(envApiKey)}&q=${encodeURIComponent(payload.destination)}`)
+    : (payload.coordinates
+        ? `https://www.openstreetmap.org/export/embed.html?bbox=${payload.coordinates.lng - 0.05}%2C${payload.coordinates.lat - 0.05}%2C${payload.coordinates.lng + 0.05}%2C${payload.coordinates.lat + 0.05}&layer=mapnik&marker=${payload.coordinates.lat}%2C${payload.coordinates.lng}`
+        : ''));
 
   const copyCoords = () => {
     if (!coordsText) return;

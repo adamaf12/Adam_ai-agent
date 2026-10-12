@@ -15,7 +15,7 @@ import { startAndroidGoogleSignIn, signOutAndroidGoogle } from '../utils/permiss
 
 const resolvedConfig = {
   ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || 'AIzaSyAGiutifaCSS6W0rgsY7ko4BrPigR6dLBc',
+  apiKey: firebaseConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || '',
 };
 
 let app: FirebaseApp;

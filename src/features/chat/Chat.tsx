@@ -69,9 +69,47 @@ import {
 } from '../../core/agent/infiniteMemory';
 import { proactiveEngine, type ProactiveEvent } from '../../core/agent/proactiveEngine';
 import { verifyAndCorrectResponse } from '../../core/agent/deterministicVerifier';
+import { useGeneration, type GenerationTaskType } from '../../core/generation';
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { InfiniteMemoryModal } from './InfiniteMemoryModal';
 import { ChatSessionDrawer } from './ChatSessionDrawer';
+
+function classifyTaskType(prompt: string, routeIntent?: string, isAr = false): { taskType: GenerationTaskType; defaultStage: string; steps: number } {
+  const p = prompt.toLowerCase();
+  if (p.includes('صورة') || p.includes('رسم') || p.includes('ارسم') || p.includes('image') || p.includes('photo') || p.includes('flux') || p.includes('imagen')) {
+    return {
+      taskType: 'image',
+      defaultStage: isAr ? '1/3 جاري صياغة البرومبت والمعالجة البصرية بمحرك الصور…' : '1/3 Synthesizing prompt & diffusion pipeline…',
+      steps: 3,
+    };
+  }
+  if (p.includes('فيديو') || p.includes('video') || p.includes('veo') || p.includes('تحريك')) {
+    return {
+      taskType: 'video',
+      defaultStage: isAr ? '1/3 جاري معالجة الإطارات الحركية ومسار الكاميرا…' : '1/3 Synthesizing camera motion & video frames…',
+      steps: 3,
+    };
+  }
+  if (p.includes('لعبة') || p.includes('game') || p.includes('تطبيق') || p.includes('برمج') || p.includes('أكواد') || p.includes('app') || p.includes('code')) {
+    return {
+      taskType: 'game',
+      defaultStage: isAr ? '1/3 جاري بناء وتجهيز بيئة الأكواد والتطبيق التفاعلي…' : '1/3 Architecting interactive code & sandbox runtime…',
+      steps: 3,
+    };
+  }
+  if (routeIntent === 'web' || p.includes('بحث') || p.includes('search') || p.includes('google') || p.includes('أخبار')) {
+    return {
+      taskType: 'search',
+      defaultStage: isAr ? '1/3 جاري فحص واسترجاع النتائج الحية من فهرس Google…' : '1/3 Querying live Google Search index…',
+      steps: 3,
+    };
+  }
+  return {
+    taskType: 'chat',
+    defaultStage: isAr ? '1/3 جاري التحليل وصياغة الاستجابة…' : '1/3 Analyzing prompt & constructing verified response…',
+    steps: 3,
+  };
+}
 
 function localConfirmation(language: Language, intent: NonNullable<ReturnType<typeof parseLocalIntent>>, data: unknown) {
   if (intent.type === 'creator.identity') {
@@ -385,6 +423,7 @@ export function Chat({
   onSessionMetaChange?: (meta: { title: string; count: number }) => void;
   onNavigateView?: (view: ViewId, extraParam?: string) => void;
 }) {
+  const { isGenerating, startGeneration, updateStage, finishGeneration, cancelGeneration } = useGeneration();
   const [currentConversation, setCurrentConversation] = useState<ChatConversation>(() => loadConversation());
   const [conversations, setConversations] = useState<ChatConversation[]>(() => loadAllConversations());
   const [messages, setMessages] = useState<Message[]>(() => currentConversation.messages);
@@ -586,7 +625,7 @@ export function Chat({
   const send = async (text: string, images?: string[]) => {
     const turnStartTime = Date.now();
     const clean = text.trim();
-    if ((!clean && (!images || images.length === 0)) || busy) return;
+    if ((!clean && (!images || images.length === 0)) || busy || isGenerating) return;
     const user = createUserMessage(clean, images);
     const assistant = createAssistantMessage();
     const next = [...messages, user];
@@ -645,6 +684,16 @@ export function Chat({
 
     const abort = new AbortController();
     controller.current = abort;
+
+    const isAr = language === 'ar';
+    const taskMeta = classifyTaskType(clean, route.intent, isAr);
+    startGeneration({
+      taskType: taskMeta.taskType,
+      taskTitle: clean.length > 38 ? clean.slice(0, 38) + '…' : clean,
+      initialStage: taskMeta.defaultStage,
+      totalSteps: taskMeta.steps,
+      controller: abort,
+    });
     try {
       // Check for direct ADEM Autonomous Agent commands (Run code, terminal command, create file, task)
       const autonomousAction = checkAndExecuteDirectAutonomousCommand(clean, language);
@@ -742,6 +791,7 @@ export function Chat({
       }
 
       let streamedOutput = '';
+      updateStage(language === 'ar' ? '2/3 جاري استلام وتدقيق الاستجابة الحية…' : '2/3 Streaming verified response…', 60, 2);
       await client.send({ messages: messagesToSend, language, agentName, maxModels: route.intent === 'chat' ? 1 : 3 }, abort.signal, partial => {
         streamedOutput = partial;
         setResponse(current => current ? reduceResponseEvent(current, { type: 'delta', text: partial.slice(current.content.length) }) : current);
@@ -750,6 +800,7 @@ export function Chat({
       setResponse(current => current ? reduceResponseEvent(current, { type: 'done' }) : current);
 
       // 4. Deterministic Self-Verification Gate
+      updateStage(language === 'ar' ? '3/3 تدقيق الجودة وسلامة الاستجابة…' : '3/3 Verifying quality and facts…', 90, 3);
       const verification = verifyAndCorrectResponse(streamedOutput);
       const finalized = verification.verifiedText;
       if (verification.isModified) {
@@ -784,7 +835,15 @@ export function Chat({
         wasSuccess: true,
       });
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return;
+      if ((err as Error).name === 'AbortError') {
+        cancelGeneration(language === 'ar' ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Generation cancelled by user');
+        const cancelNote = language === 'ar'
+          ? '⏹️ **تم إلغاء التوليد بواسطة المستخدم.** تم تحرير حقل الإدخال بنجاح ويمكنك إرسال طلب جديد الآن.'
+          : '⏹️ **Generation cancelled by user.** Input has been unlocked, you can send a new request now.';
+        setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: cancelNote } : m));
+        return;
+      }
+      cancelGeneration();
       const failure = toUserFacingChatError(err);
       setResponse(current => current ? reduceResponseEvent(current, { type: 'error', code: failure.code, message: failure.message }) : current);
       setMessages(current => current.filter(m => m.id !== assistant.id));
@@ -793,10 +852,14 @@ export function Chat({
     } finally {
       setBusy(false);
       controller.current = null;
+      finishGeneration();
     }
   };
 
-  const stop = () => controller.current?.abort();
+  const stop = () => {
+    controller.current?.abort();
+    cancelGeneration(language === 'ar' ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user');
+  };
 
   const triggerVisionUpload = (promptPrefix?: string) => {
     window.dispatchEvent(

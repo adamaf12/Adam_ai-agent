@@ -25,7 +25,7 @@ import { AgentPermissionGuard } from './security/agentPermissions';
 import { costControlManager } from './security/costControl';
 import { secretsManager, redactSecrets } from './security/secrets';
 import { systemMonitor } from './security/monitoring';
-import { chatRateLimiter } from './security/rateLimiter';
+import { chatRateLimiter, agentRateLimiter } from './security/rateLimiter';
 import { buildRequestContract, formatRequestContract } from '../src/core/agent/requestUnderstanding';
 import { buildExecutionPlan, formatExecutionPlan } from '../src/core/agent/executionPlanner';
 import { AGENT_ACTION_TOOLS, executeAgentActionTool } from '../src/core/agent/toolExecution';
@@ -937,7 +937,7 @@ async function invokeWithRetry(
 }
 
 export function registerAgentRoute(app: Express, apiKey: string, model: string) {
-  app.post('/api/agent', chatRateLimiter.middleware(), async (req: Request, res: Response) => {
+  app.post('/api/agent', agentRateLimiter.middleware(), async (req: Request, res: Response) => {
     const body = (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {}) as AgentRequest;
     const requestId = getRequestId(req);
     const runId = `run_${requestId}`;

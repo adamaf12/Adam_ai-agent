@@ -43,6 +43,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import type { Language, ViewId } from '../../core/domain';
+import { useGeneration } from '../../core/generation';
+import { LiveProgressCard } from '../../components/LiveProgressCard';
 
 export type StudioTab = 'image' | 'video' | 'vector' | 'gallery';
 export type AspectRatio = '16:9' | '1:1' | '9:16' | '4:3' | '21:9' | '1:4' | '1:8' | '4:1' | '8:1';
@@ -324,6 +326,14 @@ const QUICK_OPTICAL_MODIFIERS = [
 
 export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaStudioProps) {
   const isAr = language === 'ar';
+  const {
+    isGenerating: globalIsGenerating,
+    startGeneration,
+    updateStage,
+    finishGeneration,
+    cancelGeneration,
+  } = useGeneration();
+  const abortRef = useRef<AbortController | null>(null);
   const [activeTab, setActiveTab] = useState<StudioTab>('image');
   const [selectedEngine, setSelectedEngine] = useState<MediaEngineChoice>('auto');
   const [prompt, setPrompt] = useState('');
@@ -597,10 +607,24 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
     }, 50);
   };
 
+  const activeGenerating = isGenerating || globalIsGenerating;
+
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || activeGenerating) return;
     setIsGenerating(true);
-    setGenerationStep(isAr ? 'تحليل النوايا الدلالية ومواءمة محركات الإخراج…' : 'Synthesizing prompt & routing pipeline…');
+    const initialMsg = isAr ? '1/3 تحليل النوايا الدلالية ومواءمة محركات الإخراج…' : '1/3 Synthesizing prompt & routing pipeline…';
+    setGenerationStep(initialMsg);
+
+    const abort = new AbortController();
+    abortRef.current = abort;
+    const taskType = activeTab === 'video' ? 'video' : activeTab === 'vector' ? 'vector' : 'image';
+    startGeneration({
+      taskType,
+      taskTitle: prompt.length > 36 ? prompt.slice(0, 36) + '…' : prompt,
+      totalSteps: 3,
+      initialStage: initialMsg,
+      controller: abort,
+    });
 
     try {
       const seedNum = customSeed.trim() ? Number(customSeed) : Math.floor(Math.random() * 999999);
@@ -623,7 +647,9 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
       ].filter(Boolean).join(', ');
 
       if (activeTab === 'image' && batchCount > 1) {
-        setGenerationStep(isAr ? `توليد ${batchCount} تنويعات بصرية متوازية عبر بذور انتشار مختلفة…` : `Synthesizing ${batchCount} parallel visual variations…`);
+        const batchMsg = isAr ? `2/3 توليد ${batchCount} تنويعات بصرية متوازية عبر بذور انتشار مختلفة…` : `2/3 Synthesizing ${batchCount} parallel visual variations…`;
+        setGenerationStep(batchMsg);
+        updateStage(batchMsg, 50, 2);
         const res = await fetch('/api/media/generate-variations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -635,9 +661,11 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
             engine: selectedEngine,
             opticalConfig,
           }),
+          signal: abort.signal,
         });
         const data = await res.json();
         if (data.ok && Array.isArray(data.items) && data.items.length > 0) {
+          updateStage(isAr ? '3/3 إنهاء ومعالجة الحزمة البصرية…' : '3/3 Finalizing variations batch…', 95, 3);
           setCurrentResult(data.items[0]);
           setVariationResults(data.items);
           fetchGallery();
@@ -684,26 +712,27 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
         };
       }
 
-      setTimeout(() => {
-        setGenerationStep(
-          activeTab === 'vector'
-            ? (isAr ? 'بناء المسارات الهندسية والتدرجات عبر Neural SVG…' : 'Synthesizing vector paths & gradients via Neural SVG…')
-            : activeTab === 'video'
-            ? (isAr ? 'محاكاة اللقطات الحركية وضبط الإضاءة والديناميكية عبر Veo 3…' : 'Rendering cinematic camera motion via Google Veo 3…')
-            : isImg2Img
-            ? (isAr ? 'معالجة الصورة المرجعية وتطبيق التعديل العصبي…' : 'Processing reference image & neural restyling…')
-            : (isAr ? `توليد الصورة بدقة فائقة عبر محرك ${selectedEngine}…` : `Synthesizing high-res textures via ${selectedEngine}…`)
-        );
-      }, 1000);
+      const secondStepMsg = activeTab === 'vector'
+        ? (isAr ? '2/3 بناء المسارات الهندسية والتدرجات عبر Neural SVG…' : '2/3 Synthesizing vector paths & gradients via Neural SVG…')
+        : activeTab === 'video'
+        ? (isAr ? '2/3 محاكاة اللقطات الحركية وضبط الإضاءة والديناميكية عبر Veo 3…' : '2/3 Rendering cinematic camera motion via Google Veo 3…')
+        : isImg2Img
+        ? (isAr ? '2/3 معالجة الصورة المرجعية وتطبيق التعديل العصبي…' : '2/3 Processing reference image & neural restyling…')
+        : (isAr ? `2/3 توليد الصورة بدقة فائقة عبر محرك ${selectedEngine}…` : `2/3 Synthesizing high-res textures via ${selectedEngine}…`);
+
+      setGenerationStep(secondStepMsg);
+      updateStage(secondStepMsg, 60, 2);
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: abort.signal,
       });
 
       const data = await res.json();
       if (data.ok && data.item) {
+        updateStage(isAr ? '3/3 إنهاء ومعالجة العمل وحفظه…' : '3/3 Finalizing output & caching…', 95, 3);
         if (isImg2Img && sourceImage) {
           setBeforeImage(sourceImage);
           setShowComparison(true);
@@ -712,11 +741,18 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
         setVariationResults([]);
         fetchGallery();
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Generation cancelled by user');
+        return;
+      }
+      cancelGeneration();
       console.warn('Generation failed:', e);
     } finally {
       setIsGenerating(false);
       setGenerationStep('');
+      abortRef.current = null;
+      finishGeneration();
     }
   };
 
@@ -1023,15 +1059,21 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
+                disabled={activeGenerating}
+                readOnly={activeGenerating}
                 placeholder={
-                  activeTab === 'vector'
+                  activeGenerating
+                    ? (isAr ? 'جاري تنفيذ وتوليد العمل البصري حالياً… يرجى الانتظار أو الإلغاء ⏳' : 'Visual generation currently running… please wait or cancel ⏳')
+                    : activeTab === 'vector'
                     ? (isAr ? 'مثال: شعار تقني مينيمالي لشركة ذكاء اصطناعي بخطوط هندسية متناسقة وتدرج ألوان متوهج…' : 'e.g. Minimalist cybernetic AI tech emblem with sleek gradients and clean geometric lines…')
                     : activeTab === 'video'
                     ? (isAr ? 'مثال: لقطة درون سينمائية FPV تندفع بسرعة بين أبراج مدينة ذكية مستقبلية في الليل مع أضواء النيون…' : 'e.g. Cinematic FPV drone swooping through futuristic skyscraper canyons at night with wet neon reflections…')
                     : (isAr ? 'مثال: صقر عربي ذهبي ملكي يحلق فوق رمال صحراء العلا عند الغروب مع إضاءة شمسية دافئة وعزل 85mm…' : 'e.g. Royal golden Arabian falcon soaring over sandstone dunes at sunset, 85mm lens, volumetric light…')
                 }
                 rows={3}
-                className="w-full p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition resize-none leading-relaxed"
+                className={`w-full p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-xs sm:text-sm text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition resize-none leading-relaxed ${
+                  activeGenerating ? 'cursor-not-allowed opacity-60 pointer-events-none' : ''
+                }`}
               />
 
               {/* Quick Modifiers */}
@@ -1482,12 +1524,28 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
               )}
             </div>
 
+            {/* Live Progress Indicator & Abort Action */}
+            {activeGenerating && (
+              <LiveProgressCard
+                language={language}
+                onCancel={() => {
+                  abortRef.current?.abort();
+                  cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Generation cancelled by user');
+                }}
+                className="mb-3"
+              />
+            )}
+
             {/* Main Action Button */}
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
-              className="w-full py-3.5 rounded-2xl bg-[var(--accent)] hover:opacity-90 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+              disabled={!prompt.trim() || activeGenerating}
+              className={`w-full py-3.5 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-[0.99] ${
+                activeGenerating
+                  ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80'
+                  : 'bg-[var(--accent)] hover:opacity-90 text-slate-950 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
             >
               {isGenerating ? (
                 <>

@@ -30,6 +30,8 @@ import {
   Terminal
 } from 'lucide-react';
 import type { Language } from '../../core/domain';
+import { useGeneration } from '../../core/generation';
+import { LiveProgressCard } from '../../components/LiveProgressCard';
 import { openSafeExternalUrl } from '../../core/utils/mobileWebHandler';
 import {
   loadSandboxApps,
@@ -1017,8 +1019,17 @@ export function AppSandboxStudio({
   const [promptInput, setPromptInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const {
+    isGenerating: globalIsGenerating,
+    startGeneration,
+    updateStage,
+    finishGeneration,
+    cancelGeneration,
+  } = useGeneration();
+  const abortRef = useRef<AbortController | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesisStage, setSynthesisStage] = useState('');
+  const activeSynthesizing = isSynthesizing || globalIsGenerating;
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const activeApp = useMemo(() => {
@@ -1039,13 +1050,29 @@ export function AppSandboxStudio({
 
   const handleSynthesizeDirectly = async (customPrompt?: string) => {
     const text = (customPrompt || promptInput).trim();
-    if (!text || isSynthesizing) return;
+    if (!text || activeSynthesizing) return;
     setIsSynthesizing(true);
+
+    const abort = new AbortController();
+    abortRef.current = abort;
+
+    const initialMsg = isAr ? '1/3 تحليل فكرة التطبيق وهندسة المتطلبات بالذكاء الاصطناعي…' : '1/3 Analyzing application specs & prompt architecture…';
+    setSynthesisStage(initialMsg);
+
+    startGeneration({
+      taskType: 'game',
+      taskTitle: text.length > 36 ? text.slice(0, 36) + '…' : text,
+      totalSteps: 3,
+      initialStage: initialMsg,
+      controller: abort,
+    });
+
     try {
-      setSynthesisStage(isAr ? 'تحليل فكرة التطبيق وهندسة المتطلبات بالذكاء الاصطناعي...' : 'Analyzing application specs & AI prompt architecture...');
       await new Promise((r) => setTimeout(r, 200));
 
-      setSynthesisStage(isAr ? 'هندسة بنية واجهة المستخدم HTML5 والأنماط البصرية...' : 'Architecting HTML5 layout & responsive CSS aesthetics...');
+      const stage2Msg = isAr ? '2/3 هندسة بنية واجهة المستخدم HTML5 والمنطق التفاعلي…' : '2/3 Architecting HTML5 layout & interactive script logic…';
+      setSynthesisStage(stage2Msg);
+      updateStage(stage2Msg, 55, 2);
 
       let newApp: SandboxApp | null = null;
 
@@ -1059,6 +1086,7 @@ export function AppSandboxStudio({
             category: categoryFilter !== 'all' ? categoryFilter : undefined,
             language: isAr ? 'ar' : 'en',
           }),
+          signal: abort.signal,
         });
 
         if (res.ok) {
@@ -1074,11 +1102,14 @@ export function AppSandboxStudio({
             };
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') throw err;
         console.warn('[Sandbox AI Server fallback]', err);
       }
 
-      setSynthesisStage(isAr ? 'برمجة المنطق التفاعلي وحقن محركات الصوت والأحداث...' : 'Compiling JavaScript logic, Web Audio & event listeners...');
+      const stage3Msg = isAr ? '3/3 حقن محركات الصوت والفيزياء وإنهاء بيئة التشغيل…' : '3/3 Injecting audio, physics & finalizing runtime…';
+      setSynthesisStage(stage3Msg);
+      updateStage(stage3Msg, 85, 3);
       await new Promise((r) => setTimeout(r, 200));
 
       // 2. Resilient procedural fallback if backend unreachable
@@ -1100,11 +1131,19 @@ export function AppSandboxStudio({
       setEditableCode(newApp.code);
       setActiveTab('preview');
       setPromptInput('');
+      updateStage(isAr ? 'تم البناء والتشغيل بنجاح!' : 'App built and ready!', 100, 3);
     } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Generation cancelled by user');
+        return;
+      }
+      cancelGeneration();
       console.error('[Synthesis Error]:', e);
     } finally {
       setIsSynthesizing(false);
       setSynthesisStage('');
+      abortRef.current = null;
+      finishGeneration();
     }
   };
 
@@ -1402,22 +1441,27 @@ export function AppSandboxStudio({
                   <button
                     key={idx}
                     type="button"
+                    disabled={activeSynthesizing}
                     onClick={() => {
                       setPromptInput(chip.p);
                       handleSynthesizeDirectly(chip.p);
                     }}
-                    className="px-2 py-0.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted)] hover:text-[var(--accent)] transition cursor-pointer"
+                    className={`px-2 py-0.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[10px] text-[var(--muted)] hover:text-[var(--accent)] transition cursor-pointer ${
+                      activeSynthesizing ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''
+                    }`}
                   >
                     {isAr ? chip.ar : chip.en}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)]">
+              <div className={`flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus-within:border-[var(--accent)] ${activeSynthesizing ? 'ring-1 ring-amber-500/30' : ''}`}>
                 <Sparkles size={14} className="text-[var(--accent)] flex-shrink-0 mx-1" />
                 <input
                   type="text"
                   value={promptInput}
+                  disabled={activeSynthesizing}
+                  readOnly={activeSynthesizing}
                   onChange={(e) => setPromptInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -1425,14 +1469,22 @@ export function AppSandboxStudio({
                       handlePromptSubmit();
                     }
                   }}
-                  placeholder={isAr ? 'اطلب برمجة أي تطبيق أو أداة أو لعبة بدقة...' : 'Describe any app, tool or game to generate...'}
-                  className="bg-transparent border-0 outline-none text-xs w-full text-[var(--text)] placeholder-[var(--muted)]"
+                  placeholder={
+                    activeSynthesizing
+                      ? (isAr ? 'جاري بناء وهندسة التطبيق… يرجى الانتظار أو الإلغاء ⏳' : 'Synthesizing application… please wait or cancel ⏳')
+                      : (isAr ? 'اطلب برمجة أي تطبيق أو أداة أو لعبة بدقة...' : 'Describe any app, tool or game to generate...')
+                  }
+                  className={`bg-transparent border-0 outline-none text-xs w-full text-[var(--text)] placeholder-[var(--muted)] ${activeSynthesizing ? 'cursor-not-allowed opacity-60' : ''}`}
                 />
                 <button
                   type="button"
                   onClick={() => handleSynthesizeDirectly()}
-                  disabled={!promptInput.trim() || isSynthesizing}
-                  className="p-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                  disabled={!promptInput.trim() || activeSynthesizing}
+                  className={`p-1.5 rounded-lg transition flex items-center gap-1 ${
+                    activeSynthesizing
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                      : 'bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 disabled:opacity-40 cursor-pointer'
+                  }`}
                   title={isAr ? 'توليد فوري' : 'Synthesize'}
                 >
                   <Send size={12} />
@@ -1617,20 +1669,22 @@ export function AppSandboxStudio({
 
           {/* Interactive Screen Display */}
           <div className="flex-1 overflow-hidden relative flex items-center justify-center p-2 sm:p-4 bg-[var(--bg)]">
-            {isSynthesizing && (
+            {activeSynthesizing && (
               <div className="absolute inset-0 z-50 bg-[var(--bg)]/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--accent)] to-purple-600 flex items-center justify-center text-white shadow-2xl shadow-[var(--accent-glow)] mb-4 animate-bounce">
                   <Gamepad2 size={32} />
                 </div>
-                <h3 className="text-base font-black text-[var(--text)] mb-2">
-                  {isAr ? 'جاري هندسة وبناء اللعبة 60FPS...' : 'Synthesizing 60FPS Game Architecture...'}
+                <h3 className="text-base font-black text-[var(--text)] mb-3">
+                  {isAr ? 'جاري هندسة وبناء اللعبة والتطبيق 60FPS…' : 'Synthesizing 60FPS Interactive Sandbox…'}
                 </h3>
-                <p className="text-xs font-mono text-[var(--accent)] animate-pulse max-w-sm mb-4">
-                  ⚡ {synthesisStage}
-                </p>
-                <div className="w-64 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[var(--accent)] to-purple-500 rounded-full animate-pulse w-3/4" />
-                </div>
+                <LiveProgressCard
+                  language={language}
+                  onCancel={() => {
+                    abortRef.current?.abort();
+                    cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Generation cancelled by user');
+                  }}
+                  className="w-full max-w-md shadow-2xl mb-2"
+                />
               </div>
             )}
 

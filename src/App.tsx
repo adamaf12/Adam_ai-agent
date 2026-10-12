@@ -18,6 +18,7 @@ import { InAppBrowserModal } from './components/InAppBrowserModal';
 import { AuthModal } from './components/AuthModal';
 import { AgenticLogin } from './features/auth/AgenticLogin';
 import { openSafeExternalUrl, setupAndroidBackGuard } from './core/utils/mobileWebHandler';
+import { GenerationProvider } from './core/generation';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
   agentName: 'Adam',
@@ -171,127 +172,128 @@ export default function App() {
   }
 
   return (
-    <AppShell
-      activeView={activeView}
-      language={preferences.language}
-      agentName={preferences.agentName}
-      onViewChange={setActiveView}
-      onNewChat={handleNewChat}
-      onToggleLanguage={() =>
-        updatePreferences({ language: preferences.language === 'ar' ? 'en' : 'ar' })
-      }
-      sessionTitle={sessionMeta.title}
-      conversationCount={sessionMeta.count}
-      onOpenSessionDrawer={handleOpenSessionDrawer}
-      onOpenAuth={() => setLoginExperienceOpen(true)}
-    >
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={activeView}
-          initial={{ opacity: 0, y: 8, filter: 'blur(2px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -6, filter: 'blur(2px)' }}
-          transition={{
-            duration: 0.2,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          className="view-transition-wrapper h-full w-full flex flex-col flex-1 min-h-0 overflow-hidden"
-        >
-          {activeView === 'chat' && (
-            <Chat
-              key={`${preferences.language}-${preferences.agentName}-${chatSessionKey}`}
-              language={preferences.language}
-              agentName={preferences.agentName}
-              copy={heroCopy}
-              onNewChat={handleNewChat}
-              onToggleLanguage={() =>
-                updatePreferences({ language: preferences.language === 'ar' ? 'en' : 'ar' })
-              }
-              onOpenSandbox={(appId) => {
-                setSelectedSandboxAppId(appId);
-                setActiveView('apps');
-              }}
-              onSessionMetaChange={handleSessionMetaChange}
-              onNavigateView={(view, extraParam) => {
-                if (extraParam) {
-                  setSelectedSandboxAppId(extraParam);
+    <GenerationProvider>
+      <AppShell
+        activeView={activeView}
+        language={preferences.language}
+        agentName={preferences.agentName}
+        onViewChange={setActiveView}
+        onNewChat={handleNewChat}
+        onToggleLanguage={() =>
+          updatePreferences({ language: preferences.language === 'ar' ? 'en' : 'ar' })
+        }
+        sessionTitle={sessionMeta.title}
+        conversationCount={sessionMeta.count}
+        onOpenSessionDrawer={handleOpenSessionDrawer}
+        onOpenAuth={() => setLoginExperienceOpen(true)}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeView}
+            initial={{ opacity: 0, y: 8, filter: 'blur(2px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -6, filter: 'blur(2px)' }}
+            transition={{
+              duration: 0.2,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="view-transition-wrapper h-full w-full flex flex-col flex-1 min-h-0 overflow-hidden"
+          >
+            {activeView === 'chat' && (
+              <Chat
+                key={`${preferences.language}-${preferences.agentName}-${chatSessionKey}`}
+                language={preferences.language}
+                agentName={preferences.agentName}
+                copy={heroCopy}
+                onNewChat={handleNewChat}
+                onToggleLanguage={() =>
+                  updatePreferences({ language: preferences.language === 'ar' ? 'en' : 'ar' })
                 }
-                setActiveView(view);
-              }}
-            />
-          )}
+                onOpenSandbox={(appId) => {
+                  setSelectedSandboxAppId(appId);
+                  setActiveView('apps');
+                }}
+                onSessionMetaChange={handleSessionMetaChange}
+                onNavigateView={(view, extraParam) => {
+                  if (extraParam) {
+                    setSelectedSandboxAppId(extraParam);
+                  }
+                  setActiveView(view);
+                }}
+              />
+            )}
 
-          {activeView === 'settings' && (
-            <Settings
-              language={preferences.language}
-              preferences={preferences}
-              onChange={updatePreferences}
-            />
-          )}
+            {activeView === 'settings' && (
+              <Settings
+                language={preferences.language}
+                preferences={preferences}
+                onChange={updatePreferences}
+              />
+            )}
 
-          {activeView === 'apps' && (
-            <AppSandboxStudio
-              language={preferences.language}
-              initialAppId={selectedSandboxAppId}
-              onNavigateToChat={(_prompt) => {
-                setActiveView('chat');
-              }}
-            />
-          )}
+            {activeView === 'apps' && (
+              <AppSandboxStudio
+                language={preferences.language}
+                initialAppId={selectedSandboxAppId}
+                onNavigateToChat={(_prompt) => {
+                  setActiveView('chat');
+                }}
+              />
+            )}
 
-          {activeView === 'translate' && (
-            <TranslatorStudio
-              language={preferences.language}
-              onNavigateToChat={(_prompt) => {
-                setActiveView('chat');
-              }}
-            />
-          )}
+            {activeView === 'translate' && (
+              <TranslatorStudio
+                language={preferences.language}
+                onNavigateToChat={(_prompt) => {
+                  setActiveView('chat');
+                }}
+              />
+            )}
 
-          {activeView === 'adk' && (
-            <GoogleAdkStudio
-              language={preferences.language}
-              onNavigateToChat={(_prompt) => {
-                setActiveView('chat');
-              }}
-            />
-          )}
+            {activeView === 'adk' && (
+              <GoogleAdkStudio
+                language={preferences.language}
+                onNavigateToChat={(_prompt) => {
+                  setActiveView('chat');
+                }}
+              />
+            )}
 
-          {activeView === 'media' && (
-            <MediaStudio
-              language={preferences.language}
-              onNavigate={(view) => setActiveView(view)}
-              onRunPromptInChat={(_prompt) => {
-                setActiveView('chat');
-              }}
-            />
-          )}
+            {activeView === 'media' && (
+              <MediaStudio
+                language={preferences.language}
+                onNavigate={(view) => setActiveView(view)}
+                onRunPromptInChat={(_prompt) => {
+                  setActiveView('chat');
+                }}
+              />
+            )}
 
-          {activeView === 'github' && (
-            <GitHubStudio
-              language={preferences.language}
-              onNavigateToChat={(_prompt) => {
-                setActiveView('chat');
-              }}
-            />
-          )}
-        </motion.div>
+            {activeView === 'github' && (
+              <GitHubStudio
+                language={preferences.language}
+                onNavigateToChat={(_prompt) => {
+                  setActiveView('chat');
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-      </AnimatePresence>
-
-      <BackgroundSecuritySentinel />
-      <QuickLiquidRefraction />
-      <NetworkSentinel language={preferences.language} />
-      <InAppBrowserModal language={preferences.language} />
-      <AuthModal language={preferences.language} />
-      {loginExperienceOpen && (
-        <AgenticLogin
-          language={preferences.language}
-          open={loginExperienceOpen}
-          onClose={() => setLoginExperienceOpen(false)}
-          onOpenFallbackAuth={() => { setLoginExperienceOpen(false); window.dispatchEvent(new CustomEvent('adam:open-auth-modal')); }}
-        />
-      )}
-    </AppShell>
+        <BackgroundSecuritySentinel />
+        <QuickLiquidRefraction />
+        <NetworkSentinel language={preferences.language} />
+        <InAppBrowserModal language={preferences.language} />
+        <AuthModal language={preferences.language} />
+        {loginExperienceOpen && (
+          <AgenticLogin
+            language={preferences.language}
+            open={loginExperienceOpen}
+            onClose={() => setLoginExperienceOpen(false)}
+            onOpenFallbackAuth={() => { setLoginExperienceOpen(false); window.dispatchEvent(new CustomEvent('adam:open-auth-modal')); }}
+          />
+        )}
+      </AppShell>
+    </GenerationProvider>
   );
 }

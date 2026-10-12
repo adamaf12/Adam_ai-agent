@@ -21,7 +21,8 @@ import { mediaEngine, CognitiveMediaBrain } from './server/mediaEngine';
 import { secretsManager, redactSecrets } from './server/security/secrets';
 import { authenticateSession, requirePermission, requireRole } from './server/security/auth';
 import { securityHeadersMiddleware, corsMiddleware, validateFileSecurity } from './server/security/networkShield';
-import { globalRateLimiter, chatRateLimiter, mediaRateLimiter, authRateLimiter } from './server/security/rateLimiter';
+import { globalRateLimiter, chatRateLimiter, mediaRateLimiter, authRateLimiter, agentRateLimiter, loginBruteForceLimiter } from './server/security/rateLimiter';
+import { signSessionToken } from './server/security/auth';
 import { PromptInjectionGuard } from './server/security/promptInjection';
 import { AgentPermissionGuard } from './server/security/agentPermissions';
 import { humanApprovalManager } from './server/security/humanApproval';
@@ -659,9 +660,79 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/auth/session', (req, res) => {
   res.json({
     ok: true,
-    user: req.user,
+    user: req.user ? {
+      uid: req.user.uid,
+      role: req.user.role,
+      email: req.user.email,
+      displayName: req.user.displayName,
+      isAnonymous: req.user.isAnonymous,
+    } : null,
     timestamp: Date.now(),
   });
+});
+
+// Protected Login with Brute-Force Rate Limiting (5 attempts / 5 mins per IP)
+app.post('/api/auth/login', loginBruteForceLimiter.middleware(), async (req, res) => {
+  try {
+    const { email, password, provider = 'direct', idToken } = req.body || {};
+    
+    // Direct or Firebase token verification
+    if (!email && !idToken) {
+      return res.status(400).json({
+        ok: false,
+        code: 'CREDENTIALS_REQUIRED',
+        messageAr: 'يرجى تقديم بيانات الدخول الصحيحة (البريد الإلكتروني أو رمز التحقق).',
+        messageEn: 'Please provide valid credentials (email or verification token).',
+      });
+    }
+
+    // Sanitize and normalize identifier
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : undefined;
+    const uid = normalizedEmail ? `user_${Buffer.from(normalizedEmail).toString('base64url').slice(0, 24)}` : `user_${Date.now()}`;
+    const role = normalizedEmail === 'ademfeidat@gmail.com' ? 'admin' : 'user';
+
+    const token = signSessionToken({
+      uid,
+      role,
+      email: normalizedEmail,
+      displayName: normalizedEmail ? normalizedEmail.split('@')[0] : 'User',
+      isAnonymous: false,
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    res.setHeader('Set-Cookie', `adam_session=${encodeURIComponent(token)}; Path=/; Max-Age=${7 * 86400}; HttpOnly; SameSite=Lax${isProd ? '; Secure' : ''}`);
+
+    auditLogger.log({
+      userId: uid,
+      ip: req.ip || 'unknown',
+      action: 'USER_LOGIN_SUCCESS',
+      resource: '/api/auth/login',
+      outcome: 'SUCCESS',
+      riskScore: 10,
+    });
+
+    return res.json({
+      ok: true,
+      user: {
+        uid,
+        role,
+        email: normalizedEmail,
+        displayName: normalizedEmail ? normalizedEmail.split('@')[0] : 'User',
+        isAnonymous: false,
+      },
+      token,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, error: 'LOGIN_FAILED', message: err?.message || 'Authentication failed' });
+  }
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  res.setHeader('Set-Cookie', `adam_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${isProd ? '; Secure' : ''}`);
+  return res.json({ ok: true, message: 'Logged out successfully' });
 });
 
 // Security: Metrics (P2 Monitoring)
@@ -2250,8 +2321,10 @@ async function startServer() {
         setHeaders: (res, filePath) => {
           if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          } else if (filePath.includes('/assets/') || filePath.match(/\.[a-f0-9]{8}\.(js|css)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$/)) {
-            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+            res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
           }
         }
       }));

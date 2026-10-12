@@ -102,18 +102,62 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   next();
 }
 
+const TRUSTED_ORIGIN_PATTERNS: Array<string | RegExp> = [
+  'https://adam-ai-agent.vercel.app',
+  /^https:\/\/[a-z0-9-]+-263913895850\.[a-z0-9-]+\.run\.app$/,
+  /^https:\/\/[a-z0-9-]+-ademfeidat\.vercel\.app$/,
+  /^https:\/\/[a-z0-9-]+-adam-ai-agent\.vercel\.app$/,
+  'capacitor://localhost',
+  'ionic://localhost',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+if (process.env.ALLOWED_ORIGINS) {
+  for (const item of process.env.ALLOWED_ORIGINS.split(',')) {
+    const trimmed = item.trim();
+    if (trimmed) TRUSTED_ORIGIN_PATTERNS.push(trimmed);
+  }
+}
+
+export function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false;
+  return TRUSTED_ORIGIN_PATTERNS.some((pattern) => {
+    if (typeof pattern === 'string') {
+      return origin === pattern;
+    }
+    return pattern.test(origin);
+  });
+}
+
 /**
  * Strict CORS Middleware
- * Validates origin whitelist, blocks wildcard with credentials
+ * Validates origin whitelist, blocks wildcard with credentials, protects sensitive API routes
  */
 export function corsMiddleware(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
 
   if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (isOriginAllowed(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
+    } else {
+      // Disallow unauthorized cross-origin access to API routes
+      if (req.path.startsWith('/api/')) {
+        if (req.method === 'OPTIONS') {
+          return res.status(403).json({ ok: false, error: 'CORS_ORIGIN_DENIED' });
+        }
+        return res.status(403).json({
+          ok: false,
+          code: 'CORS_FORBIDDEN',
+          messageAr: 'تم حظر الطلب: المصدر غير مصرح به للوصول إلى واجهة برمجة التطبيقات.',
+          messageEn: 'Request blocked: Unauthorized origin for API access.',
+        });
+      }
+    }
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');

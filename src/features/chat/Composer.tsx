@@ -14,6 +14,8 @@ import {
 import { useRef, useState, useEffect } from 'react';
 import { copy } from '../../core/i18n';
 import { processImageFile, formatFileSize, type ProcessedImage } from '../../core/utils/imageUtils';
+import { useGeneration } from '../../core/generation';
+import { LiveProgressCard } from '../../components/LiveProgressCard';
 
 export interface DialectOption {
   code: string;
@@ -71,6 +73,8 @@ export function Composer({
   onSend: (text: string, images?: string[]) => void;
   onStop: () => void;
 }) {
+  const { isGenerating, cancelGeneration } = useGeneration();
+  const isLocked = busy || isGenerating;
   const [draft, setDraft] = useState('');
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<{ id: string; name: string; sizeBytes: number; type: string; content: string }[]>([]);
@@ -258,7 +262,7 @@ export function Composer({
 
   const submit = () => {
     const text = draft.trim();
-    if ((!text && images.length === 0 && attachedFiles.length === 0) || busy) return;
+    if ((!text && images.length === 0 && attachedFiles.length === 0) || isLocked) return;
 
     const filesContext = attachedFiles
       .map(
@@ -655,20 +659,27 @@ export function Composer({
         </div>
       )}
 
+      {/* Live Progress Indicator & Cancel Action */}
+      <LiveProgressCard
+        language={language}
+        onCancel={isGenerating ? () => cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user') : onStop}
+        className="mb-2"
+      />
+
       {/* Main Luxury Streamlined Composer Box */}
-      <div className="composer flex items-end gap-1.5 p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-xl backdrop-blur-2xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_24px_var(--accent-glow)] w-full">
+      <div className={`composer flex items-end gap-1.5 p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-xl backdrop-blur-2xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_24px_var(--accent-glow)] w-full ${isLocked ? 'ring-1 ring-amber-500/30' : ''}`}>
         {/* Attach Document / File Button */}
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            attachedFiles.length > 0
+            isLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : attachedFiles.length > 0
               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => documentInputRef.current?.click()}
           aria-label={isAr ? 'إرفاق ملف أو مستند' : 'Attach Document'}
           title={isAr ? 'إرفاق ملف، مستند، كود أو PDF' : 'Attach document, code or PDF'}
-          disabled={processingFiles}
+          disabled={isLocked || processingFiles}
         >
           {processingFiles ? (
             <Loader2 size={16} className="animate-spin text-cyan-400" />
@@ -681,14 +692,14 @@ export function Composer({
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            images.length > 0
+            isLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => fileInputRef.current?.click()}
           aria-label={isAr ? 'إرفاق صورة' : 'Attach Image'}
           title={isAr ? 'إرفاق صورة للتحليل البصري' : 'Attach image'}
-          disabled={processingImages}
+          disabled={isLocked || processingImages}
         >
           {processingImages ? (
             <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
@@ -712,7 +723,11 @@ export function Composer({
               }
             }}
             placeholder={
-              listening
+              isLocked
+                ? isAr
+                  ? 'جاري تنفيذ وتوليد الطلب… يرجى الانتظار أو الإلغاء ⏳'
+                  : 'Execution in progress… please wait or cancel ⏳'
+                : listening
                 ? isAr
                   ? 'جاري الاستماع بدقة...'
                   : 'Listening...'
@@ -725,8 +740,11 @@ export function Composer({
                 : 'Type your message or ask anything...'
             }
             rows={1}
-            disabled={busy}
-            className="w-full bg-transparent border-0 outline-none text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block"
+            disabled={isLocked}
+            readOnly={isLocked}
+            className={`w-full bg-transparent border-0 outline-none text-[15px] text-[var(--text)] placeholder-[var(--muted)] resize-none py-1.5 px-2 min-h-[38px] max-h-[160px] font-normal leading-relaxed overflow-y-auto block ${
+              isLocked ? 'cursor-not-allowed opacity-60' : ''
+            }`}
           />
         </div>
 
@@ -734,7 +752,9 @@ export function Composer({
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            isRecordingAudio
+            isLocked
+              ? 'opacity-40 cursor-not-allowed pointer-events-none text-[var(--muted)]'
+              : isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
               ? 'bg-amber-500/20 text-amber-400 animate-pulse border border-amber-500/40'
@@ -751,6 +771,7 @@ export function Composer({
               ? 'تسجيل وتفريغ صوتي فوري'
               : 'Voice Recording & Transcription'
           }
+          disabled={isLocked}
         >
           {isRecordingAudio ? (
             <MicOff size={16} className="text-rose-400" />
@@ -763,17 +784,24 @@ export function Composer({
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md touch-manipulation ${
-            busy
-              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50'
+            isLocked
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 active:scale-95'
               : draft.trim() || images.length > 0 || attachedFiles.length > 0
               ? 'bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] shadow-[0_0_18px_var(--accent-glow)] active:scale-95'
               : 'bg-[var(--surface-2)] text-[var(--muted)] opacity-50 cursor-not-allowed'
           }`}
-          onClick={busy ? onStop : submit}
-          aria-label={busy ? t.stop : t.send}
-          disabled={!busy && !draft.trim() && images.length === 0 && attachedFiles.length === 0}
+          onClick={
+            isLocked
+              ? isGenerating
+                ? () => cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user')
+                : onStop
+              : submit
+          }
+          aria-label={isLocked ? (isAr ? 'إلغاء' : 'Cancel') : t.send}
+          title={isLocked ? (isAr ? 'إلغاء العملية وتحرير الإدخال' : 'Cancel operation & unlock input') : (draft.trim() ? t.send : '')}
+          disabled={!isLocked && !draft.trim() && images.length === 0 && attachedFiles.length === 0}
         >
-          {busy ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
+          {isLocked ? <Square size={13} fill="currentColor" /> : <Send size={15} />}
         </button>
       </div>
 

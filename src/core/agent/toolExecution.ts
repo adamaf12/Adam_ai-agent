@@ -456,9 +456,11 @@ export async function executeAgentActionTool(
         googleMapsUrl: origin && destination
           ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
           : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTerm)}`,
-        embedUrl: origin && destination
-          ? `https://www.google.com/maps/embed/v1/directions?key=${apiKey || 'AIzaSyDemoKeyForMaps'}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
-          : `https://www.google.com/maps/embed/v1/search?key=${apiKey || 'AIzaSyDemoKeyForMaps'}&q=${encodeURIComponent(searchTerm)}`,
+        embedUrl: apiKey
+          ? (origin && destination
+              ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(apiKey)}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
+              : `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(apiKey)}&q=${encodeURIComponent(searchTerm)}`)
+          : undefined,
         estimatedDistance: '4.2 km',
         estimatedDuration: '10 mins',
         recommendedRoute: `Optimal route for ${searchTerm} via primary transit and highways.`,
