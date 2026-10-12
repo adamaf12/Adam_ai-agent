@@ -11,6 +11,81 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Adam AI" />
     <meta name="format-detection" content="telephone=no" />
+
+    <!-- AI Studio Environment Shield: Suppress & handle Vite HMR WebSocket in preview iframe -->
+    <script>
+      (function() {
+        if (typeof window !== 'undefined') {
+          window.addEventListener('unhandledrejection', function(event) {
+            var reason = event && event.reason;
+            var str = String((reason && (reason.stack || reason.message)) || reason || '');
+            if (
+              str.includes('WebSocket') ||
+              str.includes('vite') ||
+              str.includes('@vite/client') ||
+              str.includes('createWebSocketModuleRunnerTransport') ||
+              str.includes('WebSocket closed without opened')
+            ) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          }, true);
+
+          window.addEventListener('error', function(event) {
+            var msg = String((event && (event.message || event.filename)) || '');
+            if (
+              msg.includes('WebSocket') ||
+              msg.includes('@vite/client') ||
+              msg.includes('createWebSocketModuleRunnerTransport')
+            ) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              return true;
+            }
+          }, true);
+
+          if (window.WebSocket) {
+            var OrigWS = window.WebSocket;
+            var PatchedWS = function(url, protocols) {
+              var isHmr = (protocols === 'vite-hmr') ||
+                          (Array.isArray(protocols) && protocols.indexOf('vite-hmr') !== -1) ||
+                          (typeof url === 'string' && (url.indexOf('token=') !== -1 || url.indexOf('vite') !== -1));
+              if (isHmr) {
+                var dummy = new EventTarget();
+                dummy.binaryType = 'blob';
+                dummy.readyState = 1; // WebSocket.OPEN
+                dummy.url = String(url);
+                dummy.protocol = 'vite-hmr';
+                dummy.bufferedAmount = 0;
+                dummy.extensions = '';
+                dummy.onopen = null;
+                dummy.onclose = null;
+                dummy.onerror = null;
+                dummy.onmessage = null;
+                dummy.send = function() {};
+                dummy.close = function() {
+                  dummy.readyState = 3;
+                };
+                setTimeout(function() {
+                  if (typeof dummy.onopen === 'function') {
+                    try { dummy.onopen(new Event('open')); } catch (e) {}
+                  }
+                  dummy.dispatchEvent(new Event('open'));
+                }, 0);
+                return dummy;
+              }
+              return new OrigWS(url, protocols);
+            };
+            PatchedWS.prototype = OrigWS.prototype;
+            PatchedWS.CONNECTING = 0;
+            PatchedWS.OPEN = 1;
+            PatchedWS.CLOSING = 2;
+            PatchedWS.CLOSED = 3;
+            window.WebSocket = PatchedWS;
+          }
+        }
+      })();
+    </script>
     
     <!-- Typography: Cairo for Arabic & Plus Jakarta Sans for English -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

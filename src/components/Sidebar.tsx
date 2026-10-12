@@ -15,6 +15,7 @@ import {
   Sparkles,
   Trash2,
   X,
+  GitBranch,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { ChatConversation, Language, ViewId } from '../core/domain';
@@ -229,6 +230,22 @@ export function Sidebar({
               >
                 <Languages size={13} className="text-emerald-400 shrink-0" />
                 <span className="truncate">{isAr ? 'المترجم' : 'Translator'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange('github');
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium transition cursor-pointer text-start ${
+                  activeView === 'github'
+                    ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold border border-[var(--accent)]/30'
+                    : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <GitBranch size={13} className="text-cyan-400 shrink-0" />
+                <span className="truncate">{isAr ? 'كود GitHub' : 'GitHub Code'}</span>
               </button>
 
               {onOpenLiveVoice && (

@@ -33,11 +33,19 @@ import {
   ArrowRight,
   MonitorPlay,
   Sparkle,
+  ScanEye,
+  Split,
+  Brush,
+  Focus,
+  SlidersHorizontal,
+  UserCheck,
+  Grid3X3,
+  ShieldCheck,
 } from 'lucide-react';
 import type { Language, ViewId } from '../../core/domain';
 
 export type StudioTab = 'image' | 'video' | 'vector' | 'gallery';
-export type AspectRatio = '16:9' | '1:1' | '9:16' | '4:3' | '21:9';
+export type AspectRatio = '16:9' | '1:1' | '9:16' | '4:3' | '21:9' | '1:4' | '1:8' | '4:1' | '8:1';
 
 export type ImageStyle =
   | 'photorealistic'
@@ -53,6 +61,7 @@ export type ImageStyle =
 
 export type MediaEngineChoice =
   | 'auto'
+  | 'gemini-nano-banana'
   | 'gemini-image'
   | 'imagen-3'
   | 'flux-pro'
@@ -67,6 +76,23 @@ export type VideoMotion =
   | 'pan_horizontal'
   | 'hyperlapse'
   | 'cinematic_steady';
+
+export type FocalLength = 'none' | '14mm' | '35mm' | '50mm' | '85mm' | '200mm';
+export type Aperture = 'none' | 'f1.2' | 'f1.8' | 'f2.8' | 'f8' | 'f16';
+export type LightingSetup = 'none' | 'golden_hour' | 'studio_softbox' | 'cyber_neon' | 'dramatic_rim' | 'volumetric_rays' | 'cinematic_natural';
+export type FilmStock = 'none' | 'kodak_portra' | 'fuji_velvia' | 'ilford_bw' | 'cinestill_800t' | 'digital_8k';
+export type ImageQuality = '1K' | '2K' | '4K';
+
+export interface VisualAuditResult {
+  palette: Array<{ hex: string; name: string }>;
+  compositionScore: number;
+  lightingScore: number;
+  promptFidelityScore: number;
+  critiqueAr: string;
+  critiqueEn: string;
+  improvedPromptEn: string;
+  technicalDetails: string;
+}
 
 export interface SemanticAnalysis {
   subject: string;
@@ -94,6 +120,7 @@ export interface MediaItem {
   width: number;
   height: number;
   style: string;
+  quality?: ImageQuality;
   motion?: VideoMotion;
   duration?: number;
   fps?: number;
@@ -126,13 +153,13 @@ const ENGINE_CHOICES: Array<{
     badge: 'OPTIMAL',
   },
   {
-    id: 'gemini-image',
-    nameAr: 'Google Gemini 3.1 Flash Lite',
-    nameEn: 'Google Gemini 3.1 Flash Lite',
-    descAr: 'محرك قوقل الرسمي فائق السرعة لتوليد وتعديل الصور بدقة أصلية',
-    descEn: 'Official native Google vision pipeline with editing capability',
-    icon: '✨',
-    badge: 'OFFICIAL GOOGLE',
+    id: 'gemini-nano-banana',
+    nameAr: 'Google Nano Banana 2.1 (4K)',
+    nameEn: 'Google Nano Banana 2.1 (4K)',
+    descAr: 'محرك قوقل الخارق للتوليد بدقة 4K فائقة الوضوح وأبعاد واسعة',
+    descEn: 'Flagship Google generative vision with configurable 1K/2K/4K resolution',
+    icon: '🍌',
+    badge: 'FLAGSHIP 4K',
   },
   {
     id: 'imagen-3',
@@ -142,6 +169,15 @@ const ENGINE_CHOICES: Array<{
     descEn: 'DeepMind studio realism, authentic textures & lighting physics',
     icon: '💎',
     badge: 'STUDIO 8K',
+  },
+  {
+    id: 'gemini-image',
+    nameAr: 'Google Gemini 3.1 Flash Lite',
+    nameEn: 'Google Gemini 3.1 Flash Lite',
+    descAr: 'محرك قوقل الرسمي فائق السرعة لتوليد وتعديل الصور بدقة أصلية',
+    descEn: 'Official native Google vision pipeline with editing capability',
+    icon: '✨',
+    badge: 'OFFICIAL GOOGLE',
   },
   {
     id: 'flux-pro',
@@ -191,6 +227,59 @@ const ASPECT_OPTIONS: Array<{ id: AspectRatio; nameAr: string; nameEn: string; r
   { id: '9:16', nameAr: 'طولي (ريلز / هاتف)', nameEn: 'Portrait / Reels', ratio: '9:16' },
   { id: '4:3', nameAr: 'شاشة كلاسيكية', nameEn: 'Standard', ratio: '4:3' },
   { id: '21:9', nameAr: 'ألترا وايد سينمائي', nameEn: 'Cinemascope', ratio: '21:9' },
+  { id: '1:4', nameAr: 'طولي بانورامي 1:4', nameEn: 'Ultra Tall 1:4', ratio: '1:4' },
+  { id: '4:1', nameAr: 'عريض بانورامي 4:1', nameEn: 'Ultra Wide 4:1', ratio: '4:1' },
+];
+
+const FOCAL_LENGTH_OPTIONS: Array<{ id: FocalLength; nameAr: string; nameEn: string; icon: string }> = [
+  { id: 'none', nameAr: 'تلقائي', nameEn: 'Auto', icon: '🎯' },
+  { id: '14mm', nameAr: '14mm زاوية فائقة الاتساع', nameEn: '14mm Ultra-Wide', icon: '📐' },
+  { id: '35mm', nameAr: '35mm وثائقي وشارع', nameEn: '35mm Documentary', icon: '🏙️' },
+  { id: '50mm', nameAr: '50mm عين طبيعية', nameEn: '50mm Standard', icon: '👁️' },
+  { id: '85mm', nameAr: '85mm بورتريه مع عزل بوكيه', nameEn: '85mm Portrait Bokeh', icon: '🎭' },
+  { id: '200mm', nameAr: '200mm تيليفوتو ماكرو', nameEn: '200mm Telephoto Macro', icon: '🔭' },
+];
+
+const APERTURE_OPTIONS: Array<{ id: Aperture; nameAr: string; nameEn: string }> = [
+  { id: 'none', nameAr: 'تلقائي', nameEn: 'Auto' },
+  { id: 'f1.2', nameAr: 'f/1.2 عزل دائري حالم (Creamy Bokeh)', nameEn: 'f/1.2 Creamy Bokeh' },
+  { id: 'f1.8', nameAr: 'f/1.8 عزل سينمائي ناعم', nameEn: 'f/1.8 Cinematic Bokeh' },
+  { id: 'f2.8', nameAr: 'f/2.8 حدة استوديو تجاري', nameEn: 'f/2.8 Commercial Sharp' },
+  { id: 'f8', nameAr: 'f/8 حدة كاملة للأفق', nameEn: 'f/8 Deep Landscape' },
+  { id: 'f16', nameAr: 'f/16 حدة معمارية شاملة', nameEn: 'f/16 Infinite Depth' },
+];
+
+const LIGHTING_OPTIONS: Array<{ id: LightingSetup; nameAr: string; nameEn: string }> = [
+  { id: 'none', nameAr: 'تلقائي', nameEn: 'Auto' },
+  { id: 'golden_hour', nameAr: 'الساعة الذهبية ودفء الغروب', nameEn: 'Golden Hour Sunset' },
+  { id: 'studio_softbox', nameAr: 'استوديو سوفت بوكس احترافي (3 نقاط)', nameEn: '3-Point Studio Softbox' },
+  { id: 'cyber_neon', nameAr: 'نيون سايبربانك ثنائي اللون مع بلل', nameEn: 'Dual Cyber Neon Glow' },
+  { id: 'dramatic_rim', nameAr: 'إضاءة حواف درامية (Rim Light Noir)', nameEn: 'Dramatic Chiaroscuro Rim' },
+  { id: 'volumetric_rays', nameAr: 'أشعة ضوئية حجمية (God-Rays)', nameEn: 'Volumetric Sun Rays' },
+  { id: 'cinematic_natural', nameAr: 'ضوء طبيعي ناعم (Overcast Diffused)', nameEn: 'Diffused Overcast Sky' },
+];
+
+const FILM_STOCK_OPTIONS: Array<{ id: FilmStock; nameAr: string; nameEn: string }> = [
+  { id: 'none', nameAr: 'تلقائي', nameEn: 'Auto' },
+  { id: 'kodak_portra', nameAr: 'Kodak Portra 400 (دفء البشرة وحبيبات ناعمة)', nameEn: 'Kodak Portra 400' },
+  { id: 'fuji_velvia', nameAr: 'Fujifilm Velvia 50 (تشبع ألوان حيوي عالي)', nameEn: 'Fujifilm Velvia 50' },
+  { id: 'ilford_bw', nameAr: 'Ilford HP5 (أبيض وأسود تباين سينمائي)', nameEn: 'Ilford HP5 B&W' },
+  { id: 'cinestill_800t', nameAr: 'CineStill 800T (هالة ضوئية ليلية دافئة)', nameEn: 'CineStill 800T Film' },
+  { id: 'digital_8k', nameAr: 'Hasselblad 100MP 8K Digital Sensor', nameEn: '8K Digital Hasselblad' },
+];
+
+const QUALITY_OPTIONS: Array<{ id: ImageQuality; nameAr: string; nameEn: string; desc: string }> = [
+  { id: '1K', nameAr: '1K معيار قياسي', nameEn: '1K Standard', desc: '1024x1024 · فائق السرعة ومثالي للعصف الذهني' },
+  { id: '2K', nameAr: '2K عالي الدقة HD', nameEn: '2K High-Def', desc: '2048x2048 · توازن رائع بين السرعة والتفاصيل' },
+  { id: '4K', nameAr: '4K فائق الدقة Ultra-HD', nameEn: '4K Master Studio', desc: '3840x2160 · أعلى دقة استوديو تجارية' },
+];
+
+const QUICK_NEGATIVE_PRESETS = [
+  { id: 'no_blur', labelAr: 'مكافحة الضبابية', labelEn: 'Anti-Blur', text: 'blurry, out of focus, motion blur, soft focus' },
+  { id: 'no_anatomy', labelAr: 'إصلاح الأطراف والأصابع', labelEn: 'Perfect Anatomy', text: 'bad anatomy, deformed limbs, extra fingers, mutated hands, missing fingers' },
+  { id: 'no_watermark', labelAr: 'إزالة النصوص والشعارات', labelEn: 'No Watermark/Text', text: 'watermark, text, signature, stamp, username, border' },
+  { id: 'photoreal_skin', labelAr: 'بشرة طبيعية غير بلاستيكية', labelEn: 'Natural Skin Texture', text: 'plastic skin, airbrushed, cartoonish skin, artificial face' },
+  { id: 'high_contrast', labelAr: 'منع بهتان الألوان', labelEn: 'Anti-Washed Colors', text: 'washed out, low contrast, oversaturated, muddy shadows' },
 ];
 
 const MOTION_OPTIONS: Array<{ id: VideoMotion; nameAr: string; nameEn: string }> = [
@@ -243,6 +332,46 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
   const [selectedMotion, setSelectedMotion] = useState<VideoMotion>('drone_fpv');
   const [customSeed, setCustomSeed] = useState<string>('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Pro Optical Physics Studio State
+  const [selectedFocalLength, setSelectedFocalLength] = useState<FocalLength>('none');
+  const [selectedAperture, setSelectedAperture] = useState<Aperture>('none');
+  const [selectedLighting, setSelectedLighting] = useState<LightingSetup>('none');
+  const [selectedFilmStock, setSelectedFilmStock] = useState<FilmStock>('none');
+  const [showOpticalStudio, setShowOpticalStudio] = useState(false);
+
+  // Resolution & Quality State
+  const [selectedQuality, setSelectedQuality] = useState<ImageQuality>('1K');
+
+  // Negative Prompting & Presets
+  const [customNegativePrompt, setCustomNegativePrompt] = useState('');
+  const [activeNegativeTags, setActiveNegativeTags] = useState<string[]>(['no_blur', 'no_anatomy']);
+  const [showNegativeStudio, setShowNegativeStudio] = useState(false);
+
+  // Character Consistency Anchor / Identity Lock
+  const [characterLockEnabled, setCharacterLockEnabled] = useState(false);
+  const [characterName, setCharacterName] = useState('');
+  const [characterTraits, setCharacterTraits] = useState('');
+  const [showCharacterLock, setShowCharacterLock] = useState(false);
+
+  // Batch Generation State
+  const [batchCount, setBatchCount] = useState<1 | 2 | 4>(1);
+  const [variationResults, setVariationResults] = useState<MediaItem[]>([]);
+
+  // AI Visual Audit State
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState<VisualAuditResult | null>(null);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+
+  // Inpainting & Regional Edit State
+  const [showInpaintModal, setShowInpaintModal] = useState(false);
+  const [inpaintInstruction, setInpaintInstruction] = useState('');
+  const [isInpainting, setIsInpainting] = useState(false);
+
+  // Before / After Comparison Split View
+  const [beforeImage, setBeforeImage] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
+  const [sliderPosition, setSliderPosition] = useState(50);
 
   // Vector Display States
   const [vectorViewMode, setVectorViewMode] = useState<'preview' | 'code'>('preview');
@@ -395,6 +524,71 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
     setPrompt((prev) => (prev.trim() ? `${prev.trim()}, ${text}` : text));
   };
 
+  const handleToggleNegativeTag = (tagId: string) => {
+    setActiveNegativeTags((prev) =>
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const handleAuditImage = async () => {
+    if (!currentResult) return;
+    setIsAuditing(true);
+    setShowAuditModal(true);
+    try {
+      const res = await fetch('/api/media/audit-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: currentResult.url,
+          prompt: currentResult.originalPrompt || prompt,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.audit) {
+        setAuditResult(data.audit);
+      }
+    } catch (e) {
+      console.warn('Audit failed:', e);
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
+  const handleApplyAuditImprovement = () => {
+    if (!auditResult?.improvedPromptEn) return;
+    setPrompt(auditResult.improvedPromptEn);
+    setShowAuditModal(false);
+  };
+
+  const handleInpaint = async () => {
+    if (!currentResult || !inpaintInstruction.trim()) return;
+    setIsInpainting(true);
+    try {
+      const res = await fetch('/api/media/inpaint-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceImage: currentResult.url,
+          instruction: inpaintInstruction.trim(),
+          style: selectedStyle,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.item) {
+        setBeforeImage(currentResult.url);
+        setCurrentResult(data.item);
+        setShowComparison(true);
+        setShowInpaintModal(false);
+        setInpaintInstruction('');
+        fetchGallery();
+      }
+    } catch (e) {
+      console.warn('Inpainting failed:', e);
+    } finally {
+      setIsInpainting(false);
+    }
+  };
+
   const handleGenerateVariations = () => {
     const nextSeed = Math.floor(Math.random() * 999999);
     setCustomSeed(nextSeed.toString());
@@ -410,6 +604,47 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
 
     try {
       const seedNum = customSeed.trim() ? Number(customSeed) : Math.floor(Math.random() * 999999);
+      
+      const opticalConfig = {
+        focalLength: selectedFocalLength !== 'none' ? selectedFocalLength : undefined,
+        aperture: selectedAperture !== 'none' ? selectedAperture : undefined,
+        lightingSetup: selectedLighting !== 'none' ? selectedLighting : undefined,
+        filmStock: selectedFilmStock !== 'none' ? selectedFilmStock : undefined,
+      };
+
+      const characterAnchor = characterLockEnabled && (characterName.trim() || characterTraits.trim()) ? {
+        characterName: characterName.trim(),
+        characterTraits: characterTraits.trim(),
+      } : undefined;
+
+      const combinedNegativePrompt = [
+        ...activeNegativeTags.map(id => QUICK_NEGATIVE_PRESETS.find(p => p.id === id)?.text).filter(Boolean),
+        customNegativePrompt.trim(),
+      ].filter(Boolean).join(', ');
+
+      if (activeTab === 'image' && batchCount > 1) {
+        setGenerationStep(isAr ? `توليد ${batchCount} تنويعات بصرية متوازية عبر بذور انتشار مختلفة…` : `Synthesizing ${batchCount} parallel visual variations…`);
+        const res = await fetch('/api/media/generate-variations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            count: batchCount,
+            style: selectedStyle,
+            aspectRatio: selectedAspect,
+            engine: selectedEngine,
+            opticalConfig,
+          }),
+        });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.items) && data.items.length > 0) {
+          setCurrentResult(data.items[0]);
+          setVariationResults(data.items);
+          fetchGallery();
+        }
+        return;
+      }
+
       let endpoint = '/api/media/generate-image';
       let payload: any = {
         prompt,
@@ -417,6 +652,10 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
         aspectRatio: selectedAspect,
         seed: seedNum,
         engine: selectedEngine,
+        quality: selectedQuality,
+        opticalConfig,
+        characterAnchor,
+        customNegativePrompt: combinedNegativePrompt || undefined,
       };
 
       if (activeTab === 'vector') {
@@ -465,7 +704,12 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
 
       const data = await res.json();
       if (data.ok && data.item) {
+        if (isImg2Img && sourceImage) {
+          setBeforeImage(sourceImage);
+          setShowComparison(true);
+        }
         setCurrentResult(data.item);
+        setVariationResults([]);
         fetchGallery();
       }
     } catch (e) {
@@ -599,9 +843,9 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6 items-start">
           {/* Left Panel: Creation Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-5">
-            {/* Engine Selection Bar (Image Tab) */}
+            {/* Engine Selection & Pro Studio Quality Bar (Image Tab) */}
             {activeTab === 'image' && (
-              <div className="p-4 rounded-3xl bg-[var(--surface-2)] border border-[var(--border)] space-y-2.5">
+              <div className="p-4 rounded-3xl bg-[var(--surface-2)] border border-[var(--border)] space-y-3.5">
                 <div className="flex items-center justify-between text-xs font-bold text-[var(--text)]">
                   <span className="flex items-center gap-1.5">
                     <Cpu size={14} className="text-cyan-400" />
@@ -612,7 +856,7 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {ENGINE_CHOICES.map((eng) => (
                     <button
                       key={eng.id}
@@ -634,6 +878,56 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
                     </button>
                   ))}
                 </div>
+
+                {/* Pro Resolution & Batch Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[var(--border)]">
+                  <div>
+                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center justify-between">
+                      <span>{isAr ? 'دقة واستبانة الإخراج:' : 'Resolution & Fidelity:'}</span>
+                      <span className="font-mono text-emerald-400 text-[10px]">{selectedQuality}</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {QUALITY_OPTIONS.map((q) => (
+                        <button
+                          key={q.id}
+                          type="button"
+                          onClick={() => setSelectedQuality(q.id)}
+                          className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer text-xs font-bold ${
+                            selectedQuality === q.id
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                              : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                          }`}
+                        >
+                          {q.id}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center justify-between">
+                      <span>{isAr ? 'التوليد الدفعي المتوازي:' : 'Batch Variations:'}</span>
+                      <span className="font-mono text-cyan-400 text-[10px]">{batchCount}x</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {([1, 2, 4] as const).map((cnt) => (
+                        <button
+                          key={cnt}
+                          type="button"
+                          onClick={() => setBatchCount(cnt)}
+                          className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer text-xs font-bold flex items-center justify-center gap-1 ${
+                            batchCount === cnt
+                              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                              : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                          }`}
+                        >
+                          <Grid3X3 size={11} />
+                          <span>{cnt}x</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -651,16 +945,80 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
                   </span>
                 </span>
 
-                <button
-                  type="button"
-                  onClick={handleEnhancePrompt}
-                  disabled={!prompt.trim() || isEnhancing}
-                  className="px-2.5 py-1 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-                >
-                  <Wand2 size={12} className={isEnhancing ? 'animate-spin' : ''} />
-                  <span>{isEnhancing ? (isAr ? 'جاري التحسين…' : 'Enhancing…') : (isAr ? 'تعزيز سينمائي تلقائي ✨' : 'Enhance Prompt ✨')}</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {activeTab === 'image' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCharacterLock(!showCharacterLock)}
+                      className={`px-2 py-1 rounded-xl border text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
+                        characterLockEnabled
+                          ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                          : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                      }`}
+                      title={isAr ? 'تثبيت هوية وملامح الشخصية عبر التوليدات' : 'Lock character identity across generations'}
+                    >
+                      <UserCheck size={12} />
+                      <span>{isAr ? 'تثبيت الشخصية' : 'Character Lock'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleEnhancePrompt}
+                    disabled={!prompt.trim() || isEnhancing}
+                    className="px-2.5 py-1 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Wand2 size={12} className={isEnhancing ? 'animate-spin' : ''} />
+                    <span>{isEnhancing ? (isAr ? 'جاري التحسين…' : 'Enhancing…') : (isAr ? 'تعزيز سينمائي ✨' : 'Enhance ✨')}</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Character Consistency Anchor Bar (Expandable) */}
+              {activeTab === 'image' && showCharacterLock && (
+                <div className="p-3 rounded-2xl bg-purple-950/20 border border-purple-800/40 space-y-2.5 animate-fadeIn">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                      <UserCheck size={13} className="text-purple-400" />
+                      <span>{isAr ? 'مرساة تثبيت ملامح الشخصية (Consistent Face Anchor):' : 'Consistent Character Anchor:'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCharacterLockEnabled(!characterLockEnabled)}
+                      className={`text-[10px] px-2 py-0.5 rounded-lg font-bold font-mono transition cursor-pointer ${
+                        characterLockEnabled
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {characterLockEnabled ? (isAr ? 'مفعل ✓' : 'LOCKED ✓') : (isAr ? 'غير مفعل' : 'DISABLED')}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={characterName}
+                      onChange={(e) => {
+                        setCharacterName(e.target.value);
+                        setCharacterLockEnabled(true);
+                      }}
+                      placeholder={isAr ? 'اسم أو رمز الشخصية (مثال: Al-Ula Falcon Knight)' : 'Character name (e.g. Cyber Nomad Zack)'}
+                      className="px-2.5 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] placeholder-[var(--muted)]"
+                    />
+                    <input
+                      type="text"
+                      value={characterTraits}
+                      onChange={(e) => {
+                        setCharacterTraits(e.target.value);
+                        setCharacterLockEnabled(true);
+                      }}
+                      placeholder={isAr ? 'الملامح الثابتة (مثال: عيون كهرمانية حادة، شعر أسود قصير، ندبة)' : 'Fixed facial traits (e.g. sharp jaw, emerald eyes, silver hair)'}
+                      className="px-2.5 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] placeholder-[var(--muted)]"
+                    />
+                  </div>
+                </div>
+              )}
 
               <textarea
                 value={prompt}
@@ -692,6 +1050,53 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
                   </button>
                 ))}
               </div>
+
+              {/* Negative Prompting Suite (Image Tab) */}
+              {activeTab === 'image' && (
+                <div className="pt-2 border-t border-[var(--border)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[var(--muted)] font-semibold flex items-center gap-1">
+                      <ShieldCheck size={12} className="text-rose-400" />
+                      <span>{isAr ? 'الفلاتر السلبية الذكية (Negative Constraints):' : 'Negative Constraints:'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowNegativeStudio(!showNegativeStudio)}
+                      className="text-[10px] text-[var(--accent)] hover:underline cursor-pointer"
+                    >
+                      {showNegativeStudio ? (isAr ? 'إخفاء الحقل المخصص' : 'Hide Custom') : (isAr ? '+ مخصص' : '+ Custom')}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {QUICK_NEGATIVE_PRESETS.map((np) => (
+                      <button
+                        key={np.id}
+                        type="button"
+                        onClick={() => handleToggleNegativeTag(np.id)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border transition cursor-pointer ${
+                          activeNegativeTags.includes(np.id)
+                            ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                            : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                        }`}
+                      >
+                        {activeNegativeTags.includes(np.id) ? '✓ ' : '+ '}
+                        {isAr ? np.labelAr : np.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
+                  {showNegativeStudio && (
+                    <input
+                      type="text"
+                      value={customNegativePrompt}
+                      onChange={(e) => setCustomNegativePrompt(e.target.value)}
+                      placeholder={isAr ? 'استبعاد مخصص (مثال: no artifacts, no sunglasses, no crowded background)' : 'Custom negative tokens...'}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text)] placeholder-[var(--muted)]"
+                    />
+                  )}
+                </div>
+              )}
 
               {/* Prompt Suggestions */}
               <div className="space-y-1.5 pt-1 border-t border-[var(--border)]">
@@ -820,6 +1225,134 @@ export function MediaStudio({ language, onNavigate, onRunPromptInChat }: MediaSt
                 </div>
               )}
             </div>
+
+            {/* Pro Optical Physics Studio (معمل البصريات والكاميرا الاحترافية) */}
+            {activeTab === 'image' && (
+              <div className="p-4 sm:p-5 rounded-3xl bg-[var(--surface-2)] border border-[var(--border)] space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-[var(--text)]">
+                  <span className="flex items-center gap-1.5">
+                    <Focus size={14} className="text-amber-400" />
+                    <span>{isAr ? 'معمل البصريات والكاميرا الاحترافية (Optical Rig):' : 'Optical Physics & Camera Rig:'}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowOpticalStudio(!showOpticalStudio)}
+                    className="text-[11px] text-amber-400 hover:underline cursor-pointer font-semibold"
+                  >
+                    {showOpticalStudio ? (isAr ? 'طي المعمل ▲' : 'Collapse ▲') : (isAr ? 'توسيع معمل العدسات والإضاءة ▼' : 'Open Optics Studio ▼')}
+                  </button>
+                </div>
+
+                {showOpticalStudio ? (
+                  <div className="space-y-3 pt-2 border-t border-[var(--border)] animate-fadeIn">
+                    {/* Focal Length */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
+                        <span>{isAr ? 'البُعد البؤري للعدسة (Focal Length):' : 'Focal Length:'}</span>
+                        <span className="font-mono text-cyan-400">{selectedFocalLength !== 'none' ? selectedFocalLength : 'Auto'}</span>
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                        {FOCAL_LENGTH_OPTIONS.map((foc) => (
+                          <button
+                            key={foc.id}
+                            type="button"
+                            onClick={() => setSelectedFocalLength(foc.id)}
+                            className={`p-1.5 rounded-xl border text-center transition cursor-pointer text-[10px] font-bold ${
+                              selectedFocalLength === foc.id
+                                ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-sm'
+                                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                            }`}
+                          >
+                            <span className="block text-xs">{foc.icon}</span>
+                            <span className="truncate block mt-0.5">{isAr ? foc.nameAr.split(' ')[0] : foc.nameEn.split(' ')[0]}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Aperture */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
+                        <span>{isAr ? 'فتحة العدسة والعزل (Aperture & Bokeh):' : 'Aperture & Bokeh:'}</span>
+                        <span className="font-mono text-emerald-400">{selectedAperture !== 'none' ? selectedAperture : 'Auto'}</span>
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                        {APERTURE_OPTIONS.map((ap) => (
+                          <button
+                            key={ap.id}
+                            type="button"
+                            onClick={() => setSelectedAperture(ap.id)}
+                            className={`p-1.5 rounded-xl border text-center transition cursor-pointer text-[10px] font-bold ${
+                              selectedAperture === ap.id
+                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                            }`}
+                          >
+                            {ap.id === 'none' ? (isAr ? 'تلقائي' : 'Auto') : ap.id}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Lighting Rig */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
+                        <span>{isAr ? 'الإضاءة والاستوديو (Lighting Setup):' : 'Lighting Setup:'}</span>
+                        <span className="text-[10px] text-amber-400">{LIGHTING_OPTIONS.find(l => l.id === selectedLighting)?.[isAr ? 'nameAr' : 'nameEn']}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {LIGHTING_OPTIONS.map((lit) => (
+                          <button
+                            key={lit.id}
+                            type="button"
+                            onClick={() => setSelectedLighting(lit.id)}
+                            className={`p-2 rounded-xl border text-start transition cursor-pointer text-[10px] font-bold truncate ${
+                              selectedLighting === lit.id
+                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                            }`}
+                          >
+                            {isAr ? lit.nameAr : lit.nameEn}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Film Stock & Sensor */}
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
+                        <span>{isAr ? 'فيلم التصوير والمستشعر (Film Stock / Sensor):' : 'Film Stock & Sensor:'}</span>
+                        <span className="text-[10px] text-purple-400">{FILM_STOCK_OPTIONS.find(f => f.id === selectedFilmStock)?.[isAr ? 'nameAr' : 'nameEn']}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                        {FILM_STOCK_OPTIONS.map((flm) => (
+                          <button
+                            key={flm.id}
+                            type="button"
+                            onClick={() => setSelectedFilmStock(flm.id)}
+                            className={`p-2 rounded-xl border text-start transition cursor-pointer text-[10px] font-bold truncate ${
+                              selectedFilmStock === flm.id
+                                ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)]'
+                            }`}
+                          >
+                            {isAr ? flm.nameAr : flm.nameEn}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] flex-wrap">
+                    <span>{isAr ? 'العدسة:' : 'Lens:'} <b className="text-[var(--text)]">{selectedFocalLength}</b></span>
+                    <span aria-hidden="true">·</span>
+                    <span>{isAr ? 'العزل:' : 'Aperture:'} <b className="text-[var(--text)]">{selectedAperture}</b></span>
+                    <span aria-hidden="true">·</span>
+                    <span>{isAr ? 'الإضاءة:' : 'Light:'} <b className="text-[var(--text)]">{selectedLighting}</b></span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Artistic Style Matrix (Image & Vector) */}
             {activeTab !== 'video' && (

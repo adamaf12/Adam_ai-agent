@@ -9,6 +9,7 @@ import { AppSandboxStudio } from './features/sandbox/AppSandboxStudio';
 import { TranslatorStudio } from './features/translation/TranslatorStudio';
 import { GoogleAdkStudio } from './features/adk/GoogleAdkStudio';
 import { MediaStudio } from './features/media/MediaStudio';
+import { GitHubStudio } from './features/github/GitHubStudio';
 import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
 import { QuickLiquidRefraction } from './components/QuickLiquidRefraction';
 import { NetworkSentinel } from './components/NetworkSentinel';
@@ -261,6 +262,15 @@ export default function App() {
               language={preferences.language}
               onNavigate={(view) => setActiveView(view)}
               onRunPromptInChat={(_prompt) => {
+                setActiveView('chat');
+              }}
+            />
+          )}
+
+          {activeView === 'github' && (
+            <GitHubStudio
+              language={preferences.language}
+              onNavigateToChat={(_prompt) => {
                 setActiveView('chat');
               }}
             />

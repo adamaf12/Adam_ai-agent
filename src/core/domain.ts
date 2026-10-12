@@ -38,7 +38,7 @@ export type Theme =
   | 'cyber-samurai'
   | 'cherry-blossom'
   | 'iceberg-polar';
-export type ViewId = 'chat' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings' | 'iq' | 'translate' | 'adk';
+export type ViewId = 'chat' | 'apps' | 'workspace' | 'media' | 'memory' | 'hermes' | 'security' | 'settings' | 'iq' | 'translate' | 'adk' | 'github';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type MemoryCategory = 'preference' | 'fact' | 'goal' | 'instruction';

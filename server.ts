@@ -839,7 +839,7 @@ app.post('/api/media/enhance-prompt', mediaRateLimiter.middleware(), async (req,
 
 app.post('/api/media/generate-image', mediaRateLimiter.middleware(), async (req, res) => {
   try {
-    const { prompt, style, aspectRatio, seed, engine } = req.body || {};
+    const { prompt, style, aspectRatio, seed, engine, quality, opticalConfig, characterAnchor, customNegativePrompt } = req.body || {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ ok: false, error: 'Prompt is required' });
     }
@@ -862,6 +862,10 @@ app.post('/api/media/generate-image', mediaRateLimiter.middleware(), async (req,
       aspectRatio,
       seed,
       engine,
+      quality,
+      opticalConfig,
+      characterAnchor,
+      customNegativePrompt,
       apiKey,
       userId: req.user.uid,
     });
@@ -1029,6 +1033,66 @@ app.post('/api/media/image-to-image', mediaRateLimiter.middleware(), async (req,
     res.status(500).json({ ok: false, error: err?.message || 'Image-to-Image failed' });
   }
 });
+
+app.post('/api/media/audit-image', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { imageUrl, prompt } = req.body || {};
+    if (!prompt) {
+      return res.status(400).json({ ok: false, error: 'Prompt is required' });
+    }
+    const audit = await mediaEngine.auditImage({
+      imageUrl: imageUrl || '',
+      prompt: String(prompt).slice(0, 800),
+      apiKey,
+    });
+    res.json({ ok: true, audit });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Visual audit failed' });
+  }
+});
+
+app.post('/api/media/generate-variations', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { prompt, count, style, aspectRatio, engine, opticalConfig } = req.body || {};
+    if (!prompt) {
+      return res.status(400).json({ ok: false, error: 'Prompt is required' });
+    }
+    const num = count === 4 ? 4 : 2;
+    const items = await mediaEngine.generateVariations({
+      prompt: String(prompt).slice(0, 1000),
+      count: num,
+      style,
+      aspectRatio,
+      engine,
+      opticalConfig,
+      apiKey,
+      userId: req.user.uid,
+    });
+    res.json({ ok: true, items });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Variations failed' });
+  }
+});
+
+app.post('/api/media/inpaint-image', mediaRateLimiter.middleware(), async (req, res) => {
+  try {
+    const { sourceImage, instruction, style } = req.body || {};
+    if (!sourceImage || !instruction) {
+      return res.status(400).json({ ok: false, error: 'sourceImage and instruction are required' });
+    }
+    const item = await mediaEngine.inpaintImage({
+      sourceImage,
+      instruction: String(instruction).slice(0, 600),
+      style,
+      apiKey,
+      userId: req.user.uid,
+    });
+    res.json({ ok: true, item });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Inpainting failed' });
+  }
+});
+
 
 function buildGenerationConfig(baseConfig: Record<string, any>, modelId: string): Record<string, any> {
   const config = { ...baseConfig };
@@ -2204,7 +2268,13 @@ async function startServer() {
       });
     } else if (process.env.NODE_ENV !== 'test') {
       const { createServer: createViteServer } = await import('vite');
-      const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
+      const vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: false,
+        },
+        appType: 'spa',
+      });
       app.use(vite.middlewares);
     }
   } catch (err) {
