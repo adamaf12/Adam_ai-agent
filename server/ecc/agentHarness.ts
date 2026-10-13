@@ -46,6 +46,12 @@ const SKILLS: HarnessSkill[] = [
   { id: 'regression-testing', description: 'Prefer deterministic checks and preserve known failure cases.', capabilities: ['testing', 'verification'], risk: 'medium' },
   { id: 'self-debugging', description: 'Capture failure state before retrying and recover with bounded steps.', capabilities: ['debugging', 'recovery'], risk: 'medium' },
   { id: 'continuous-improvement', description: 'Turn verified outcomes into reusable workflow knowledge without persisting raw model claims.', capabilities: ['memory', 'learning'], risk: 'low' },
+  { id: 'api-integration', description: 'Trace API request and response contracts, authentication, streaming, timeouts, and provider failures end to end.', capabilities: ['api', 'integration', 'debugging'], risk: 'medium' },
+  { id: 'database-reliability', description: 'Design durable persistence, migrations, access policies, and recovery rather than relying on ephemeral serverless disk.', capabilities: ['database', 'persistence', 'memory'], risk: 'high' },
+  { id: 'mobile-app-debugging', description: 'Diagnose Android/WebView networking, Capacitor configuration, APK build and release behavior.', capabilities: ['android', 'mobile', 'debugging'], risk: 'medium' },
+  { id: 'web-automation', description: 'Use available browser and web tools for grounded page inspection and user-authorized workflows.', capabilities: ['web', 'research', 'tools'], risk: 'medium' },
+  { id: 'multimodal-media', description: 'Route image, audio, video, OCR and document requests to the appropriate available capability and verify output type.', capabilities: ['image', 'audio', 'video', 'multimodal'], risk: 'medium' },
+  { id: 'skill-composition', description: 'Compose several specialized skills into a dependency-aware plan, execute in order, and validate deliverables.', capabilities: ['planning', 'tools', 'verification'], risk: 'medium' },
 ];
 
 function has(text: string, pattern: RegExp): boolean {
@@ -55,14 +61,22 @@ function has(text: string, pattern: RegExp): boolean {
 export function buildHarnessPlan(prompt: string): HarnessPlan {
   const text = prompt.trim();
   const coding = has(text, /code|coding|debug|bug|github|repo|deploy|typescript|javascript|python|كود|برمج|خطأ|إصلاح|مستودع|نشر/i);
-  const research = has(text, /research|search|latest|current|verify|ابحث|بحث|آخر|تحقق|مصدر/i);
+  const research = has(text, /research|search|latest|current|verify|ابحث|بحث|آخر|تحقق|مصدر|ويب|موقع|صفحة/i);
   const security = has(text, /security|auth|permission|secret|token|attack|أمان|حماية|صلاحيات|مفتاح|ثغرة/i);
-  const complex = text.length > 700 || coding || research || security;
+  const api = has(text, /api|endpoint|http|stream|ndjson|webhook|oauth|integration|واجهة برمجية|طلب شبكة|استجابة/i);
+  const database = has(text, /database|supabase|postgres|sql|storage|persistence|migration|قاعدة بيانات|تخزين|ذاكرة دائمة/i);
+  const mobile = has(text, /android|apk|capacitor|webview|ios|mobile|هاتف|أندرويد|تطبيق الهاتف/i);
+  const media = has(text, /image|photo|video|audio|voice|ocr|multimodal|صورة|فيديو|صوت|استخراج النص/i);
+  const complex = text.length > 700 || coding || research || security || api || database || mobile || media;
 
   const requiredCapabilities = new Set<string>(['planning']);
-  if (coding) requiredCapabilities.add('coding');
-  if (research) requiredCapabilities.add('research');
+  if (coding) { requiredCapabilities.add('coding'); requiredCapabilities.add('debugging'); }
+  if (research) { requiredCapabilities.add('research'); requiredCapabilities.add('web'); }
   if (security) requiredCapabilities.add('security');
+  if (api) { requiredCapabilities.add('api'); requiredCapabilities.add('integration'); }
+  if (database) { requiredCapabilities.add('database'); requiredCapabilities.add('persistence'); }
+  if (mobile) { requiredCapabilities.add('android'); requiredCapabilities.add('mobile'); }
+  if (media) { requiredCapabilities.add('multimodal'); requiredCapabilities.add('image'); requiredCapabilities.add('audio'); requiredCapabilities.add('video'); }
   if (complex) requiredCapabilities.add('reasoning');
 
   const agents = agentRegistry.enabled()
