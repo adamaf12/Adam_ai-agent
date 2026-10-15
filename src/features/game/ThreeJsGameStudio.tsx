@@ -546,20 +546,37 @@ export const ThreeJsGameStudio: React.FC<ThreeJsGameStudioProps> = ({ language, 
     const camera = new THREE.PerspectiveCamera(65, container.clientWidth / container.clientHeight, 0.1, 800);
     camera.position.set(0, 4.5, 9);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.appendChild(renderer.domElement);
+    let renderer: THREE.WebGLRenderer | null = null;
+    let fallback2DCanvas: HTMLCanvasElement | null = null;
+    let isFallbackMode = false;
 
-    // Studio Environment Reflections via RoomEnvironment
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmremGenerator.dispose();
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+    } catch (glErr) {
+      console.warn('[ThreeJsGameStudio] WebGL context creation failed, falling back to high-performance 2D Canvas renderer:', glErr);
+      isFallbackMode = true;
+      fallback2DCanvas = document.createElement('canvas');
+      fallback2DCanvas.width = container.clientWidth || 800;
+      fallback2DCanvas.height = container.clientHeight || 600;
+      fallback2DCanvas.style.width = '100%';
+      fallback2DCanvas.style.height = '100%';
+      container.appendChild(fallback2DCanvas);
+    }
+
+    if (!isFallbackMode && renderer) {
+      // Studio Environment Reflections via RoomEnvironment
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmremGenerator.dispose();
+    }
 
     // Studio 3-Point Balanced Lighting
     const keyLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
@@ -868,7 +885,54 @@ export const ThreeJsGameStudio: React.FC<ThreeJsGameStudioProps> = ({ language, 
       // HUD Metrics Update
       setSpeedKph(Math.round(g.speed * 4.6));
 
-      renderer.render(scene, camera);
+      if (isFallbackMode && fallback2DCanvas) {
+        const ctx = fallback2DCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#050811';
+          ctx.fillRect(0, 0, fallback2DCanvas.width, fallback2DCanvas.height);
+
+          // Draw Neon grid lines
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          for (let gx = 0; gx < fallback2DCanvas.width; gx += 40) {
+            ctx.beginPath();
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx, fallback2DCanvas.height);
+            ctx.stroke();
+          }
+
+          // Draw Player Ship
+          const px = fallback2DCanvas.width / 2 + g.playerX * 30;
+          const py = fallback2DCanvas.height * 0.7 - (g.playerY - 1.5) * 30;
+          ctx.fillStyle = activeMission === 'space' ? '#38bdf8' : activeMission === 'lab' ? '#a855f7' : '#06b6d4';
+          ctx.beginPath();
+          ctx.moveTo(px, py - 20);
+          ctx.lineTo(px - 15, py + 15);
+          ctx.lineTo(px + 15, py + 15);
+          ctx.closePath();
+          ctx.fill();
+
+          // Draw Collectibles
+          ctx.fillStyle = '#34d399';
+          collectibles.forEach((item) => {
+            const ix = fallback2DCanvas.width / 2 + item.position.x * 25;
+            const iy = fallback2DCanvas.height * 0.3 + (item.position.z + 50) * 3;
+            ctx.beginPath();
+            ctx.arc(ix, iy, 8, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Draw Obstacles
+          ctx.fillStyle = '#ef4444';
+          obstacles.forEach((obs) => {
+            const ox = fallback2DCanvas.width / 2 + obs.position.x * 25;
+            const oy = fallback2DCanvas.height * 0.3 + (obs.position.z + 50) * 3;
+            ctx.fillRect(ox - 18, oy - 12, 36, 24);
+          });
+        }
+      } else if (renderer) {
+        renderer.render(scene, camera);
+      }
     };
 
     animId = requestAnimationFrame(renderLoop);
@@ -876,18 +940,28 @@ export const ThreeJsGameStudio: React.FC<ThreeJsGameStudioProps> = ({ language, 
     // Responsive Resize Handler
     const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      if (renderer) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      } else if (fallback2DCanvas) {
+        fallback2DCanvas.width = container.clientWidth;
+        fallback2DCanvas.height = container.clientHeight;
+      }
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
-      renderer.dispose();
-      if (renderer.domElement.parentNode) {
-        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      if (renderer) {
+        renderer.dispose();
+        if (renderer.domElement.parentNode) {
+          renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+      }
+      if (fallback2DCanvas && fallback2DCanvas.parentNode) {
+        fallback2DCanvas.parentNode.removeChild(fallback2DCanvas);
       }
     };
   }, [activeMission, cameraMode]);
