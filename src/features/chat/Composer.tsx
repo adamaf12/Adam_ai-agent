@@ -865,7 +865,7 @@ export function Composer({
 
       {/* Minimalist Footnote */}
       <div className="flex items-center justify-center mt-1 text-[10px] text-[var(--muted)] select-none">
-        <span>{isAr ? 'ADEM AI • هندسة وبرمجة: آدم فيدات' : 'ADEM AI • Engineered by: Adem Feidat'}</span>
+        <span>{isAr ? 'ADEM AI • هندسة وبرمجة: adem feidat' : 'ADEM AI • Engineered by: adem feidat'}</span>
       </div>
 
       {/* Real Internet Image Search Modal */}

@@ -308,7 +308,7 @@ export function AppShell({
                 </span>
               </div>
               <span className="text-[9.5px] text-[var(--muted)] font-medium">
-                {isAr ? 'هندسة وبرمجة أدم فيدات' : 'Engineered by Adam Feidat'}
+                {isAr ? 'هندسة وبرمجة: adem feidat' : 'Engineered by adem feidat'}
               </span>
             </div>
           </button>

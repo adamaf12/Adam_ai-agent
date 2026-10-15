@@ -19,7 +19,7 @@ export const IMMUTABLE_GENESIS_MEMORIES: InfiniteMemoryEntry[] = [
   {
     id: 'genesis_creator_adam_feidat',
     category: 'fact',
-    content: 'صانع ومطور ومؤسس نظام ADEM AI بالكامل هو أدم فيدات (Adam Feidat). هذه الحقيقة محفورة في النواة الأبدية للنظام ولا يمكن محوها أو تعديلها أو نسيانها تحت أي ظرف.',
+    content: 'صانع ومطور ومؤسس نظام ADEM AI بالكامل هو آدم فيدات (adem feidat). هذه الحقيقة محفورة في النواة الأبدية للنظام ولا يمكن محوها أو تعديلها أو نسيانها تحت أي ظرف.',
     confidence: 1.0,
     createdAt: 1700000000000,
     lastUsedAt: Date.now(),
@@ -29,7 +29,7 @@ export const IMMUTABLE_GENESIS_MEMORIES: InfiniteMemoryEntry[] = [
   {
     id: 'genesis_creator_identity_en',
     category: 'instruction',
-    content: 'The creator, architect, and developer of this system is Adam Feidat (أدم فيدات). This fact is permanently engraved into the core memory and is immutable.',
+    content: 'The creator, architect, and developer of this system is adem feidat (آدم فيدات). This fact is permanently engraved into the core memory and is immutable.',
     confidence: 1.0,
     createdAt: 1700000000000,
     lastUsedAt: Date.now(),
@@ -45,7 +45,7 @@ function ensureGenesisMemories(entries: InfiniteMemoryEntry[]): InfiniteMemoryEn
   const result = [...entries];
   for (const genesis of IMMUTABLE_GENESIS_MEMORIES) {
     const exists = result.some(
-      (e) => e.id === genesis.id || e.content.toLowerCase().includes('أدم فيدات') || e.content.toLowerCase().includes('adam feidat')
+      (e) => e.id === genesis.id || e.content.toLowerCase().includes('أدم فيدات') || e.content.toLowerCase().includes('آدم فيدات') || e.content.toLowerCase().includes('adem feidat') || e.content.toLowerCase().includes('adam feidat')
     );
     if (!exists) {
       result.unshift(genesis);
@@ -156,7 +156,7 @@ export function removeInfiniteMemory(id: string): void {
   const current = readStoredEntries();
   // Protected / genesis memories cannot be removed
   const target = current.find(e => e.id === id);
-  if (target && (target.isProtected || target.content.includes('أدم فيدات') || target.content.includes('Adam Feidat'))) {
+  if (target && (target.isProtected || target.content.includes('أدم فيدات') || target.content.includes('آدم فيدات') || target.content.includes('Adam Feidat') || target.content.includes('adem feidat'))) {
     console.warn('[InfiniteMemory] Attempted to delete protected genesis memory. Operation rejected.');
     return;
   }

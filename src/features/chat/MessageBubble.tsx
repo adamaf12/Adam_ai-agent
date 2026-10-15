@@ -346,7 +346,7 @@ export function MessageBubble({
             <>
               <span aria-hidden="true" className="text-[var(--muted)]/50">·</span>
               <span className="text-[11px] text-[var(--accent)] font-medium">
-                {language === 'ar' ? 'آدم فيدات' : 'Adem Feidat'}
+                adem feidat
               </span>
             </>
           )}

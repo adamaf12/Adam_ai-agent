@@ -914,7 +914,7 @@ export function Chat({
                 <Sparkles size={24} className="text-cyan-400" />
               </div>
               <span className="text-xs font-mono text-[var(--muted)]">
-                {language === 'ar' ? 'ADEM AI • آدم فيدات' : 'ADEM AI • Adam Feidat'}
+                {language === 'ar' ? 'ADEM AI • adem feidat' : 'ADEM AI • adem feidat'}
               </span>
             </div>
 

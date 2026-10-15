@@ -100,9 +100,9 @@ export function GitHubStudio({ language, onNavigateToChat }: GitHubStudioProps) 
   ];
 
   const mockCommits: CommitItem[] = [
-    { sha: '8f72a19', message: isAr ? 'ترقية استوديو الصور والوسائط وإصلاح أخطاء البناء' : 'Upgrade Media Studio & fix build compilation errors', author: 'Adam Feidat', date: '10 minutes ago' },
-    { sha: '3c91e42', message: isAr ? 'تأمين اتصالات WebSocket وتفعيل درع حماية بيئة المعاينة' : 'Secure WebSocket connections and enable preview environment shield', author: 'Adam Feidat', date: '2 hours ago' },
-    { sha: '1a40f88', message: isAr ? 'إضافة محرك الذكاء الاصطناعي متعدد الوسائط بالكامل' : 'Integrate complete multimodal AI engine & tools', author: 'Adam Feidat', date: 'Yesterday' },
+    { sha: '8f72a19', message: isAr ? 'ترقية استوديو الصور والوسائط وإصلاح أخطاء البناء' : 'Upgrade Media Studio & fix build compilation errors', author: 'adem feidat', date: '10 minutes ago' },
+    { sha: '3c91e42', message: isAr ? 'تأمين اتصالات WebSocket وتفعيل درع حماية بيئة المعاينة' : 'Secure WebSocket connections and enable preview environment shield', author: 'adem feidat', date: '2 hours ago' },
+    { sha: '1a40f88', message: isAr ? 'إضافة محرك الذكاء الاصطناعي متعدد الوسائط بالكامل' : 'Integrate complete multimodal AI engine & tools', author: 'adem feidat', date: 'Yesterday' },
   ];
 
   const handleSelectRepo = (repoName: string) => {

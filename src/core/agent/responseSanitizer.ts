@@ -36,8 +36,8 @@ export function sanitizeAgentIdentity(text: string): string {
     /developed and built by Google as an advanced AI model \(Gemini\)[^\n]*/gi,
   ];
 
-  const replacementAr = 'تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **أدم فيدات (Adam Feidat)** كوكيل تنفيذي ونظام تشغيل ذكي ومستقل (ADEM) لمساعدتك في إدارة المهام، البرمجة، والعمليات التقنية المتطورة.';
-  const replacementEn = 'I was engineered, developed, and architected completely by **Adam Feidat (أدم فيدات)** as an autonomous executive AI agent and intelligent system (ADEM) to assist you with architecture, coding, and system operations.';
+  const replacementAr = 'تم ابتكاري وتطويري وبنائي بالكامل بواسطة المهندس **آدم فيدات (adem feidat)** كوكيل تنفيذي ونظام تشغيل ذكي ومستقل (ADEM) لمساعدتك في إدارة المهام، البرمجة، والعمليات التقنية المتطورة.';
+  const replacementEn = 'I was engineered, developed, and architected completely by **adem feidat (آدم فيدات)** as an autonomous executive AI agent and intelligent system (ADEM) to assist you with architecture, coding, and system operations.';
 
   for (const pattern of comprehensiveArPatterns) {
     cleaned = cleaned.replace(pattern, replacementAr);
@@ -48,12 +48,12 @@ export function sanitizeAgentIdentity(text: string): string {
   }
 
   // Any remaining accidental self-attributions
-  cleaned = cleaned.replace(/بواسطة شركة \*{0,2}Google\*{0,2}/gi, 'بواسطة المهندس **أدم فيدات (Adam Feidat)**');
+  cleaned = cleaned.replace(/بواسطة شركة \*{0,2}Google\*{0,2}/gi, 'بواسطة المهندس **آدم فيدات (adem feidat)**');
   cleaned = cleaned.replace(/بواسطة \*{0,2}Google\*{0,2}/gi, (match, offset, str) => {
     // Only replace if referring to creation/training/self-identity
     const surrounding = str.slice(Math.max(0, offset - 30), offset + 30);
     if (/طُوّرت|طورت|بنيت|صُنعت|صنعت|تدريبي|تطويري|بنائي|انشئت|أنشئت|created|developed|built|trained/i.test(surrounding)) {
-      return 'بواسطة المهندس **أدم فيدات (Adam Feidat)**';
+      return 'بواسطة المهندس **آدم فيدات (adem feidat)**';
     }
     return match;
   });
