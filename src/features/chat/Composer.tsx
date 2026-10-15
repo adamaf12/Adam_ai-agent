@@ -1,5 +1,6 @@
 import {
   Camera,
+  Globe,
   Loader2,
   Mic,
   MicOff,
@@ -16,6 +17,7 @@ import { copy } from '../../core/i18n';
 import { processImageFile, formatFileSize, type ProcessedImage } from '../../core/utils/imageUtils';
 import { useGeneration } from '../../core/generation';
 import { LiveProgressCard } from '../../components/LiveProgressCard';
+import { WebImageSearchModal, type WebImageItem } from './WebImageSearchModal';
 
 export interface DialectOption {
   code: string;
@@ -82,6 +84,7 @@ export function Composer({
   const [processingFiles, setProcessingFiles] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [listening, setListening] = useState(false);
+  const [isWebImageModalOpen, setIsWebImageModalOpen] = useState(false);
   const isAr = language === 'ar';
   const [voiceDialect, setVoiceDialect] = useState<string>(() => {
     return localStorage.getItem('adam_voice_dialect') || (isAr ? 'ar-DZ' : 'en-US');
@@ -708,6 +711,22 @@ export function Composer({
           )}
         </button>
 
+        {/* Fetch Web Image from Internet Button */}
+        <button
+          type="button"
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
+            isLocked
+              ? 'opacity-40 cursor-not-allowed pointer-events-none'
+              : 'text-[var(--muted)] hover:text-blue-400 hover:bg-[var(--surface-2)]'
+          }`}
+          onClick={() => setIsWebImageModalOpen(true)}
+          aria-label={isAr ? 'جلب صور من الإنترنت' : 'Fetch Web Images'}
+          title={isAr ? 'جلب صور حقيقية من الإنترنت (Wikimedia & Web)' : 'Fetch real web images'}
+          disabled={isLocked}
+        >
+          <Globe size={16} />
+        </button>
+
         {/* Flexible Text Input */}
         <div className="flex-1 min-w-0 w-full flex items-center py-0.5">
           <textarea
@@ -809,6 +828,26 @@ export function Composer({
       <div className="flex items-center justify-center mt-1 text-[10px] text-[var(--muted)] select-none">
         <span>{isAr ? 'ADEM AI • هندسة وبرمجة: آدم فيدات' : 'ADEM AI • Engineered by: Adem Feidat'}</span>
       </div>
+
+      {/* Real Internet Image Search Modal */}
+      <WebImageSearchModal
+        isOpen={isWebImageModalOpen}
+        onClose={() => setIsWebImageModalOpen(false)}
+        language={language}
+        onSelectImage={(img, mode) => {
+          if (mode === 'insert_markdown') {
+            setDraft((prev) =>
+              prev ? `${prev.trim()}\n\n![${img.title}](${img.url})\n` : `![${img.title}](${img.url})\n`
+            );
+          } else {
+            onSend(
+              isAr
+                ? `إليك صورة حية تم جلبها من الإنترنت:\n![${img.title}](${img.url})\n\nأريدك أن تفحصها وتشرح محتواها وأهم تفاصيلها التقنية بالتفصيل.`
+                : `Here is a real image retrieved from the web:\n![${img.title}](${img.url})\n\nPlease inspect it and analyze its key technical details in depth.`
+            );
+          }
+        }}
+      />
     </div>
   );
 }

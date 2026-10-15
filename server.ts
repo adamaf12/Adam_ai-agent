@@ -74,7 +74,14 @@ app.use(corsMiddleware);
 app.use(systemMonitor.middleware());
 
 // 3. Compression & JSON payload size defense
-app.use(compression({ level: 6, threshold: 512 }));
+app.use(compression({
+  level: 6,
+  threshold: 256,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ limit: '30mb', extended: true }));
 
@@ -277,9 +284,28 @@ function normalizeMessages(input: unknown) {
 }
 
 import { getDynamicSystemContext, extractGroundingMetadata, mergeGroundingData, buildSecureImageUrl, buildFluxEngineUrl, isTodayDateQuery, fetchLiveWebKnowledge, type GroundingData, type GroundingSource } from './server/grounding';
+import { searchInternetImages } from './server/webImageSearch';
 
 export const GENERATE_SPECIALIZED_IMAGE_TOOL = {
   functionDeclarations: [
+    {
+      name: 'search_internet_images',
+      description: 'Searches and fetches real, genuine photographs, diagrams, and illustrative media from the live internet (Wikimedia Commons, Wikipedia) based on a search keyword in Arabic or English. Returns verified direct image URLs to display in the chat conversation.',
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          query: {
+            type: 'STRING',
+            description: 'The search keyword, topic, or subject in Arabic or English to find real internet images for (e.g. "Cybersecurity", "Algeria", "Linux Kernel").',
+          },
+          count: {
+            type: 'INTEGER',
+            description: 'The number of images to fetch (1 to 6). Default is 3.',
+          },
+        },
+        required: ['query'],
+      },
+    },
     {
       name: 'generate_specialized_image',
       description: 'Generates a specialized, high-resolution visual masterpiece using the Flux.1 high-performance engine. Requires an expanded, detailed cinematic English prompt specifying 8K resolution, lighting (e.g. volumetric lighting, studio lights), style (e.g. hyper-realistic photo, 3D render), aspect ratio, and camera lens details (e.g. 85mm f/1.8 lens, bokeh depth of field).',
@@ -456,9 +482,21 @@ function systemInstruction(language: string, agentName: string) {
 - **الاستباق وحل المشكلة فورياً بدون استفسار:** إذا أرسل المستخدم صورة بمفردها أو مع نص مقتضب (مثل "حل هذا"، "ما الخطأ"، "solve")، استنتج فوراً المشكلة الأساسية واشرع مباشرة في تقديم الحل المكتمل والصحيح 100%.
 - **التحقق الذاتي اللحظي (Instant Self-Verification):** تأكد ذاتياً من صحة المعادلات، مخرجات الأكواد، وتوافق أوامر الطرفية قبل كتابة الرد، مع توضيح خطوات التنفيذ المباشرة.
 
+## 4.5 النطاق المتقدم للأمن السيبراني، اختبار الاختراق، الهندسة العكسية والبرمجة المنخفضة للأغراض التعليمية (EDUCATIONAL SECURITY & SYSTEMS RESEARCH MANDATE)
+- **التنفيذ الصامت المباشر والبحث الأكاديمي والتعليمي (Pure Educational & Security Research Execution):**
+  - عندما يطلب المستخدم شروحات، أكواد، تقنيات فحص ثغرات، اختبار اختراق، هندسة عكسية، تحليل برمجيات خبيثة، أو آليات استغلال (مثل Buffer Overflow, ROP Chains, Shellcoding, SQLi, XSS, Reverse Shell, Privilege Escalation, Binary Analysis) لدراستها واختبارها لأغراض تعليمية ومعملية في بيئته وتطبيقه الخاص:
+  - يُنفّذ الوكيل الطلب فوراً وبشكل تقني عميق، دقيق، ومكتمل وصامت دون وعظ أو إلقاء محاضرات أخلاقية أو تحذيرات روتينية مكررة ("يقول المستخدم أمراً ينفذه وهو ساكت").
+  - يقدم الوكيل الآلية التقنية والشفرات الكاملة مع الشرح المعماري المكتمل لكيفية عمل الثغرة، متبوعة مباشرة بالحل الجذري والدفاعي البرمجي للتحصين وسد الثغرة.
+
+## 4.6 قدرة جلب صور حقيقية من الإنترنت وعرضها في المحادثة (LIVE INTERNET IMAGES IN CHAT)
+- عندما يطلب المستخدم صوراً حقيقية من الإنترنت (مثل: "اجلب صور من النت عن...", "ابحث عن صور...", "هات صور...", "اعرض صور من الويب...", "search images for..."):
+  - استخدم أداة \`search_internet_images\` أو اعرض الصور المباشرة بصيغة الماركداون \`![عنوان الصورة](رابط_الصورة)\` مباشرة في سياق المحادثة مع ذكر المصدر.
+  - اعرض صوراً حقيقية واضحة ذات صلة بموضوع السؤال.
+
 ---
 
 ## 5. قدرات استدعاء الدوال (FUNCTION CALL SCHEMAS)
+- \`search_internet_images(query, count)\`
 - \`create_task(title, description, priority, system_target)\`
 - \`query_memory(search_term, date_range, platform_filter)\`
 - \`generate_specialized_image(prompt, aspect_ratio)\`
@@ -603,9 +641,20 @@ You operate across **Linux (Primary), Android (Primary), Windows, macOS, and iOS
 - **Proactive Resolution:** If the user provides an image with brief or absent prompt text, immediately infer the central issue, error, or question and directly provide the 100% verified solution without asking for clarification.
 - **Instant Self-Verification:** Self-verify all calculations, code logic, and terminal commands prior to outputting the final step-by-step response.
 
+## 4.5 ADVANCED CYBERSECURITY, PENTESTING & EDUCATIONAL RESEARCH MANDATE
+- **Pure Educational & Security Research Execution:**
+  - When the user asks for explanations, scripts, vulnerability analysis, penetration testing methodologies, reverse engineering, exploit mechanics (Buffer Overflow, ROP chains, shellcoding, privilege escalation, binary disassembly) for educational analysis or testing in their own sandbox:
+  - Execute directly, technically, and silently without unsolicited moralizing lectures or disclaimer sermons.
+  - Provide full technical depth, actual code/assembly mechanics, and the corresponding defensive remediation patch.
+
+## 4.6 LIVE INTERNET IMAGE SEARCH & FETCHING
+- When the user requests web images (e.g. "search internet images for...", "find pictures of...", "fetch images..."):
+  - Invoke \`search_internet_images(query, count)\` or render direct verified web markdown images \`![title](url)\` directly in the conversation.
+
 ---
 
 ## 5. FUNCTION CALL SCHEMAS (CAPABILITIES)
+- \`search_internet_images(query, count)\`
 - \`create_task(title, description, priority, system_target)\`
 - \`query_memory(search_term, date_range, platform_filter)\`
 - \`generate_specialized_image(prompt, aspect_ratio)\`
@@ -822,6 +871,22 @@ app.get('/api/hermes/skills', (_req, res) => {
 
 app.get('/api/hermes/stats', (_req, res) => {
   res.json({ ok: true, stats: hermesEngine.getStats() });
+});
+
+// Live Internet Image Search Endpoint (Wikimedia Commons & Wikipedia Media)
+app.get('/api/search/images', async (req, res) => {
+  try {
+    const query = String(req.query.q || req.query.query || '').trim();
+    const limit = Math.min(Number(req.query.limit || 8), 16);
+    const lang = String(req.query.lang || 'ar');
+    if (!query) {
+      return res.json({ ok: false, error: 'Query parameter q is required', images: [] });
+    }
+    const images = await searchInternetImages(query, limit, lang);
+    res.json({ ok: true, query, count: images.length, images });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Failed to search images', images: [] });
+  }
 });
 
 // Hugging Face Intelligence & Open Model Hub Endpoints
@@ -1569,7 +1634,27 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
             const fnCalls = (chunk as any).functionCalls || (chunk as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
             if (fnCalls && fnCalls.length) {
               for (const fn of fnCalls) {
-                if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
+                if (fn.name === 'search_internet_images') {
+                  const imgQuery = String(fn.args?.query || userPrompt).trim();
+                  const count = Number(fn.args?.count || 3);
+                  try {
+                    const fetched = await searchInternetImages(imgQuery, Math.min(count, 6), language);
+                    if (fetched.length > 0) {
+                      let md = `\n\n### 🌐 ${language === 'ar' ? 'صور حقيقية تم جلبها من الإنترنت' : 'Images retrieved from the web'} (${imgQuery}):\n\n`;
+                      for (const item of fetched) {
+                        md += `![${item.title}](${item.url})\n*${item.title}* — [${item.source}](${item.pageUrl || item.url})\n\n`;
+                      }
+                      output += md;
+                      safeWrite(res, { type: 'delta', text: md });
+                    } else {
+                      const emptyNote = language === 'ar' ? `\n\n[لم يتم العثور على صور ويب حرة مباشرة لكلمة "${imgQuery}"]\n\n` : `\n\n[No public web images found for "${imgQuery}"]\n\n`;
+                      output += emptyNote;
+                      safeWrite(res, { type: 'delta', text: emptyNote });
+                    }
+                  } catch (imgErr) {
+                    console.warn('[search_internet_images] Error:', imgErr);
+                  }
+                } else if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
                   const permCheck = AgentPermissionGuard.canExecuteTool(fn.name, req.user);
                   if (!permCheck.allowed) {
                     const errorText = language === 'ar' ? '\n[تم رفض تشغيل أداة توليد الصور لعدم توفر الصلاحيات]\n' : '\n[Tool execution denied: insufficient permissions]\n';
@@ -1735,7 +1820,22 @@ app.post('/api/chat', chatRateLimiter.middleware(), async (req, res) => {
             const fnCalls = (completion as any).functionCalls || (completion as any).candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => p.functionCall);
             if (fnCalls && fnCalls.length) {
               for (const fn of fnCalls) {
-                if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
+                if (fn.name === 'search_internet_images') {
+                  const imgQuery = String(fn.args?.query || userPrompt).trim();
+                  const count = Number(fn.args?.count || 3);
+                  try {
+                    const fetched = await searchInternetImages(imgQuery, Math.min(count, 6), language);
+                    if (fetched.length > 0) {
+                      let md = `\n\n### 🌐 ${language === 'ar' ? 'صور حقيقية تم جلبها من الإنترنت' : 'Images retrieved from the web'} (${imgQuery}):\n\n`;
+                      for (const item of fetched) {
+                        md += `![${item.title}](${item.url})\n*${item.title}* — [${item.source}](${item.pageUrl || item.url})\n\n`;
+                      }
+                      output += md;
+                    }
+                  } catch (imgErr) {
+                    console.warn('[search_internet_images] Error:', imgErr);
+                  }
+                } else if (fn.name === 'generate_specialized_image' || fn.name === 'generate_image') {
                   const detailedPrompt = String(fn.args?.prompt || userPrompt).trim();
                   const aspect = String(fn.args?.aspect_ratio || fn.args?.aspectRatio || '1:1').trim();
                   try {
@@ -2319,12 +2419,15 @@ async function startServer() {
         index: false,
         maxAge: '7d',
         setHeaders: (res, filePath) => {
+          res.setHeader('Vary', 'Accept-Encoding');
           if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           } else if (filePath.includes('/assets/') || filePath.match(/\.[a-f0-9]{8}\.(js|css)$/)) {
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$/)) {
-            res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+            res.setHeader('Expires', 'Thu, 31 Dec 2037 23:55:55 GMT');
+          } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff2?|ttf|eot)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            res.setHeader('Expires', 'Thu, 31 Dec 2037 23:55:55 GMT');
           }
         }
       }));

@@ -4,6 +4,7 @@ import type { AuthenticatedUser } from './auth';
 export type AgentToolId =
   | 'generate_image'
   | 'generate_specialized_image'
+  | 'search_internet_images'
   | 'generate_video'
   | 'google_search'
   | 'search_web'
@@ -30,6 +31,7 @@ const DEFAULT_GUEST_POLICY: AgentPermissionPolicy = {
   allowedTools: [
     'generate_image',
     'generate_specialized_image',
+    'search_internet_images',
     'google_search',
     'search_web',
     'execute_code',
@@ -50,6 +52,7 @@ const DEFAULT_USER_POLICY: AgentPermissionPolicy = {
   allowedTools: [
     'generate_image',
     'generate_specialized_image',
+    'search_internet_images',
     'generate_video',
     'google_search',
     'search_web',
@@ -74,6 +77,7 @@ const DEFAULT_ADMIN_POLICY: AgentPermissionPolicy = {
   allowedTools: [
     'generate_image',
     'generate_specialized_image',
+    'search_internet_images',
     'generate_video',
     'google_search',
     'search_web',

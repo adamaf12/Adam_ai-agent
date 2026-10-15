@@ -5,6 +5,7 @@ import { AuthProvider } from './core/auth/AuthContext';
 import './index.css';
 import './theme.css';
 import './features/features.css';
+import 'leaflet/dist/leaflet.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Adam root element is missing');

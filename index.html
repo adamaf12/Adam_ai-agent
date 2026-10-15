@@ -12,146 +12,13 @@
     <meta name="apple-mobile-web-app-title" content="ADEM AI" />
     <meta name="format-detection" content="telephone=no" />
 
-    <!-- AI Studio Environment Shield: Suppress & handle Vite HMR WebSocket in preview iframe -->
-    <script>
-      (function() {
-        if (typeof window !== 'undefined') {
-          window.addEventListener('unhandledrejection', function(event) {
-            var reason = event && event.reason;
-            var str = String((reason && (reason.stack || reason.message)) || reason || '');
-            if (
-              str.includes('WebSocket') ||
-              str.includes('vite') ||
-              str.includes('@vite/client') ||
-              str.includes('createWebSocketModuleRunnerTransport') ||
-              str.includes('WebSocket closed without opened')
-            ) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-            }
-          }, true);
-
-          window.addEventListener('error', function(event) {
-            var msg = String((event && (event.message || event.filename)) || '');
-            if (
-              msg.includes('WebSocket') ||
-              msg.includes('@vite/client') ||
-              msg.includes('createWebSocketModuleRunnerTransport')
-            ) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              return true;
-            }
-          }, true);
-
-          if (window.WebSocket) {
-            var OrigWS = window.WebSocket;
-            var PatchedWS = function(url, protocols) {
-              var isHmr = (protocols === 'vite-hmr') ||
-                          (Array.isArray(protocols) && protocols.indexOf('vite-hmr') !== -1) ||
-                          (typeof url === 'string' && (url.indexOf('token=') !== -1 || url.indexOf('vite') !== -1));
-              if (isHmr) {
-                var dummy = new EventTarget();
-                dummy.binaryType = 'blob';
-                dummy.readyState = 1; // WebSocket.OPEN
-                dummy.url = String(url);
-                dummy.protocol = 'vite-hmr';
-                dummy.bufferedAmount = 0;
-                dummy.extensions = '';
-                dummy.onopen = null;
-                dummy.onclose = null;
-                dummy.onerror = null;
-                dummy.onmessage = null;
-                dummy.send = function() {};
-                dummy.close = function() {
-                  dummy.readyState = 3;
-                };
-                setTimeout(function() {
-                  if (typeof dummy.onopen === 'function') {
-                    try { dummy.onopen(new Event('open')); } catch (e) {}
-                  }
-                  dummy.dispatchEvent(new Event('open'));
-                }, 0);
-                return dummy;
-              }
-              return new OrigWS(url, protocols);
-            };
-            PatchedWS.prototype = OrigWS.prototype;
-            PatchedWS.CONNECTING = 0;
-            PatchedWS.OPEN = 1;
-            PatchedWS.CLOSING = 2;
-            PatchedWS.CLOSED = 3;
-            window.WebSocket = PatchedWS;
-          }
-        }
-      })();
-    </script>
-    
-    <!-- Typography: Cairo for Arabic & Plus Jakarta Sans for English -->
+    <!-- 1. Put CSS at Top & Fast DNS Optimization -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
 
-    <!-- Google Identity Services (In-Page Auth to avoid storage-partitioned redirect errors) -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
-    <!-- SEO & Discoverability Layer -->
-    <title>ADEM AI — Personal Operating System & Autonomous Intelligence</title>
-    <meta name="description" content="ADEM AI is a high-performance Personal Operating System combining Autonomous Agents, Live Google Search Grounding, and Multimodal Tools engineered by Adam Feidat." />
-    <meta name="keywords" content="ADEM AI, Personal Operating System, AI Agent, Autonomous Intelligence, Google Search Grounded, Adam Feidat, Arabic AI" />
-    <meta name="author" content="Adam Feidat" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-
-    <!-- OpenGraph / Social Metadata -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="ADEM AI" />
-    <meta property="og:title" content="ADEM AI — Personal Operating System & Autonomous Intelligence" />
-    <meta property="og:description" content="A next-generation Personal Operating System engineered by Adam Feidat, powered by autonomous engines and real-time Google Search grounding." />
-    <meta property="og:image" content="/icon.png" />
-
-    <!-- Twitter / X Metadata -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@ademfeidat" />
-    <meta name="twitter:title" content="ADEM AI — Personal Operating System & Autonomous Intelligence" />
-    <meta name="twitter:description" content="A next-generation Personal Operating System engineered by Adam Feidat, powered by autonomous engines and real-time Google Search grounding." />
-    <meta name="twitter:image" content="/icon.png" />
-
-    <!-- Structured Data (JSON-LD for AI crawlers & search engines) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "ADEM AI",
-      "operatingSystem": "Web, Android, iOS, Linux, Windows",
-      "applicationCategory": "ProductivityApplication",
-      "description": "ADEM AI is a Personal Operating System integrating persistent memory, autonomous planning agents, real-time Google Search grounding, and multimodal generation engineered by Adam Feidat.",
-      "author": {
-        "@type": "Person",
-        "name": "Adam Feidat",
-        "email": "ademfeidat@gmail.com"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    }
-    </script>
-
-    <link rel="icon" href="/icon.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
-    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
-    <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin />
-    <link rel="preconnect" href="https://pollinations.ai" crossorigin />
-    <link rel="preconnect" href="https://image.pollinations.ai" crossorigin />
-    <link rel="dns-prefetch" href="https://pollinations.ai" />
-    <link rel="dns-prefetch" href="https://image.pollinations.ai" />
-
+    <!-- 2. Critical UI Skeleton Style (Inlined in Head for Zero-FOUC First Paint) -->
     <style>
-      /* Pure CSS Initial Loading State & Skeleton UI */
       .adem-init-skeleton {
         position: fixed;
         inset: 0;
@@ -224,6 +91,78 @@
         100% { background-position: 200% 0; }
       }
     </style>
+
+    <!-- 3. PWA Icons & Manifest -->
+    <link rel="icon" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- 4. SEO & Discoverability Layer -->
+    <title>ADEM AI — Personal Operating System & Autonomous Intelligence</title>
+    <meta name="description" content="ADEM AI is a high-performance Personal Operating System combining Autonomous Agents, Live Google Search Grounding, and Multimodal Tools engineered by Adam Feidat." />
+    <meta name="keywords" content="ADEM AI, Personal Operating System, AI Agent, Autonomous Intelligence, Google Search Grounded, Adam Feidat, Arabic AI" />
+    <meta name="author" content="Adam Feidat" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- OpenGraph / Social Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ADEM AI" />
+    <meta property="og:title" content="ADEM AI — Personal Operating System & Autonomous Intelligence" />
+    <meta property="og:description" content="A next-generation Personal Operating System engineered by Adam Feidat, powered by autonomous engines and real-time Google Search grounding." />
+    <meta property="og:image" content="/icon.png" />
+
+    <!-- Twitter / X Metadata -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@ademfeidat" />
+    <meta name="twitter:title" content="ADEM AI — Personal Operating System & Autonomous Intelligence" />
+    <meta name="twitter:description" content="A next-generation Personal Operating System engineered by Adam Feidat, powered by autonomous engines and real-time Google Search grounding." />
+    <meta name="twitter:image" content="/icon.png" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ADEM AI",
+      "operatingSystem": "Web, Android, iOS, Linux, Windows",
+      "applicationCategory": "ProductivityApplication",
+      "description": "ADEM AI is a Personal Operating System integrating persistent memory, autonomous planning agents, real-time Google Search grounding, and multimodal generation engineered by Adam Feidat.",
+      "author": {
+        "@type": "Person",
+        "name": "Adam Feidat",
+        "email": "ademfeidat@gmail.com"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <!-- 5. AI Studio Environment Shield -->
+    <script>
+      (function() {
+        if (typeof window !== 'undefined') {
+          window.addEventListener('unhandledrejection', function(event) {
+            var reason = event && event.reason;
+            var str = String((reason && (reason.stack || reason.message)) || reason || '');
+            if (str.includes('WebSocket') || str.includes('vite') || str.includes('@vite/client') || str.includes('WebSocket closed without opened')) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          }, true);
+          window.addEventListener('error', function(event) {
+            var msg = String((event && (event.message || event.filename)) || '');
+            if (msg.includes('WebSocket') || msg.includes('@vite/client')) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              return true;
+            }
+          }, true);
+        }
+      })();
+    </script>
   </head>
   <body>
     <!-- Rich Semantic Fallback for Non-JavaScript Environments & Search Crawlers -->

@@ -17,6 +17,7 @@ import {
   Languages,
   Database,
   Terminal,
+  Shield,
 } from 'lucide-react';
 import type { Language, ViewId } from '../../core/domain';
 
@@ -24,7 +25,7 @@ interface HermesSkill {
   id: string;
   name: string;
   displayNameAr: string;
-  category: 'coding' | 'math' | 'creativity' | 'data' | 'system' | 'reasoning' | 'ui';
+  category: 'cybersecurity' | 'pentesting' | 'coding' | 'math' | 'creativity' | 'data' | 'system' | 'reasoning' | 'ui';
   description: string;
   triggers: string[];
   proceduralSteps: string[];
@@ -59,6 +60,7 @@ export function HermesDashboard({ language, onNavigate, onRunPrompt }: HermesDas
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [displayLimit, setDisplayLimit] = useState(36);
   const [activeSkillModal, setActiveSkillModal] = useState<HermesSkill | null>(null);
 
   const fetchHermesData = async () => {
@@ -86,12 +88,15 @@ export function HermesDashboard({ language, onNavigate, onRunPrompt }: HermesDas
   }, []);
 
   const categories = [
-    { id: 'all', nameAr: 'جميع المهارات', nameEn: 'All Skills', icon: Layers },
-    { id: 'ui', nameAr: 'واجهات وتطبيقات', nameEn: 'UI & Live Apps', icon: Sparkles },
-    { id: 'coding', nameAr: 'برمجة وخوارزميات', nameEn: 'Coding & Arch', icon: Code },
-    { id: 'reasoning', nameAr: 'اللغة والاستنتاج', nameEn: 'Arabic NLP', icon: Languages },
+    { id: 'all', nameAr: 'جميع المهارات (1000)', nameEn: 'All Skills (1000)', icon: Layers },
+    { id: 'cybersecurity', nameAr: 'أمن سيبراني ودفاع', nameEn: 'Cybersecurity & Defense', icon: Shield },
+    { id: 'pentesting', nameAr: 'اختبار اختراق وهندسة عكسية', nameEn: 'Penetration & PWN', icon: Terminal },
+    { id: 'coding', nameAr: 'برمجة متقدمة ونواة', nameEn: 'Advanced Systems & Kernel', icon: Code },
+    { id: 'reasoning', nameAr: 'استنتاج ونماذج AI', nameEn: 'Reasoning & AI', icon: Languages },
     { id: 'math', nameAr: 'الرياضيات والعلوم', nameEn: 'Math & Logic', icon: Calculator },
-    { id: 'data', nameAr: 'البيانات والمخططات', nameEn: 'Data & JSON', icon: Database },
+    { id: 'system', nameAr: 'الأنظمة والطرفية', nameEn: 'Linux & System', icon: Cpu },
+    { id: 'data', nameAr: 'البيانات والمخططات', nameEn: 'Data & Schemas', icon: Database },
+    { id: 'ui', nameAr: 'واجهات وتطبيقات', nameEn: 'UI & Apps', icon: Sparkles },
   ];
 
   const filteredSkills = useMemo(() => {
@@ -244,7 +249,7 @@ export function HermesDashboard({ language, onNavigate, onRunPrompt }: HermesDas
 
       {/* Skills Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredSkills.map(skill => {
+        {filteredSkills.slice(0, displayLimit).map(skill => {
           const isAutonomous = skill.origin === 'autonomous_learned';
           return (
             <article
@@ -316,6 +321,24 @@ export function HermesDashboard({ language, onNavigate, onRunPrompt }: HermesDas
           );
         })}
       </div>
+
+      {/* Load More Button & Stats Footer */}
+      {filteredSkills.length > displayLimit && (
+        <div className="flex flex-col items-center justify-center gap-2 pt-8 pb-4">
+          <p className="text-xs text-[var(--muted)]">
+            {isAr
+              ? `يتم عرض ${displayLimit} من أصل ${filteredSkills.length} مهارة`
+              : `Showing ${displayLimit} of ${filteredSkills.length} skills`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setDisplayLimit((prev) => prev + 36)}
+            className="px-6 py-2.5 rounded-2xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-semibold text-[var(--text)] transition shadow-sm cursor-pointer hover:border-[var(--accent)]"
+          >
+            {isAr ? 'عرض المزيد من المهارات (+36)' : 'Load More Skills (+36)'}
+          </button>
+        </div>
+      )}
 
       {filteredSkills.length === 0 && !loading && (
         <div className="text-center py-12 text-[var(--muted)] text-xs">
