@@ -64,6 +64,7 @@ interface AppSandboxStudioProps {
   language: Language;
   initialAppId?: string;
   onNavigateToChat?: (prompt: string) => void;
+  onNavigateToGame?: () => void;
 }
 
 // Curated Luxury Built-in Templates
@@ -995,7 +996,8 @@ const CURATED_MODELS: SandboxApp[] = [
 export function AppSandboxStudio({
   language,
   initialAppId,
-  onNavigateToChat
+  onNavigateToChat,
+  onNavigateToGame,
 }: AppSandboxStudioProps) {
   const isAr = language === 'ar';
   const [apps, setApps] = useState<SandboxApp[]>(() => {
@@ -1313,6 +1315,16 @@ export function AppSandboxStudio({
                   : `Models (${apps.length})`}
               </span>
             </button>
+            {onNavigateToGame && (
+              <button
+                type="button"
+                onClick={onNavigateToGame}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              >
+                <Sparkles size={13} fill="currentColor" />
+                <span>{isAr ? 'ألعاب 3D ثلاثية الأبعاد' : '3D Three.js Arcade'}</span>
+              </button>
+            )}
             <div className="flex items-center p-0.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
               {(['all', 'game', 'app'] as const).map((cat) => (
                 <button

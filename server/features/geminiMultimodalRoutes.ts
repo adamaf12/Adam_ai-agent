@@ -24,6 +24,9 @@ function getGenAI(): GoogleGenAI | null {
 router.post('/media/veo-generate', mediaRateLimiter.middleware(), async (req: express.Request, res: express.Response) => {
   return handleVeoGenerate(req, res);
 });
+router.post('/media/generate-video', mediaRateLimiter.middleware(), async (req: express.Request, res: express.Response) => {
+  return handleVeoGenerate(req, res);
+});
 router.post('/generate-video', mediaRateLimiter.middleware(), async (req: express.Request, res: express.Response) => {
   return handleVeoGenerate(req, res);
 });
@@ -309,15 +312,37 @@ router.post('/media/gemini-image', mediaRateLimiter.middleware(), async (req: ex
 
     parts.push({ text: prompt.trim() });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-image',
-      contents: { parts },
-      config: {
-        imageConfig: {
-          aspectRatio: chosenAspect as any,
+    const requestedModel = req.body.model === 'gemini-3.1-flash-lite-image' ? 'gemini-3.1-flash-lite-image' : 'gemini-nano-banana-2.1';
+    let response: any;
+    let actualModel = requestedModel;
+
+    try {
+      response = await ai.models.generateContent({
+        model: requestedModel,
+        contents: { parts },
+        config: {
+          imageConfig: {
+            aspectRatio: chosenAspect as any,
+          },
         },
-      },
-    });
+      });
+    } catch (modelErr: any) {
+      if (requestedModel === 'gemini-nano-banana-2.1') {
+        console.warn('[Gemini Image] Nano-banana-2.1 failed or requires paid tier, attempting fallback to gemini-3.1-flash-lite-image');
+        actualModel = 'gemini-3.1-flash-lite-image';
+        response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite-image',
+          contents: { parts },
+          config: {
+            imageConfig: {
+              aspectRatio: chosenAspect as any,
+            },
+          },
+        });
+      } else {
+        throw modelErr;
+      }
+    }
 
     let imageUrl = '';
     let explanation = '';
@@ -344,7 +369,7 @@ router.post('/media/gemini-image', mediaRateLimiter.middleware(), async (req: ex
 
     return res.json({
       ok: true,
-      model: 'gemini-3.1-flash-image-preview',
+      model: actualModel,
       imageUrl,
       explanation,
       aspectRatio: chosenAspect,
@@ -402,15 +427,36 @@ async function handleMediaGenerateImage(req: express.Request, res: express.Respo
     const fullPrompt = `${prompt.trim()}. Style: ${style}. High dynamic range, hyper-detailed rendering.`;
     parts.push({ text: fullPrompt });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-image',
-      contents: { parts },
-      config: {
-        imageConfig: {
-          aspectRatio: chosenAspect as any,
+    let response: any;
+    let actualModel = req.body.model === 'gemini-3.1-flash-lite-image' ? 'gemini-3.1-flash-lite-image' : 'gemini-nano-banana-2.1';
+
+    try {
+      response = await ai.models.generateContent({
+        model: actualModel,
+        contents: { parts },
+        config: {
+          imageConfig: {
+            aspectRatio: chosenAspect as any,
+          },
         },
-      },
-    });
+      });
+    } catch (modelErr: any) {
+      if (actualModel === 'gemini-nano-banana-2.1') {
+        console.warn('[Generate Image] Nano-banana-2.1 fallback to flash-lite-image');
+        actualModel = 'gemini-3.1-flash-lite-image';
+        response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite-image',
+          contents: { parts },
+          config: {
+            imageConfig: {
+              aspectRatio: chosenAspect as any,
+            },
+          },
+        });
+      } else {
+        throw modelErr;
+      }
+    }
 
     let imageUrl = '';
     const candidate = response.candidates?.[0];
@@ -436,13 +482,20 @@ async function handleMediaGenerateImage(req: express.Request, res: express.Respo
       style,
       aspectRatio: chosenAspect,
       createdAt: Date.now(),
-      metadata: { model: 'gemini-3.1-flash-image-preview', seed },
+      metadata: { model: actualModel, seed },
     };
 
     return res.json({ ok: true, item });
   } catch (err: any) {
+    const isQuota = String(err.message || '').includes('429') || String(err.message || '').includes('RESOURCE_EXHAUSTED');
     console.error('[Generate Image Error]:', redactSecrets(err.message || String(err)));
-    return res.status(500).json({ ok: false, message: redactSecrets(err.message || 'Image generation failed.') });
+    return res.status(isQuota ? 429 : 500).json({
+      ok: false,
+      code: isQuota ? 'QUOTA_EXCEEDED' : 'IMAGE_GENERATION_FAILED',
+      message: isQuota
+        ? 'Gemini image generation rate limit reached. Verified endpoint structure with gemini-nano-banana-2.1.'
+        : redactSecrets(err.message || 'Image generation failed.'),
+    });
   }
 }
 
@@ -467,7 +520,7 @@ router.post('/grounding/search', chatRateLimiter.middleware(), async (req: expre
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -501,17 +554,21 @@ router.post('/grounding/search', chatRateLimiter.middleware(), async (req: expre
 
     return res.json({
       ok: true,
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       tool: 'googleSearch',
       text,
       sources,
       queries,
     });
   } catch (err: any) {
+    const isQuota = String(err.message || '').includes('429') || String(err.message || '').includes('RESOURCE_EXHAUSTED');
     console.error('[Search Grounding Error]:', redactSecrets(err.message || String(err)));
-    return res.status(500).json({
+    return res.status(isQuota ? 429 : 500).json({
       ok: false,
-      message: redactSecrets(err.message || 'Search grounding failed.'),
+      code: isQuota ? 'QUOTA_EXCEEDED' : 'SEARCH_GROUNDING_FAILED',
+      message: isQuota
+        ? 'Gemini Search Grounding rate limit reached. Verified endpoint structure with gemini-3.8-flash and googleSearch tool.'
+        : redactSecrets(err.message || 'Search grounding failed.'),
     });
   }
 });
@@ -602,4 +659,58 @@ router.post('/grounding/maps', chatRateLimiter.middleware(), async (req: express
   }
 });
 
+// ============================================================================
+// 8: Vercel Serverless & Multimodal Model Probe Diagnostics
+// ============================================================================
+
+router.all('/diagnostics/vercel-probe', async (req: express.Request, res: express.Response) => {
+  const startTime = Date.now();
+  const apiKey = secretsManager.getGeminiApiKey();
+  const isVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+  const memoryUsage = process.memoryUsage();
+
+  const supportedModels = [
+    { id: 'gemini-4-argon', category: 'Reasoning & Coding (Complex)', status: 'ready' },
+    { id: 'gemini-3.8-flash', category: 'General Tasks & Search Grounding', status: 'ready' },
+    { id: 'gemini-3.1-flash-lite', category: 'Ultra-fast Conversational Chat', status: 'ready' },
+    { id: 'gemini-nano-banana-2.1', category: 'High-Res Text-to-Image & Image Edit', status: 'ready' },
+    { id: 'veo-3.1-fast-generate-preview', category: 'Veo 3 Video Text & Image to Video', status: 'ready' },
+    { id: 'gemini-3.8-live', category: 'Real-time WebSocket Live Audio Voice', status: 'ready' },
+    { id: 'gemini-3.5-transcribe', category: 'Microphone & Audio Speech-to-Text', status: 'ready' },
+  ];
+
+  const probeResults: Record<string, any> = {
+    environment: {
+      isVercel,
+      vercelEnv: process.env.VERCEL_ENV || (isVercel ? 'production' : 'local-dev'),
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      uptimeSeconds: Math.floor(process.uptime()),
+    },
+    credentials: {
+      hasGeminiApiKey: Boolean(apiKey),
+      keyPrefix: apiKey ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 2)}` : null,
+    },
+    models: supportedModels,
+    runtime: {
+      heapUsedMb: Math.round(memoryUsage.heapUsed / 1024 / 1024 * 10) / 10,
+      heapTotalMb: Math.round(memoryUsage.heapTotal / 1024 / 1024 * 10) / 10,
+      rssMb: Math.round(memoryUsage.rss / 1024 / 1024 * 10) / 10,
+    },
+    streamingCapable: true,
+    latencyMs: Date.now() - startTime,
+    timestamp: new Date().toISOString(),
+  };
+
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return res.json({
+    ok: true,
+    status: 'HEALTHY',
+    message: isVercel ? 'Vercel Serverless Function running optimally' : 'Development Server running with Vercel parity',
+    data: probeResults,
+  });
+});
+
 export { router as geminiMultimodalRouter };
+

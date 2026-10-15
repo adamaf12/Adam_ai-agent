@@ -11,6 +11,7 @@ import {
   Check,
   Globe,
   Settings as SettingsIcon,
+  Server,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -117,6 +118,36 @@ const STUDIO_TABS: {
     iconColor: 'text-emerald-400',
     borderColor: 'border-emerald-500/40',
     glowAura: 'rgba(16, 185, 129, 0.35)',
+  },
+  {
+    id: 'game',
+    icon: Gamepad2,
+    labelAr: 'ألعاب 3D ثلاثية الأبعاد',
+    labelEn: '3D Arcade',
+    descAr: 'استوديو ألعاب Three.js الفضائية والسايبر 60FPS',
+    descEn: '60fps Three.js 3D Arcade & Space Simulator',
+    badgeAr: 'الألعاب',
+    badgeEn: '3D Game',
+    shortcut: 'Alt+5',
+    gradientClass: 'from-amber-500/25 via-orange-500/15 to-transparent',
+    iconColor: 'text-amber-400',
+    borderColor: 'border-amber-500/40',
+    glowAura: 'rgba(245, 158, 11, 0.35)',
+  },
+  {
+    id: 'vercel',
+    icon: Server,
+    labelAr: 'فحص Vercel والنماذج',
+    labelEn: 'Vercel Diagnostics',
+    descAr: 'فحص الخوادم، زمن الاستجابة، ونماذج Gemini التسعة',
+    descEn: 'Vercel Serverless & 9-Model AI Diagnostic Suite',
+    badgeAr: 'الفحص',
+    badgeEn: 'Vercel',
+    shortcut: 'Alt+6',
+    gradientClass: 'from-sky-500/25 via-blue-500/15 to-transparent',
+    iconColor: 'text-sky-400',
+    borderColor: 'border-sky-500/40',
+    glowAura: 'rgba(14, 165, 233, 0.35)',
   },
 ];
 

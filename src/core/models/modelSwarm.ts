@@ -23,6 +23,7 @@ export function formatAdemModelName(modelIdOrName: string): string {
   if (clean.startsWith('ADEM-G')) return clean;
 
   const map: Record<string, string> = {
+    'gemini-4-argon': 'ADEM-G 4 Argon',
     'gemini-3.8-flash': 'ADEM-G 3.8 Flash',
     'gemini-3.1-flash-lite': 'ADEM-G 3.1 Flash Lite',
     'gemini-flash-latest': 'ADEM-G Flash Latest',
@@ -41,6 +42,7 @@ export function formatAdemModelName(modelIdOrName: string): string {
 }
 
 const builtInModels: ModelDescriptor[] = [
+  { id: 'gemini-4-argon', provider: 'ADEM-G', displayName: 'ADEM-G 4 Argon (Flagship Reasoning & STEM)', capabilities: ['reasoning','coding','math','general','vision','arabic'], quality: 10.0, speed: 9.2, cost: 2, enabled: true },
   { id: 'gemini-3.8-flash', provider: 'ADEM-G', displayName: 'ADEM-G 3.8 Flash', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.9, speed: 9.8, cost: 1, enabled: true },
   { id: 'gemini-3.1-flash-lite', provider: 'ADEM-G', displayName: 'ADEM-G 3.1 Flash Lite', capabilities: ['general','fast','coding','arabic'], quality: 9.5, speed: 9.9, cost: 1, enabled: true },
   { id: 'gemini-flash-latest', provider: 'ADEM-G', displayName: 'ADEM-G Flash Latest', capabilities: ['general','fast','coding','reasoning','math','vision','arabic'], quality: 9.8, speed: 9.8, cost: 1, enabled: true },

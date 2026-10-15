@@ -10,6 +10,8 @@ import { TranslatorStudio } from './features/translation/TranslatorStudio';
 import { GoogleAdkStudio } from './features/adk/GoogleAdkStudio';
 import { MediaStudio } from './features/media/MediaStudio';
 import { GitHubStudio } from './features/github/GitHubStudio';
+import { ThreeJsGameStudio } from './features/game/ThreeJsGameStudio';
+import { VercelDiagnosticsView } from './features/diagnostics/VercelDiagnosticsView';
 import { BackgroundSecuritySentinel } from './components/BackgroundSecuritySentinel';
 import { QuickLiquidRefraction } from './components/QuickLiquidRefraction';
 import { NetworkSentinel } from './components/NetworkSentinel';
@@ -238,6 +240,9 @@ export default function App() {
                 onNavigateToChat={(_prompt) => {
                   setActiveView('chat');
                 }}
+                onNavigateToGame={() => {
+                  setActiveView('game');
+                }}
               />
             )}
 
@@ -275,6 +280,19 @@ export default function App() {
                 onNavigateToChat={(_prompt) => {
                   setActiveView('chat');
                 }}
+              />
+            )}
+
+            {activeView === 'game' && (
+              <ThreeJsGameStudio
+                language={preferences.language}
+                onBackToApps={() => setActiveView('apps')}
+              />
+            )}
+
+            {activeView === 'vercel' && (
+              <VercelDiagnosticsView
+                language={preferences.language}
               />
             )}
           </motion.div>
