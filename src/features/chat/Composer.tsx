@@ -9,6 +9,7 @@ import {
   Send,
   Sparkles,
   Square,
+  Unlock,
   UploadCloud,
   X,
 } from 'lucide-react';
@@ -75,7 +76,7 @@ export function Composer({
   onSend: (text: string, images?: string[]) => void;
   onStop: () => void;
 }) {
-  const { isGenerating, cancelGeneration } = useGeneration();
+  const { isGenerating, cancelGeneration, forceUnlock } = useGeneration();
   const isLocked = busy || isGenerating;
   const [draft, setDraft] = useState('');
   const [images, setImages] = useState<ProcessedImage[]>([]);
@@ -665,9 +666,40 @@ export function Composer({
       {/* Live Progress Indicator & Cancel Action */}
       <LiveProgressCard
         language={language}
-        onCancel={isGenerating ? () => cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user') : onStop}
+        onCancel={() => {
+          if (isGenerating) cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user');
+          onStop();
+          forceUnlock();
+        }}
         className="mb-2"
       />
+
+      {/* Emergency Unlock Banner when locked */}
+      {isLocked && (
+        <div className="flex items-center justify-between gap-2 mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 text-xs text-amber-200 animate-fadeIn">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Loader2 size={13} className="animate-spin text-amber-400 shrink-0" />
+            <span className="truncate">
+              {isAr ? 'الواجهة مشغولة بتنفيذ طلبك… يمكنك فك القفل في أي لحظة:' : 'Processing request… You can unlock anytime:'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (isGenerating) {
+                cancelGeneration(isAr ? 'تم فك القفل اضطرارياً بواسطة المستخدم' : 'Force unlocked by user');
+              }
+              onStop();
+              forceUnlock();
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow-sm transition cursor-pointer shrink-0 active:scale-95"
+            title={isAr ? 'فك قفل الواجهة فوراً واستعادة حرية الإدخال' : 'Unlock interface immediately'}
+          >
+            <Unlock size={12} />
+            <span>{isAr ? 'فك القفل فوراً' : 'Unlock Now'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Luxury Streamlined Composer Box */}
       <div className={`composer flex items-end gap-1.5 p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-[var(--surface)]/95 border border-[var(--border-strong)] shadow-xl backdrop-blur-2xl transition-all duration-300 focus-within:border-[var(--accent)] focus-within:shadow-[0_0_24px_var(--accent-glow)] w-full ${isLocked ? 'ring-1 ring-amber-500/30' : ''}`}>
@@ -675,7 +707,7 @@ export function Composer({
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            isLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : attachedFiles.length > 0
+            isLocked ? 'opacity-40 cursor-not-allowed' : attachedFiles.length > 0
               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-cyan-400 hover:bg-[var(--surface-2)]'
           }`}
@@ -695,7 +727,7 @@ export function Composer({
         <button
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
-            isLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : images.length > 0
+            isLocked ? 'opacity-40 cursor-not-allowed' : images.length > 0
               ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40 shadow-sm'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
           }`}
@@ -716,7 +748,7 @@ export function Composer({
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             isLocked
-              ? 'opacity-40 cursor-not-allowed pointer-events-none'
+              ? 'opacity-40 cursor-not-allowed'
               : 'text-[var(--muted)] hover:text-blue-400 hover:bg-[var(--surface-2)]'
           }`}
           onClick={() => setIsWebImageModalOpen(true)}
@@ -738,14 +770,17 @@ export function Composer({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                if (isLocked) {
+                  return;
+                }
                 submit();
               }
             }}
             placeholder={
               isLocked
                 ? isAr
-                  ? 'جاري تنفيذ وتوليد الطلب… يرجى الانتظار أو الإلغاء ⏳'
-                  : 'Execution in progress… please wait or cancel ⏳'
+                  ? 'اكتب رسالتك التالية هنا… (أو اضغط فك القفل للبدء فوراً)'
+                  : 'Type your next prompt here… (or tap Unlock to start immediately)'
                 : listening
                 ? isAr
                   ? 'جاري الاستماع بدقة...'
@@ -772,7 +807,7 @@ export function Composer({
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 touch-manipulation ${
             isLocked
-              ? 'opacity-40 cursor-not-allowed pointer-events-none text-[var(--muted)]'
+              ? 'opacity-40 cursor-not-allowed text-[var(--muted)]'
               : isRecordingAudio
               ? 'bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
               : listening
@@ -804,20 +839,24 @@ export function Composer({
           type="button"
           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md touch-manipulation ${
             isLocked
-              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 active:scale-95'
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 active:scale-95 animate-pulse'
               : draft.trim() || images.length > 0 || attachedFiles.length > 0
               ? 'bg-[var(--accent)] hover:opacity-95 text-[var(--accent-contrast)] shadow-[0_0_18px_var(--accent-glow)] active:scale-95'
               : 'bg-[var(--surface-2)] text-[var(--muted)] opacity-50 cursor-not-allowed'
           }`}
-          onClick={
-            isLocked
-              ? isGenerating
-                ? () => cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user')
-                : onStop
-              : submit
-          }
-          aria-label={isLocked ? (isAr ? 'إلغاء' : 'Cancel') : t.send}
-          title={isLocked ? (isAr ? 'إلغاء العملية وتحرير الإدخال' : 'Cancel operation & unlock input') : (draft.trim() ? t.send : '')}
+          onClick={() => {
+            if (isLocked) {
+              if (isGenerating) {
+                cancelGeneration(isAr ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user');
+              }
+              onStop();
+              forceUnlock();
+            } else {
+              submit();
+            }
+          }}
+          aria-label={isLocked ? (isAr ? 'إلغاء وفك القفل فوراً' : 'Cancel and unlock immediately') : t.send}
+          title={isLocked ? (isAr ? 'إلغاء العملية وتحرير الإدخال فوراً' : 'Cancel operation & unlock input immediately') : (draft.trim() ? t.send : '')}
           disabled={!isLocked && !draft.trim() && images.length === 0 && attachedFiles.length === 0}
         >
           {isLocked ? <Square size={13} fill="currentColor" /> : <Send size={15} />}

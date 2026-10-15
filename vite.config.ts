@@ -112,8 +112,13 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor-react';
+              if (
+                id.includes('react') ||
+                id.includes('react-dom') ||
+                id.includes('motion') ||
+                id.includes('framer-motion')
+              ) {
+                return 'vendor-core';
               }
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
@@ -123,9 +128,6 @@ export default defineConfig(() => {
               }
               if (id.includes('recharts') || id.includes('d3')) {
                 return 'vendor-charts';
-              }
-              if (id.includes('motion')) {
-                return 'vendor-motion';
               }
             }
           },

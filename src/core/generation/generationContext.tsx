@@ -54,6 +54,7 @@ export interface GenerationContextValue extends GenerationState {
   finishGeneration: () => void;
   cancelGeneration: (reason?: string) => void;
   registerAbortController: (controller: AbortController) => void;
+  forceUnlock: (reason?: string) => void;
 }
 
 const DEFAULT_STATE: GenerationState = {
@@ -220,6 +221,52 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     [stopTimer]
   );
 
+  const forceUnlock = useCallback(
+    (reason = 'Force unlocked by system or user') => {
+      stopTimer();
+      if (controllerRef.current) {
+        try {
+          controllerRef.current.abort(new Error(reason));
+        } catch {
+          // ignore already aborted
+        }
+        controllerRef.current = null;
+      }
+
+      setState(DEFAULT_STATE);
+
+      window.dispatchEvent(
+        new CustomEvent('adam:force-unlock', {
+          detail: { reason },
+        })
+      );
+    },
+    [stopTimer]
+  );
+
+  // Watchdog Timer: prevents UI from ever remaining locked for > 35 seconds without resolution
+  useEffect(() => {
+    if (!state.isGenerating) return;
+    const watchdog = setTimeout(() => {
+      console.warn('[GenerationWatchdog] Generation exceeded 35s timeout. Automatically releasing UI lock.');
+      forceUnlock('Generation timeout watchdog triggered');
+    }, 35_000);
+    return () => clearTimeout(watchdog);
+  }, [state.isGenerating, forceUnlock]);
+
+  // Expose global force unlock listener and window helper
+  useEffect(() => {
+    const handleGlobalUnlock = () => {
+      forceUnlock();
+    };
+    window.addEventListener('adam:request-force-unlock', handleGlobalUnlock);
+    (window as any).__adamForceUnlock = forceUnlock;
+    return () => {
+      window.removeEventListener('adam:request-force-unlock', handleGlobalUnlock);
+      delete (window as any).__adamForceUnlock;
+    };
+  }, [forceUnlock]);
+
   const registerAbortController = useCallback((controller: AbortController) => {
     controllerRef.current = controller;
   }, []);
@@ -232,6 +279,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     finishGeneration,
     cancelGeneration,
     registerAbortController,
+    forceUnlock,
   };
 
   return (

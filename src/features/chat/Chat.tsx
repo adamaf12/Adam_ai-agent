@@ -504,14 +504,24 @@ export function Chat({
       handleStartNewChat();
     };
 
+    const handleForceUnlock = () => {
+      if (controller.current) {
+        try { controller.current.abort(); } catch {}
+        controller.current = null;
+      }
+      setBusy(false);
+    };
+
     window.addEventListener('adam:open-session-drawer', openDrawer);
     window.addEventListener('adam:select-conversation' as any, handleSelectEvent);
     window.addEventListener('adam:new-chat-triggered' as any, handleNewChatEvent);
+    window.addEventListener('adam:force-unlock', handleForceUnlock);
 
     return () => {
       window.removeEventListener('adam:open-session-drawer', openDrawer);
       window.removeEventListener('adam:select-conversation' as any, handleSelectEvent);
       window.removeEventListener('adam:new-chat-triggered' as any, handleNewChatEvent);
+      window.removeEventListener('adam:force-unlock', handleForceUnlock);
     };
   }, [currentConversation, messages]);
 
@@ -857,7 +867,13 @@ export function Chat({
   };
 
   const stop = () => {
-    controller.current?.abort();
+    if (controller.current) {
+      try {
+        controller.current.abort();
+      } catch {}
+      controller.current = null;
+    }
+    setBusy(false);
     cancelGeneration(language === 'ar' ? 'تم إلغاء التوليد بواسطة المستخدم' : 'Cancelled by user');
   };
 
