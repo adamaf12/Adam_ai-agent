@@ -36,14 +36,14 @@ import { detectMessageLanguage } from '../src/core/utils/languageDetector';
 
 export function isExplicitImageRequest(prompt: string): boolean {
   const p = prompt.trim().toLowerCase();
-  // If user is asking for code, interactive tools, calculators, games, apps, or image analysis / problem solving / OCR, do not intercept as image generation
-  if (/(برمج|كود|تطبيق تفاعلي|تطبيق ويب|أداة تفاعلية|آلة حاسبة|حاسبة|لعبة|العاب|ألعاب|تطبيق|تطبيقات|اصنع|انشئ|أنشئ|طور|صمم لعبة|استوديو الألعاب|استوديو التطبيقات|ساندبوكس|صفحة|موقع|html|javascript|code|build an app|interactive app|calculator|game|games|play|unreal|ue5)/i.test(p)) {
+  // If user is asking for code, interactive apps, calculators, games, or OCR / image analysis, do not intercept
+  if (/(برمج|كود|تطبيق تفاعلي|تطبيق ويب|أداة تفاعلية|آلة حاسبة|حاسبة|لعبة|العاب|ألعاب|تطبيق|تطبيقات|صمم لعبة|استوديو الألعاب|استوديو التطبيقات|ساندبوكس|صفحة|موقع|html|javascript|code|build an app|interactive app|calculator|game|games|play|unreal|ue5)/i.test(p) && !/(صورة|صوره|صور|رسم|ارسم)/i.test(p)) {
     return false;
   }
   if (/(حل المسألة|حل التمرين|حل الخطأ|حل المشكلة|فحص الصورة|شرح الصورة|تحليل الصورة|استخرج النص|قراءة الصورة|ocr|solve|debug|analyze image|explain image|extract text|scan)/i.test(p)) {
     return false;
   }
-  return /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|أنشئ صورة|انشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration)\b/i.test(p);
+  return /(?:صورة|صوره|صور|ارسم|ارسم لي|رسمة|رسمه|اصنع صورة|انشئ صورة|أنشئ صورة|صمم صورة|توليد صورة|أريد صورة|اريد صورة|اعطني صورة|أعطني صورة|صورة فقط|خلفية|image|photo|picture|wallpaper|draw|illustration|generate image|image generation|create an image|make an image|crée une image|génère une image)/i.test(p);
 }
 
 export function isExplicitVideoRequest(prompt: string): boolean {
@@ -51,7 +51,7 @@ export function isExplicitVideoRequest(prompt: string): boolean {
   if (/(برمج|كود|تطبيق|أداة|آلة حاسبة|حاسبة|لعبة|العاب|ألعاب|اصنع|انشئ|أنشئ|طور|صفحة|موقع|html|javascript|code|game|games)/i.test(p)) {
     return false;
   }
-  return /(?:فيديو|فديو|أنشئ فيديو|انشئ فيديو|صمم فيديو|مقطع سينمائي|مقطع فيديو|video|motion clip|cinematic video)\b/i.test(p);
+  return /(?:فيديو|فديو|أنشئ فيديو|انشئ فيديو|صمم فيديو|مقطع سينمائي|مقطع فيديو|video|motion clip|cinematic video)/i.test(p);
 }
 
 type AgentMessage = { role: string; content: string; images?: string[] };
@@ -528,7 +528,8 @@ You possess full root / executive authority to run code, execute terminal comman
 
 ---
 
-## 5. FUNCTION CALL SCHEMAS (CAPABILITIES)
+## 5. FUNCTION CALL SCHEMAS & IMAGE GENERATION CAPABILITY
+- \`generate_image(prompt, aspect_ratio, style)\`: Immediately generates high-resolution cinematic 8K images when the user requests creating, drawing, or making an image (e.g. "اصنع لي صورة", "انشئ صورة", "ارسم", "generate image", "draw").
 - \`create_task(title, description, priority, system_target)\`
 - \`query_memory(search_term, date_range, platform_filter)\`
 - \`generate_specialized_image(prompt, aspect_ratio)\`

@@ -559,6 +559,10 @@ export const ThreeJsGameStudio: React.FC<ThreeJsGameStudioProps> = ({ language, 
       renderer.toneMappingExposure = 1.15;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        console.warn('[ThreeJsGameStudio] WebGL Context Lost, handled gracefully without crashing.');
+      }, false);
       container.appendChild(renderer.domElement);
     } catch (glErr) {
       console.warn('[ThreeJsGameStudio] WebGL context creation failed, falling back to high-performance 2D Canvas renderer:', glErr);
@@ -931,7 +935,11 @@ export const ThreeJsGameStudio: React.FC<ThreeJsGameStudioProps> = ({ language, 
           });
         }
       } else if (renderer) {
-        renderer.render(scene, camera);
+        try {
+          renderer.render(scene, camera);
+        } catch (rErr) {
+          console.warn('[ThreeJsGameStudio] Render frame error caught safely:', rErr);
+        }
       }
     };
 

@@ -759,6 +759,8 @@ export function Composer({
           <Globe size={16} />
         </button>
 
+
+
         {/* Flexible Text Input */}
         <div className="flex-1 min-w-0 w-full flex items-center py-0.5">
           <textarea

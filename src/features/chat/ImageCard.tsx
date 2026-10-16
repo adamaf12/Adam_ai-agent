@@ -23,17 +23,34 @@ function cleanPromptForUrl(prompt: string, maxLen = 650): string {
 }
 
 function generateFallbackSvgUrl(title: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  const safeTitle = (title || 'ADEM Masterpiece').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 60);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
     <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#0B0F19" />
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#050811" />
+        <stop offset="50%" stop-color="#0E1626" />
         <stop offset="100%" stop-color="#1E1B4B" />
       </linearGradient>
+      <radialGradient id="cyberGlow" cx="50%" cy="45%" r="45%">
+        <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.35" />
+        <stop offset="60%" stop-color="#3B82F6" stop-opacity="0.15" />
+        <stop offset="100%" stop-color="#050811" stop-opacity="0" />
+      </radialGradient>
+      <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#06B6D4" />
+        <stop offset="50%" stop-color="#8B5CF6" />
+        <stop offset="100%" stop-color="#3B82F6" />
+      </linearGradient>
     </defs>
-    <rect width="800" height="800" fill="url(#bg)" />
-    <circle cx="400" cy="400" r="240" fill="#3B82F6" fill-opacity="0.25" />
-    <text x="400" y="370" text-anchor="middle" fill="#F8FAFC" font-family="sans-serif" font-weight="900" font-size="34">ADEM STUDIO HD</text>
-    <text x="400" y="420" text-anchor="middle" fill="#94A3B8" font-family="sans-serif" font-weight="600" font-size="16">${(title || '').slice(0, 50)}</text>
+    <rect width="1024" height="1024" fill="url(#bgGrad)" />
+    <circle cx="512" cy="460" r="340" fill="url(#cyberGlow)" />
+    <circle cx="512" cy="460" r="220" fill="none" stroke="url(#borderGrad)" stroke-width="2" stroke-dasharray="12 8" opacity="0.6" />
+    <circle cx="512" cy="460" r="160" fill="#0B0F19" stroke="#06B6D4" stroke-width="2.5" />
+    <path d="M512 360 L570 470 L454 470 Z" fill="#06B6D4" opacity="0.9" />
+    <path d="M512 560 L454 450 L570 450 Z" fill="#8B5CF6" opacity="0.85" />
+    <text x="512" y="700" text-anchor="middle" fill="#F8FAFC" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="32" letter-spacing="3">ADEM 8K SYNTHESIS</text>
+    <text x="512" y="748" text-anchor="middle" fill="#38BDF8" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="18">${safeTitle}</text>
+    <text x="512" y="784" text-anchor="middle" fill="#64748B" font-family="monospace" font-size="13">High-Fidelity Neural Output • Flux.1 Protected Pipeline</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
@@ -68,16 +85,19 @@ function buildSpeedCandidates(
   const urls: string[] = [];
 
   if (mode === 'turbo') {
-    // Ultra-Fast Turbo Engine (1-2s response)
+    // Multi-tier turbo fast mirrors
     urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
     urls.push(`https://image.pollinations.ai/prompt/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
+    urls.push(`https://gen.pollinations.ai/image/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
     urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
   } else {
-    // Primary Flux.1 High-Performance HD Engine
+    // Primary Flux.1 High-Performance HD Engine with multi-mirror CDN failover
     if (rawUrl) {
       urls.push(rawUrl);
     }
     urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
+    urls.push(`https://image.pollinations.ai/prompt/${encodedFull}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
+    urls.push(`https://gen.pollinations.ai/image/${encodedFull}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`);
     urls.push(`https://pollinations.ai/p/${encodedFull}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`);
   }
 

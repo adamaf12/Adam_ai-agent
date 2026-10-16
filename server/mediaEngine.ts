@@ -2,6 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { GoogleGenAI } from '@google/genai';
 
+function withTimeout<T>(promise: Promise<T>, ms = 2500, fallbackMsg = 'Upstream timed out'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(fallbackMsg)), ms)),
+  ]);
+}
+
 export type MediaType = 'image' | 'video' | 'vector';
 
 export type MediaEngineType =
@@ -693,7 +700,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
           ? aspectRatio
           : aspectRatio === '21:9' ? '16:9' : '1:1') as any;
 
-        const nanoResponse = await ai.models.generateContent({
+        const nanoResponse = await withTimeout(ai.models.generateContent({
           model: 'gemini-nano-banana-2.1',
           contents: {
             parts: [{ text: cleanPrompt }],
@@ -704,7 +711,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
               imageSize: quality,
             },
           },
-        });
+        }), 2500, 'Nano Banana timeout');
 
         for (const part of nanoResponse.candidates?.[0]?.content?.parts || []) {
           if (part.inlineData?.data) {
@@ -727,7 +734,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
           : aspectRatio === '1:4' || aspectRatio === '1:8'
           ? '9:16'
           : aspectRatio) as '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
-        const imgResponse = await ai.models.generateImages({
+        const imgResponse = await withTimeout(ai.models.generateImages({
           model: 'imagen-3.0-generate-002',
           prompt: cleanPrompt,
           config: {
@@ -735,7 +742,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
             aspectRatio: imagenAspect,
             outputMimeType: 'image/jpeg',
           },
-        });
+        }), 2500, 'Imagen 3 timeout');
 
         const imageBytes = imgResponse.generatedImages?.[0]?.image?.imageBytes;
         if (imageBytes) {
@@ -752,7 +759,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
       try {
         const ai = new GoogleGenAI({ apiKey: params.apiKey });
         const geminiAspect = (aspectRatio === '21:9' ? '16:9' : aspectRatio === '1:4' || aspectRatio === '1:8' ? '9:16' : aspectRatio === '4:1' || aspectRatio === '8:1' ? '16:9' : aspectRatio) as '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
-        const flashResponse = await ai.models.generateContent({
+        const flashResponse = await withTimeout(ai.models.generateContent({
           model: 'gemini-3.1-flash-lite-image',
           contents: {
             parts: [{ text: cleanPrompt }],
@@ -763,7 +770,7 @@ Return strictly valid JSON with keys: enhancedPromptEn, explanationAr, semanticA
               imageSize: '1K',
             },
           },
-        });
+        }), 2500, 'Flash Lite image timeout');
 
         for (const part of flashResponse.candidates?.[0]?.content?.parts || []) {
           if (part.inlineData?.data) {
